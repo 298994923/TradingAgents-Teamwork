@@ -224,3 +224,6 @@ reports/
 
 # Local assignment materials (not part of the deliverable)
 not_delivered/
+
+# macOS Finder metadata
+.DS_Store
