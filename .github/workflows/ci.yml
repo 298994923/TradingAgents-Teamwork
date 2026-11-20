@@ -1,0 +1,22 @@
+# CI workflow — TABLE OF CONTENTS ONLY (content added later by E).
+#
+# This file is intentionally not yet a runnable workflow (no jobs defined).
+# Enable the gates below when their scripts exist, and register them as
+# GitHub "required checks".
+#
+# Six required gates (see CS5351 merge checklist):
+#   1. tests-first approval   — tests approved independently before implementation
+#   2. static                 — ruff / lint
+#   3. schema                 — requirements.yaml / req-schema.json validation
+#   4. semantics              — live semantic evaluation of prompt/model changes
+#   5. regression             — original `tests/` + new `test/offline`
+#   6. AI-use log             — docs/ai-use-log.yaml updated for every code/prompt PR
+#
+# Planned jobs:
+#   - test            : pytest (tests/ + test/)          -> scripts: n/a
+#   - smoke-install   : clean `pip install .` + import   -> n/a
+#   - lint            : ruff check .                     -> n/a
+#   - governance-gates: test/offline/test_governance_gates.py
+#   - required checks + CODEOWNERS human review on safety/governance paths
+#
+# TODO(E): implement the jobs above.
