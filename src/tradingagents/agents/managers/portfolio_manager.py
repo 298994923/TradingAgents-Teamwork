@@ -6,6 +6,18 @@ Uses LangChain's ``with_structured_output`` so the LLM produces a typed
 ``final_trade_decision`` for the memory log, CLI display and saved reports.
 When a provider does not expose structured output, the agent falls back to
 free-text generation and the rating is read from that text.
+
+Guarded mode (``state["guard_enabled"] is True``) wires D's deterministic guard
+at two checkpoints, INV-D6 / REQ-D-007:
+
+- node start: validate ``state["trader_proposal"]`` at ``stage="trader"``;
+- after the PM decision: revalidate at ``stage="pm"`` with the Trader-gate
+  verdict as ``prior_verdict``.
+
+The structured portfolio comes from ``state["portfolio"]`` only; rendered
+strings are never parsed here. When the flag is absent or false, the node keeps
+the upstream baseline behavior (legacy comparator), per the ADR-005
+compatibility addendum.
 """
 
 from __future__ import annotations
@@ -18,6 +30,77 @@ from tradingagents.agents.context import (
 from tradingagents.agents.rating import parse_rating
 from tradingagents.agents.schemas import PortfolioDecision, render_pm_decision
 from tradingagents.agents.structured import NO_EXTERNAL_TOOLS, bind_structured, invoke_structured
+from tradingagents.constraints import ABSENT, Verdict, validate as validate_guard
+
+
+def _updated_risk_state(risk_debate_state):
+    return {
+        "history": risk_debate_state["history"],
+        "aggressive_history": risk_debate_state["aggressive_history"],
+        "conservative_history": risk_debate_state["conservative_history"],
+        "neutral_history": risk_debate_state["neutral_history"],
+        "latest_speaker": "Judge",
+        "current_aggressive_response": risk_debate_state["current_aggressive_response"],
+        "current_conservative_response": risk_debate_state["current_conservative_response"],
+        "current_neutral_response": risk_debate_state["current_neutral_response"],
+        "count": risk_debate_state["count"],
+    }
+
+
+def _guard_record(result):
+    """Serialize one gate's GuardResult for graph/audit consumers."""
+    return {
+        "verdict": result.verdict.value,
+        "reason_code": result.reason_code,
+        "checkpoint": result.checkpoint,
+        "executable": result.executable,
+        "details": result.details,
+    }
+
+
+def _guard_fields(trader_result, pm_result, reason_code):
+    return {
+        "guard_verdict": pm_result.verdict.value,
+        "guard_reason_code": reason_code,
+        "guard_executable": pm_result.executable,
+        "guard_checkpoint": pm_result.checkpoint,
+        "guard_details": pm_result.details,
+        "guard_trader": _guard_record(trader_result),
+        "guard_pm": _guard_record(pm_result),
+    }
+
+
+def _suppressed_decision(pm_result):
+    """A non-executable disposition that carries no tradeable rating or action."""
+    return (
+        f"GUARD {pm_result.verdict.value} ({pm_result.reason_code}): "
+        "non-executable disposition; recommendation suppressed."
+    )
+
+
+def _unavailable_plans_result(risk_debate_state):
+    """Missing research/trader plans are an explicit REVIEW, never fabricated."""
+    return {
+        "risk_debate_state": _updated_risk_state(risk_debate_state),
+        "final_trade_decision": (
+            "GUARD REVIEW (KNOWN_UNKNOWN): investment_plan or "
+            "trader_investment_plan unavailable; no tradeable decision."
+        ),
+        "final_rating": "REVIEW",
+        "guard_verdict": "REVIEW",
+        "guard_reason_code": "KNOWN_UNKNOWN",
+        "guard_executable": False,
+        "guard_checkpoint": "pm",
+        "guard_details": {
+            "unavailable": ["investment_plan", "trader_investment_plan"],
+        },
+        "guard_trader": None,
+        "guard_pm": None,
+    }
+
+
+def _has_plan(value) -> bool:
+    return isinstance(value, str) and bool(value.strip())
 
 
 def create_portfolio_manager(llm):
@@ -29,8 +112,32 @@ def create_portfolio_manager(llm):
 
         history = state["risk_debate_state"]["history"]
         risk_debate_state = state["risk_debate_state"]
-        research_plan = state["investment_plan"]
-        trader_plan = state["trader_investment_plan"]
+        guard_enabled = state.get("guard_enabled") is True
+
+        if guard_enabled:
+            raw_research_plan = state.get("investment_plan")
+            raw_trader_plan = state.get("trader_investment_plan")
+            if not _has_plan(raw_research_plan) or not _has_plan(raw_trader_plan):
+                return _unavailable_plans_result(risk_debate_state)
+            research_plan = raw_research_plan
+            trader_plan = raw_trader_plan
+
+            raw_portfolio = state.get("portfolio", ABSENT)
+            guard_portfolio = raw_portfolio if isinstance(raw_portfolio, dict) else ABSENT
+            raw_trader_proposal = state.get("trader_proposal")
+            trader_proposal = (
+                raw_trader_proposal if isinstance(raw_trader_proposal, dict) else {}
+            )
+
+            # INV-D6: Trader gate runs before the PM prompt/decision.
+            trader_result = validate_guard(
+                proposal=trader_proposal,
+                portfolio=guard_portfolio,
+                stage="trader",
+            )
+        else:
+            research_plan = state["investment_plan"]
+            trader_plan = state["trader_investment_plan"]
 
         past_context = state.get("past_context", "")
         lessons_line = (
@@ -85,22 +192,46 @@ Write these sections, in this order, starting with the rating on its own line:
             final_trade_decision = llm.invoke(prompt).content
             final_rating = parse_rating(final_trade_decision)
 
-        new_risk_debate_state = {
-            "history": risk_debate_state["history"],
-            "aggressive_history": risk_debate_state["aggressive_history"],
-            "conservative_history": risk_debate_state["conservative_history"],
-            "neutral_history": risk_debate_state["neutral_history"],
-            "latest_speaker": "Judge",
-            "current_aggressive_response": risk_debate_state["current_aggressive_response"],
-            "current_conservative_response": risk_debate_state["current_conservative_response"],
-            "current_neutral_response": risk_debate_state["current_neutral_response"],
-            "count": risk_debate_state["count"],
-        }
+        new_risk_debate_state = _updated_risk_state(risk_debate_state)
+
+        if not guard_enabled:
+            return {
+                "risk_debate_state": new_risk_debate_state,
+                "final_trade_decision": final_trade_decision,
+                "final_rating": final_rating,
+            }
+
+        # INV-D6 / INV-D7: final gate revalidates the PM output and preserves
+        # any higher prior verdict. PM text is passed only for override audit.
+        pm_proposal = dict(trader_proposal)
+        pm_proposal["rating"] = final_rating
+        pm_result = validate_guard(
+            proposal=pm_proposal,
+            portfolio=guard_portfolio,
+            stage="pm",
+            prior_verdict=trader_result.verdict,
+            llm_text=final_trade_decision,
+        )
+
+        reason_code = pm_result.reason_code
+        if (
+            pm_result.verdict == Verdict.REVIEW
+            and trader_result.verdict == Verdict.REVIEW
+            and pm_result.reason_code == "REVIEW_TERMINAL"
+        ):
+            # A carried-forward REVIEW keeps its originating reason in the
+            # top-level field; both gate records remain available.
+            reason_code = trader_result.reason_code
+
+        if pm_result.verdict != Verdict.PASS:
+            final_trade_decision = _suppressed_decision(pm_result)
+            final_rating = "REVIEW"
 
         return {
             "risk_debate_state": new_risk_debate_state,
             "final_trade_decision": final_trade_decision,
             "final_rating": final_rating,
+            **_guard_fields(trader_result, pm_result, reason_code),
         }
 
     return portfolio_manager_node

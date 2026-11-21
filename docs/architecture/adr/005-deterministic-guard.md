@@ -126,6 +126,32 @@ a `BLOCK`.
 All TBD-D parameter and source decisions are resolved; no documentation
 placeholder remains.
 
+### Compatibility addendum: opt-in guarded mode (2026-11-22)
+
+The guard is wired into `portfolio_manager.py` behind an explicit opt-in signal,
+`state["guard_enabled"] is True`. This preserves the upstream Portfolio Manager
+behavior as a baseline comparator for callers and existing tests that do not
+supply structured safety context, while allowing the safety-critical path to
+fail closed.
+
+- **Guarded mode (enabled):** the node validates the structured
+  `state["trader_proposal"]` at the Trader gate and revalidates the final PM
+  output at the PM gate. The structured portfolio comes only from
+  `state["portfolio"]`; rendered `portfolio_context` strings are never parsed.
+  Absent structured portfolio is `REVIEW / POSITION_UNKNOWN` (INV-D8).
+  `BLOCK` or `REVIEW` suppresses the recommendation, sets `final_rating` to
+  `REVIEW`, and returns non-executable guard fields. Missing research or trader
+  plans are explicit `REVIEW` and are never fabricated.
+- **Legacy mode (not enabled):** the node keeps the existing upstream behavior
+  and output keys; no guard fields or suppression are added.
+- **Graph integration pending:** `AgentState` currently carries only rendered
+  strings. C must add the structured `portfolio` and `trader_proposal` fields
+  and enable the guard flag before graph-level enforcement is active. This
+  addendum does not move gate placement into C-owned graph files.
+
+Verification: `test/offline/test_guard_wiring.py` covers both gates, override
+persistence, absent portfolio, and missing-plan handling in guarded mode.
+
 ## Alternatives considered
 
 ### 1. LLM-only risk debate
