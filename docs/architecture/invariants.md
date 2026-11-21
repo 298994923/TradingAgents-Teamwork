@@ -1,8 +1,8 @@
-# D Safety Invariants
+# Safety Invariants
 
 Status: Draft for human review (policy adopted 2026-11-21)  
-Owner: D  
-Reviewer: B  
+Maintainer: safety-guard module maintainer  
+Reviewer: human reviewer  
 Related: `docs/architecture/adr/005-deterministic-guard.md`, `docs/plans/D/requirements-pack.yaml`
 
 ## Authority and scope
@@ -11,7 +11,7 @@ The AI agents are advisory. The deterministic guard in `constraints.py` is
 authoritative. No LLM output, prompt, debate result, or generated explanation can
 change a verdict produced by that guard.
 
-This document defines D's hard invariants. Each invariant is enforced by
+This document defines the safety-guard module's hard invariants. Each invariant is enforced by
 `constraints.py` and verified by a negative test. The test suite lives under
 `test/offline/` and uses files such as `test/offline/test_constraints_*.py`.
 

@@ -14,16 +14,16 @@ task, read this file, then follow the reading order below.
 ## Reading order
 
 Read these in order. Check which files exist; any missing file is marked
-"(planned, owner: X)" and must never be presented as existing.
+"(planned)" and must never be presented as existing.
 
-1. `architecture-blueprint.md` — (planned, owner: C)
-2. `docs/architecture/adr/001-adaptive-collaboration.md` — (planned, owner: C)
-3. `docs/architecture/invariants.md` — exists (owner: D)
-4. `docs/architecture/trace-matrix.md` — (planned, owner: A)
-5. `docs/req/requirements.yaml` — (planned, owner: A)
-6. `docs/code-governance/structural-constraints.md` — (planned, owner: D)
-7. `docs/code-governance/verification-constraints.md` — (planned, owner: D)
-8. `Prompt.md` — (planned, owner: B)
+1. `architecture-blueprint.md` — (planned)
+2. `docs/architecture/adr/001-adaptive-collaboration.md` — (planned)
+3. `docs/architecture/invariants.md` — exists
+4. `docs/architecture/trace-matrix.md` — (planned)
+5. `docs/req/requirements.yaml` — (planned)
+6. `docs/code-governance/structural-constraints.md` — (planned)
+7. `docs/code-governance/verification-constraints.md` — (planned)
+8. `Prompt.md` — (planned)
 
 ## Independent exploration and requirements review
 
@@ -39,19 +39,35 @@ Read these in order. Check which files exist; any missing file is marked
 
 ## Readable / modifiable / frozen
 
+Person-to-task assignment is managed by the team separately and rotates per
+course policy; permissions here are defined by module, not by person.
+
 Paths are relative to `src/tradingagents/` unless stated otherwise.
 
-| Owner | Paths | Access |
-| --- | --- | --- |
-| C | `graph/setup.py`, `graph/conditional_logic.py`, `graph/trading_graph.py`, `agents/state.py`, `default_config.py` | Exclusive |
-| C | rest of `graph/` | Maintains |
-| B | `agents/schemas.py`, `agents/researchers/`, `agents/managers/research_manager.py`, `review.py`, `context_builder.py` | Exclusive |
-| D | `constraints.py`, `agents/managers/portfolio_manager.py`, `agents/risk_mgmt/`, `agents/trader/`, `portfolio.py`, and their tests | May write |
-| A | `evidence.py`, `dataflows/`, `agents/analysts/`, `memory/`, `docs/req/` | Owns |
-| E | `run_recorder.py`, `reporting.py`, `report_html.py`, `backtest.py`, `llm_clients/`, `src/cli/`, `.github/` | Owns |
+Default deny: the coding agent may edit only paths in the whitelist below, and
+only under an approved execution plan.
 
-- Other `src/` paths: role-owned only.
-- `test/`: role-owned; tests before implementation; never weaken tests.
+### Source module whitelist (by function)
+
+- Graph orchestration modules — `graph/` (excluding the protected integration
+  files below).
+- Agent schemas, research, review, and context — `agents/researchers/`,
+  `agents/managers/research_manager.py`, `review.py`, `context_builder.py`.
+- Safety guard and portfolio/risk/trader — `constraints.py`,
+  `agents/managers/portfolio_manager.py`, `agents/risk_mgmt/`, `agents/trader/`,
+  `portfolio.py`.
+- Evidence, data, memory, and analysts — `evidence.py`, `dataflows/`,
+  `agents/analysts/`, `memory/`.
+- Recording, reporting, backtest, LLM clients, CLI, and CI — `run_recorder.py`,
+  `reporting.py`, `report_html.py`, `backtest.py`, `llm_clients/`, `src/cli/`,
+  `.github/`.
+
+### Protected zones and human-only files
+
+- Protected integration files — `graph/setup.py`, `graph/conditional_logic.py`,
+  `graph/trading_graph.py`, `agents/state.py`, `default_config.py` — and
+  `agents/schemas.py` require an ADR plus explicit human approval before edit.
+- `test/`: tests before implementation; never weaken tests.
 - `docs/` shared specifications: write only with human approval.
 - `docs/plans/<member>/`: that member's personal notes, freely writable.
 - `.opencode/` and `.agent/`: human-only, agent never writes.
@@ -60,19 +76,19 @@ Paths are relative to `src/tradingagents/` unless stated otherwise.
 
 ## Module organization
 
-One architectural element per module. Names must match the ownership map above
-and `architecture-blueprint.md`.
+One architectural element per module. Names must match the module names in this
+policy and `architecture-blueprint.md`.
 
 ## Integration contracts
 
-Five contracts under `docs/contracts/`, all "(planned, to be created by each
-owner)":
+Five contracts under `docs/contracts/`, all "(planned; maintained under human
+review)":
 
-- `docs/contracts/evidence.md` — (planned, owner: A)
-- `docs/contracts/review-context.md` — (planned, owner: B)
-- `docs/contracts/execution-budget.md` — (planned, owner: C)
-- `docs/contracts/validation-decision.md` — (planned, owner: D)
-- `docs/contracts/run-event.md` — (planned, owner: E)
+- `docs/contracts/evidence.md` — (planned)
+- `docs/contracts/review-context.md` — (planned)
+- `docs/contracts/execution-budget.md` — (planned)
+- `docs/contracts/validation-decision.md` — (planned)
+- `docs/contracts/run-event.md` — (planned)
 
 ## Verification requirements
 
@@ -94,9 +110,9 @@ not apply to independent exploration or personal notes.
 
 ## Root governance ownership
 
-- `AGENTS.md` — D
-- `Prompt.md` — B
-- `architecture-blueprint.md` — C
-- `Report.md` — E integrates
+- `AGENTS.md` — repository governance
+- `Prompt.md` — execution-plan approval gate
+- `architecture-blueprint.md` — architecture blueprint
+- `Report.md` — integrated reporting
 
 All changes to these files require human approval.

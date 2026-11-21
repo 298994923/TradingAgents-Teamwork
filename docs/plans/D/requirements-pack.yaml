@@ -1,5 +1,5 @@
 pack:
-  owner: D
+  owner: safety-guard module maintainer
   pack_id: D-safety
   version: 1
   status: draft-for-review
@@ -418,9 +418,9 @@ deferred_items:
   - id: TBD-D-23A
     item: "Exact clause anchors in the course requirement sheet and team plan section 7"
     reason: "Source documents are not present in this repository"
-    owner: D
+    owner: safety-guard module maintainer
     status: open
 
 approval:
-  owner_approval: "D, 2026-11-21"
-  reviewer_signoff: "pending B"
+  owner_approval: "safety-guard module maintainer, 2026-11-21"
+  reviewer_signoff: "pending human reviewer"

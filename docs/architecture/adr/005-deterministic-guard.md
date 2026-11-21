@@ -1,10 +1,11 @@
 # ADR-005: Deterministic Guard Authority
 
-- **Status:** Proposed; owner D adopted the recommended parameter options on
-  2026-11-21. Reviewer B sign-off is pending.
+- **Status:** Proposed; the safety-guard module maintainer adopted the
+  recommended parameter options on 2026-11-21. Human reviewer sign-off is
+  pending.
 - **Date:** 2026-11-21
-- **Decision owner:** D
-- **Reviewer:** B
+- **Decision owner:** safety-guard module maintainer
+- **Reviewer:** human reviewer
 - **Supersedes:** none
 - **Related:** `docs/architecture/invariants.md`,
   `docs/plans/D/requirements-pack.yaml`, `.opencode/rules.md`
@@ -22,9 +23,9 @@ require deterministic verdicts to be final, unknown positions not to be treated
 as empty, insufficient information to produce `REVIEW`, missing or malformed
 fields to fail closed, and no LLM output to turn `BLOCK` into `PASS`.
 
-This ADR records the authority model and the adopted parameter values for D's
+This ADR records the authority model and the adopted parameter values for the
 safety guard. The guard will be implemented in `constraints.py` and invoked from
-D-owned decision code.
+safety-guard-owned decision code.
 
 ## Decision
 
@@ -172,9 +173,10 @@ Negative:
 
 Neutral:
 
-- A new state or audit field may be needed. D will not author C's graph/state
-  files or B's schema files; integration points must be coordinated with their
-  owners.
+- A new state or audit field may be needed. The coding agent must not edit the
+  protected integration files or `agents/schemas.py` without an ADR plus
+  explicit human approval; integration points are coordinated under human
+  review.
 - No broker execution path exists today. The execution-path definition is written
   now so future order dispatch cannot bypass the guard.
 
