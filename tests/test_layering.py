@@ -9,7 +9,9 @@ from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
+import tradingagents
+
+ROOT = Path(tradingagents.__file__).resolve().parent.parent
 VENDOR_LIBRARIES = {"yfinance"}
 
 
