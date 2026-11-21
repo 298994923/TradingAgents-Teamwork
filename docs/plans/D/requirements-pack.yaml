@@ -1,0 +1,426 @@
+pack:
+  owner: D
+  pack_id: D-safety
+  version: 1
+  status: draft-for-review
+  merge_target: docs/req/requirements.yaml
+  id_namespace: REQ-D
+  last_updated: "2026-11-21"
+  scope:
+    - constraints.py
+    - portfolio_manager.py
+    - risk_mgmt/
+    - trader/
+    - portfolio.py
+  invariants_doc: docs/architecture/invariants.md
+  adr: docs/architecture/adr/005-deterministic-guard.md
+  test_root: test/offline
+
+sources:
+  - id: CRS-D-SAFETY
+    label: "Course requirement sheet: D safety requirements"
+    clause: "TBD-D-23A exact clause pending source document"
+  - id: TP-§7
+    label: "Team plan section 7: safety and invariants"
+    clause: "TBD-D-23A exact clause pending source document"
+
+policy:
+  position_cap:
+    basis: percent_of_nav
+    value_percent: 10
+    exposure: gross_absolute_post_trade
+    formula: "abs(current_quantity + proposed_delta) * price"
+    comparison: lte
+    equality_allowed: true
+    numeric_tolerance: "relative_1e-9_decimal"
+  forbidden_list:
+    mode: static_human_curated
+    seed_example: DEMO-BAN
+    seed_is_live_policy: false
+    action_scope: block_exposure_increasing_allow_reductions_and_exits
+    match: normalized_ticker_exact
+  ratings:
+    five_tier:
+      - Buy
+      - Overweight
+      - Hold
+      - Underweight
+      - Sell
+    trader_three_tier:
+      - Buy
+      - Hold
+      - Sell
+    normalization: case_insensitive_trim_canonical_no_aliases
+  fail_closed:
+    missing_or_malformed_required: BLOCK
+    schema_or_parse_failure: BLOCK
+    modeled_unknown: REVIEW
+  portfolio_states:
+    absent_context: REVIEW
+    explicit_empty_positions: flat
+    malformed_portfolio: BLOCK
+    unknown_nav_or_cash_for_cap: REVIEW
+    currency_mismatch: REVIEW
+  verdicts:
+    lattice:
+      - BLOCK
+      - REVIEW
+      - PASS
+    merge: max_severity
+    monotonic: true
+    review_terminal: true
+    review_retry: false
+    block_in_system_override: false
+    exception: out_of_band_signed_human_process_and_new_or_amended_adr
+  execution_path:
+    definition: any_actionable_trade_artifact_or_future_order_dispatch
+  audit:
+    final_state: true
+    append_only_jsonl_per_run: true
+  config:
+    validation: startup_fail_before_llm
+  verification:
+    negative_test_per_invariant: true
+    deterministic_repeats: 100
+
+requirements:
+  - id: REQ-D-001
+    type: functional
+    title: Deterministic guard module and verdict API
+    statement: >
+      A deterministic guard in constraints.py must expose one verdict API that
+      returns PASS, REVIEW, or BLOCK with reason codes. No decision path may emit
+      an actionable trade artifact without a guard verdict.
+    priority: Must
+    sources: [CRS-D-SAFETY, TP-§7]
+    invariants: [INV-D4, INV-D5, INV-D6, INV-D7]
+    fit_criteria:
+      - metric: "decision paths that emit an actionable trade artifact without a guard verdict"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints.py -k bypass"
+    status: proposed
+
+  - id: REQ-D-002
+    type: invariant
+    title: Position cap enforcement
+    statement: >
+      Gross absolute post-trade exposure for the analyzed instrument must be at
+      most 10% of NAV. Equality is allowed. Missing or malformed required inputs
+      produce BLOCK; explicitly modeled unknowns produce REVIEW. An unknown
+      position is never treated as zero.
+    priority: Must
+    sources: [CRS-D-SAFETY, TP-§7]
+    invariants: [INV-D1]
+    fit_criteria:
+      - metric: "post-trade gross absolute exposure above 10% NAV emitted as PASS"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_position_cap.py"
+      - metric: "unknown NAV or quantity emitted as PASS instead of REVIEW"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_position_cap.py -k unknown"
+    status: proposed
+
+  - id: REQ-D-003
+    type: invariant
+    title: Forbidden ticker blocking
+    statement: >
+      Exposure-increasing actions on the static human-curated forbidden list
+      must be blocked. Reductions and exits are allowed. The list is seeded with
+      the illustrative entry DEMO-BAN, which is not live policy. Matching uses
+      the existing normalized ticker form.
+    priority: Must
+    sources: [CRS-D-SAFETY, TP-§7]
+    invariants: [INV-D2]
+    fit_criteria:
+      - metric: "exposure-increasing actions on DEMO-BAN or a human-curated forbidden ticker emitted as PASS"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_forbidden.py"
+      - metric: "reductions or exits on a forbidden ticker incorrectly blocked"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_forbidden.py -k exit"
+    status: proposed
+
+  - id: REQ-D-004
+    type: invariant
+    title: Rating domain enforcement
+    statement: >
+      Any emitted tradeable rating must be one of the canonical 5-tier values for
+      the Research Manager and Portfolio Manager, or the canonical 3-tier values
+      for the Trader action after case-insensitive trimming. Aliases are
+      rejected. REVIEW is the only allowed non-tier signal and is not tradeable.
+    priority: Must
+    sources: [CRS-D-SAFETY, TP-§7]
+    invariants: [INV-D3]
+    fit_criteria:
+      - metric: "present rating values outside the canonical domain accepted as tradeable"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_rating.py"
+    status: proposed
+
+  - id: REQ-D-005
+    type: invariant
+    title: REVIEW is terminal and never enters the execution path
+    statement: >
+      A REVIEW verdict is terminal, non-executable, and not retried. It may be
+      recorded in reports, state logs, and audit records only when labelled
+      non-executable. No actionable trade artifact or order may be produced.
+    priority: Must
+    sources: [CRS-D-SAFETY, TP-§7]
+    invariants: [INV-D4]
+    fit_criteria:
+      - metric: "REVIEW dispositions producing an actionable trade artifact, execution callback, or retry"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_review.py"
+    status: proposed
+
+  - id: REQ-D-006
+    type: functional
+    title: Fail-closed validation of required fields
+    statement: >
+      Missing or malformed required fields, schema failures, and parse failures
+      produce BLOCK. Explicitly modeled unknown states produce REVIEW. The guard
+      never fills a missing value with a default or converts bad input to PASS or
+      Hold.
+    priority: Must
+    sources: [CRS-D-SAFETY, TP-§7]
+    invariants: [INV-D5]
+    fit_criteria:
+      - metric: "missing or malformed required-field fixtures yielding PASS"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_fail_closed.py"
+      - metric: "modeled unknown fixtures yielding BLOCK or PASS instead of REVIEW"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_fail_closed.py -k modeled_unknown"
+    status: proposed
+
+  - id: REQ-D-007
+    type: functional
+    title: Dual validation after the Trader and after the final PM output
+    statement: >
+      Every run must pass the deterministic guard after the Trader proposal and
+      again after the final Portfolio Manager output. The final check may raise
+      but never lower the verdict. A missing gate is a BLOCK.
+    priority: Must
+    sources: [CRS-D-SAFETY, TP-§7]
+    invariants: [INV-D6]
+    fit_criteria:
+      - metric: "runs missing either the Trader gate or the final PM gate"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_dual_gate.py"
+      - metric: "earlier BLOCK or REVIEW lowered by the final gate"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_dual_gate.py -k monotonic"
+    status: proposed
+
+  - id: REQ-D-008
+    type: invariant
+    title: BLOCK authority and LLM non-override
+    statement: >
+      BLOCK is final for the run unless an out-of-band signed human process and
+      a new or amended ADR supersede it outside the system. No LLM message,
+      debate argument, prompt injection, explanation, regenerated answer, or
+      later check may lower a BLOCK. Verdicts merge by maximum severity and are
+      monotonic.
+    priority: Must
+    sources: [CRS-D-SAFETY, TP-§7]
+    invariants: [INV-D7]
+    fit_criteria:
+      - metric: "BLOCK verdicts lowered by a later check or any LLM output"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_authority.py"
+      - metric: "override attempts not recorded with prior and attempted verdicts"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_authority.py -k audit"
+    status: proposed
+
+  - id: REQ-D-009
+    type: invariant
+    title: Unknown position is not empty position
+    statement: >
+      Absent portfolio context is REVIEW, not a flat book. Only explicit empty
+      positions are flat. Unknown ticker rows, quantity, price, cash, or NAV are
+      modeled unknowns and produce REVIEW. Malformed portfolio data produces
+      BLOCK. No unknown input may be substituted with zero, empty, or Hold.
+    priority: Must
+    sources: [CRS-D-SAFETY, TP-§7]
+    invariants: [INV-D8]
+    fit_criteria:
+      - metric: "unknown or absent position inputs treated as zero, flat, or PASS-worthy"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_unknown_position.py"
+      - metric: "malformed portfolio fixtures yielding REVIEW instead of BLOCK"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_unknown_position.py -k malformed"
+    status: proposed
+
+  - id: REQ-D-010
+    type: quality
+    title: Deterministic reason codes and audit record
+    statement: >
+      Every guard verdict must be recorded in final state and in an append-only
+      JSONL record per run. The record must include the verdict, reason code,
+      checkpoint, observed value, allowed value, and the inputs used.
+    priority: Should
+    sources: [CRS-D-SAFETY, TP-§7]
+    invariants: [INV-D1, INV-D2, INV-D5, INV-D6, INV-D7, INV-D8]
+    fit_criteria:
+      - metric: "verdict records missing verdict, reason code, checkpoint, observed value, or allowed value"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_audit.py"
+    status: proposed
+
+  - id: REQ-D-011
+    type: quality
+    title: Negative test coverage for every invariant
+    statement: >
+      Every invariant INV-D1 through INV-D8 must have at least one negative test
+      under test/offline/ that would fail if the invariant were removed. Tests
+      must not be weakened or deleted to make CI pass.
+    priority: Must
+    sources: [CRS-D-SAFETY, TP-§7]
+    invariants: [INV-D1, INV-D2, INV-D3, INV-D4, INV-D5, INV-D6, INV-D7, INV-D8]
+    fit_criteria:
+      - metric: "invariants with at least one negative test under test/offline"
+        threshold: "8/8 (100%)"
+        verification: "pytest --collect-only -q test/offline/test_constraints*.py plus traceability review"
+    status: proposed
+
+  - id: REQ-D-012
+    type: quality
+    title: Constraint configuration validated at startup
+    statement: >
+      Constraint configuration, including the cap and forbidden list, must be
+      validated before any LLM call. Missing or invalid configuration fails
+      startup rather than running with a partial or unvalidated guard.
+    priority: Must
+    sources: [CRS-D-SAFETY, TP-§7]
+    invariants: [INV-D1, INV-D2, INV-D5]
+    fit_criteria:
+      - metric: "runs starting LLM or decision work with missing or invalid constraint configuration"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_config.py"
+    status: proposed
+
+  - id: REQ-D-013
+    type: quality
+    title: Guard purity, determinism, and idempotence
+    statement: >
+      The deterministic guard performs no network, LLM, or order I/O. Identical
+      inputs must produce identical verdicts and reason codes across repeated
+      runs.
+    priority: Should
+    sources: [CRS-D-SAFETY, TP-§7]
+    invariants: [INV-D1, INV-D2, INV-D3, INV-D5, INV-D6, INV-D7, INV-D8]
+    fit_criteria:
+      - metric: "guard evaluations performing network, LLM, or order I/O"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints.py -k purity"
+      - metric: "verdict or reason-code mismatches across 100 identical runs"
+        threshold: 0
+        verification: "pytest -q test/offline/test_constraints_determinism.py"
+    status: proposed
+
+parameter_decisions:
+  - id: TBD-D-01
+    decision: percent_of_nav_per_instrument
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-02
+    decision: 10_percent_of_nav
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-03
+    decision: per_instrument_gross_absolute_post_trade_exposure
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-04
+    decision: post_trade_position_holding_plus_delta
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-05
+    decision: equality_allowed_exposure_lte_cap
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-06
+    decision: decimal_with_relative_epsilon_1e-9
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-07
+    decision: static_human_curated_file_with_illustrative_DEMO-BAN
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-08
+    decision: block_exposure_increasing_allow_reductions_and_exits
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-09
+    decision: normalized_ticker_exact_match
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-10
+    decision: pm_and_rm_five_tier_trader_three_tier
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-11
+    decision: case_insensitive_trim_canonical_no_aliases
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-12
+    decision: terminal_review_no_retry
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-13
+    decision: missing_or_malformed_required_blocks_modeled_unknown_reviews
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-14
+    decision: absent_review_empty_flat_malformed_block_unknown_nav_review
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-15
+    decision: block_review_pass_max_severity_monotonic
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-16
+    decision: no_in_system_override_out_of_band_signed_process_only
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-17
+    decision: startup_fail_before_llm
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-18
+    decision: any_actionable_trade_artifact_or_future_order_dispatch
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-19
+    decision: validate_typed_source_and_revalidate_final_pm_output
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-20
+    decision: require_matching_currency_mismatch_reviews
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-21
+    decision: final_state_plus_append_only_jsonl_per_run
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-22
+    decision: one_negative_test_per_invariant_and_100_run_determinism
+    status: resolved
+    adr: ADR-005
+  - id: TBD-D-23
+    decision: stable_labels_CRS-D-SAFETY_and_TP_section_7_exact_clauses_deferred
+    status: resolved
+    adr: ADR-005
+
+deferred_items:
+  - id: TBD-D-23A
+    item: "Exact clause anchors in the course requirement sheet and team plan section 7"
+    reason: "Source documents are not present in this repository"
+    owner: D
+    status: open
+
+approval:
+  owner_approval: "D, 2026-11-21"
+  reviewer_signoff: "pending B"
