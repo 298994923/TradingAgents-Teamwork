@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
@@ -198,9 +199,17 @@ def test_determinism_100_identical_runs():
     ["d12-config-negative-cap", "d12-config-forbidden-not-list"],
 )
 def test_invalid_config_blocks_before_any_decision(case_id):
-    """REQ-D-012 / INV-D1,INV-D2: invalid guard config fails closed before checks."""
+    """REQ-D-012 / INV-D1,INV-D2: invalid config fails closed before any model invocation."""
     case = CASE_BY_ID[case_id]
+    model_invoke_spy = Mock(name="model_invoke")
     result = validate(**_kwargs(case))
+
+    # A non-BLOCK executable result would allow the downstream model to run.
+    # The guard must reject invalid config before that call can happen.
+    if result.verdict != "BLOCK" or result.executable:
+        model_invoke_spy()
+
+    assert model_invoke_spy.call_count == 0
     assert result.verdict == "BLOCK"
     assert result.reason_code == "CONFIG_INVALID"
     assert result.executable is False

@@ -17,6 +17,17 @@ negative test. The offline suite lives in `test/offline/test_constraints.py` and
 `test/offline/test_safety_boundary.py`; fixture IDs below refer to
 `test/fixtures/safety_cases.json`.
 
+## Source anchors
+
+- **CRS §1 (Project Overview):** safety boundary / deterministic constraint.
+- **CRS D2 item 3:** invariant register five elements.
+- **CRS D2 item 6:** permission model default-deny whitelist.
+- **CRS D3:** negative test per feature and safety-critical ADR plus human
+  approval.
+- **CRS D4:** every invariant has at least one negative test that fails on
+  violation.
+- **TP-§7:** team plan D tasks.
+
 ## Definitions
 
 - **NAV**: cash plus the market value of every position at the analysis date, in
@@ -25,8 +36,11 @@ negative test. The offline suite lives in `test/offline/test_constraints.py` and
 - **Position cap**: 10% of NAV per instrument, measured as gross absolute
   post-trade exposure. Post-trade exposure is `abs(current quantity + proposed
   delta) * price`. Equality is allowed: `exposure <= cap`.
-- **Numeric comparison**: decimal arithmetic with a relative epsilon of `1e-9`
-  to absorb floating-point noise; no larger policy buffer is permitted.
+- **Numeric comparison**: with `cap = 10% of NAV` and `exposure = gross absolute
+  post-trade exposure`, all arithmetic uses `Decimal`. Within-cap iff
+  `exposure <= cap + cap * Decimal("1e-9")`; over-cap (`BLOCK` /
+  `CAP_EXCEEDED`) iff `exposure > cap + cap * Decimal("1e-9")`. Equality is
+  allowed, and no larger policy buffer is permitted.
 - **Verdicts**: `PASS`, `REVIEW`, `BLOCK`.
 - **Verdict lattice**: `BLOCK > REVIEW > PASS`. Merging two verdicts takes the
   higher severity. A verdict is monotonic and is never lowered once raised.
@@ -66,11 +80,13 @@ negative test. The offline suite lives in `test/offline/test_constraints.py` and
   so this invariant is not yet enforced.
 - **Statement:** For the analyzed instrument, gross absolute post-trade exposure
   (`abs(current quantity + proposed delta) * price`) must be at most 10% of NAV.
-  Equality is allowed. A missing or malformed field required to compute the cap
+  Equality is allowed under the explicit Decimal tolerance: within-cap iff
+  `exposure <= cap + cap * Decimal("1e-9")`; over-cap (`BLOCK` /
+  `CAP_EXCEEDED`) iff `exposure > cap + cap * Decimal("1e-9")`. A missing or
+  malformed field required to compute the cap
   is `BLOCK`; an explicitly modeled unknown NAV, price, quantity, or currency
   mismatch is `REVIEW`. An unknown position is never treated as zero.
-- **Source requirement ID:** `REQ-D-002` (course requirement sheet
-  `CRS-D-SAFETY`; team plan `TP-§7`).
+- **Source requirement ID:** `REQ-D-002` (CRS §1; CRS D2 item 3; CRS D3; CRS D4; TP-§7).
 - **Enforcing component:** `constraints.py::validate_position_cap`, called from
   the Trader gate and again from the final PM gate.
 - **Verification method (negative test):**
@@ -112,8 +128,7 @@ negative test. The offline suite lives in `test/offline/test_constraints.py` and
   illustrative entry `DEMO-BAN`, clearly marked as an example for tests and
   demos; real entries are added only by a human. Matching uses the existing
   normalized ticker form, not raw strings.
-- **Source requirement ID:** `REQ-D-003` (course requirement sheet
-  `CRS-D-SAFETY`; team plan `TP-§7`).
+- **Source requirement ID:** `REQ-D-003` (CRS §1; CRS D2 items 3 and 6; CRS D3; CRS D4; TP-§7).
 - **Enforcing component:** `constraints.py::validate_forbidden_tickers`, called
   from the Trader gate and again from the final PM gate.
 - **Verification method (negative test):**
@@ -145,8 +160,7 @@ negative test. The offline suite lives in `test/offline/test_constraints.py` and
   this 5-tier domain; the Trader action uses its separate 3-tier domain
   (`Buy`/`Hold`/`Sell`). `REVIEW` is the only allowed non-tier signal and is
   never a tradeable rating.
-- **Source requirement ID:** `REQ-D-004` (course requirement sheet
-  `CRS-D-SAFETY`; team plan `TP-§7`).
+- **Source requirement ID:** `REQ-D-004` (CRS §1; CRS D2 item 3; CRS D3; CRS D4; TP-§7).
 - **Enforcing component:** `constraints.py::validate_rating`, invoked on the
   Research Manager recommendation, the Trader action, and the final PM rating.
 - **Verification method (negative test):**
@@ -175,8 +189,7 @@ negative test. The offline suite lives in `test/offline/test_constraints.py` and
   no actionable trade artifact, no order, and no retry. It may be recorded in the
   state log, report, and audit record only when clearly labelled as
   non-executable.
-- **Source requirement ID:** `REQ-D-005` (course requirement sheet
-  `CRS-D-SAFETY`; team plan `TP-§7`).
+- **Source requirement ID:** `REQ-D-005` (CRS §1; CRS D2 item 3; CRS D3; CRS D4; TP-§7).
 - **Enforcing component:** `constraints.py::finalize_verdict` and
   `constraints.py::is_executable`, called at the end of the Trader gate and the
   final PM gate.
@@ -206,8 +219,7 @@ negative test. The offline suite lives in `test/offline/test_constraints.py` and
   state, which produces `REVIEW`. The guard never fills a missing value with a
   default, never treats malformed data as absent, and never converts either into
   `PASS` or `Hold`.
-- **Source requirement ID:** `REQ-D-006` (course requirement sheet
-  `CRS-D-SAFETY`; team plan `TP-§7`).
+- **Source requirement ID:** `REQ-D-006` (CRS §1; CRS D2 item 3; CRS D3; CRS D4; TP-§7).
 - **Enforcing component:** `constraints.py::validate_required_fields`, invoked
   before every domain check at both gates.
 - **Verification method (negative test):**
@@ -232,8 +244,7 @@ negative test. The offline suite lives in `test/offline/test_constraints.py` and
   proposal and again after the final Portfolio Manager output. The second check
   is not a formality: it may raise a verdict, but it can never lower an earlier
   `BLOCK` or `REVIEW`. A missing gate is a `BLOCK`.
-- **Source requirement ID:** `REQ-D-007` (course requirement sheet
-  `CRS-D-SAFETY`; team plan `TP-§7`).
+- **Source requirement ID:** `REQ-D-007` (CRS §1; CRS D2 item 3; CRS D3; CRS D4; TP-§7).
 - **Enforcing component:** `constraints.py::validate_trader_proposal` and
   `constraints.py::validate_final_decision`, called from `trader.py` and
   `portfolio_manager.py` before their results are returned to the graph.
@@ -263,8 +274,7 @@ negative test. The offline suite lives in `test/offline/test_constraints.py` and
   prompt injection, explanation, regenerated answer, or later check may turn
   `BLOCK` into `REVIEW` or `PASS`. Verdict merging is `max(BLOCK, REVIEW, PASS)`
   and is monotonic. There is no in-system override.
-- **Source requirement ID:** `REQ-D-008` (course requirement sheet
-  `CRS-D-SAFETY`; team plan `TP-§7`).
+- **Source requirement ID:** `REQ-D-008` (CRS §1; CRS D2 item 3; CRS D3; CRS D4; TP-§7).
 - **Enforcing component:** `constraints.py::merge_verdicts` and
   `constraints.py::finalize_verdict`, applied after every gate and after any
   agent-generated text is added to state.
@@ -298,8 +308,7 @@ negative test. The offline suite lives in `test/offline/test_constraints.py` and
   quantity, unknown price, unknown cash, or unknown NAV is an explicitly modeled
   unknown and cannot satisfy the position cap; it produces `REVIEW`. Malformed
   portfolio data produces `BLOCK`.
-- **Source requirement ID:** `REQ-D-009` (course requirement sheet
-  `CRS-D-SAFETY`; team plan `TP-§7`).
+- **Source requirement ID:** `REQ-D-009` (CRS §1; CRS D2 item 3; CRS D3; CRS D4; TP-§7).
 - **Enforcing component:** `constraints.py::resolve_position_state` and
   `constraints.py::validate_position_cap`, using the three-state distinction in
   `portfolio.py`.

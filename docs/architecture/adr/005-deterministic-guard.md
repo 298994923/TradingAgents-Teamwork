@@ -55,7 +55,11 @@ a `BLOCK`.
 - Position cap: **10% of NAV**, measured as **gross absolute post-trade
   exposure** (`abs(current quantity + proposed delta) * price`). Equality is
   allowed: `exposure <= cap`.
-- Numeric comparison: decimal arithmetic with a relative epsilon of `1e-9`.
+- Numeric comparison: with `cap = 10% of NAV` and `exposure = gross absolute
+  post-trade exposure`, all arithmetic uses `Decimal`. Within-cap iff
+  `exposure <= cap + cap * Decimal("1e-9")`; over-cap (`BLOCK` /
+  `CAP_EXCEEDED`) iff `exposure > cap + cap * Decimal("1e-9")`. Equality is
+  allowed, and no larger policy buffer is permitted.
 - Forbidden list: static, human-curated file. It is seeded with the single
   illustrative entry `DEMO-BAN`, clearly marked as an example for tests and
   demos. Real entries are added only by a human.
@@ -76,9 +80,20 @@ a `BLOCK`.
   call. Reports, state logs, and audit records are not execution artifacts.
 - Audit: a verdict record in final state plus an append-only JSONL record per
   run.
-- Verification: every new test lives under `test/offline/`, for example
+- Verification: every new test lives under `test/offline/`, in
   `test/offline/test_constraints.py` and
-  `test/offline/test_constraints_position_cap.py`.
+  `test/offline/test_safety_boundary.py`.
+
+### Source anchors
+
+- **CRS §1 (Project Overview):** safety boundary / deterministic constraint.
+- **CRS D2 item 3:** invariant register five elements.
+- **CRS D2 item 6:** permission model default-deny whitelist.
+- **CRS D3:** negative test per feature and safety-critical ADR plus human
+  approval.
+- **CRS D4:** every invariant has at least one negative test that fails on
+  violation.
+- **TP-§7:** team plan D tasks.
 
 ### Parameter decisions and one-line rationales
 
@@ -89,7 +104,7 @@ a `BLOCK`.
 | TBD-D-03 | Per-instrument gross absolute post-trade exposure | Gross absolute exposure is the conservative measure and cannot be hidden by netting. |
 | TBD-D-04 | Post-trade position (holding + delta) | Checking the result, not just the delta, prevents an already-oversized holding from passing on a small trade. |
 | TBD-D-05 | Equality allowed (`exposure <= cap`) | An inclusive boundary is deterministic and testable; precision is handled separately. |
-| TBD-D-06 | Decimal arithmetic with relative epsilon `1e-9` | The epsilon absorbs floating-point noise without creating a meaningful bypass. |
+| TBD-D-06 | Decimal arithmetic: within-cap iff `exposure <= cap + cap * Decimal("1e-9")`; over-cap iff `exposure > cap + cap * Decimal("1e-9")` | The explicit tolerance absorbs Decimal/floating-point noise without creating a larger policy buffer. |
 | TBD-D-07 | Static human-curated file seeded with illustrative `DEMO-BAN` | A static list is auditable and deterministic; `DEMO-BAN` exercises blocking in tests and demos without pretending to be live policy. |
 | TBD-D-08 | Block exposure-increasing actions only; allow reductions and exits | This stops harm while still allowing a forbidden position to be reduced or exited. |
 | TBD-D-09 | Normalized ticker exact match | The existing normalizer is deterministic and handles broker spellings; issuer-level aliases are deferred. |
@@ -106,11 +121,10 @@ a `BLOCK`.
 | TBD-D-20 | Require matching currencies; mismatch -> `REVIEW` | This avoids unsafe raw-number comparisons and avoids a nondeterministic FX dependency. |
 | TBD-D-21 | Final-state verdict plus append-only JSONL per run | This provides auditable, queryable evidence while keeping the guard local and deterministic. |
 | TBD-D-22 | One negative test per invariant and 100-run determinism checks | Behavior-focused thresholds verify the guarantees rather than relying on line coverage. |
-| TBD-D-23 | Stable source labels `CRS-D-SAFETY` and `TP-§7`; exact clause anchors deferred | Stable labels keep the pack mergeable now while recording that exact clauses await the source documents. |
+| TBD-D-23 | Source anchors: CRS §1; CRS D2 items 3 and 6; CRS D3; CRS D4; TP-§7 | These real course and team-plan clauses replace the former source-label placeholders; no deferred source anchor remains. |
 
-The only deferred documentation detail is TBD-D-23A: exact clause anchors in the
-course requirement sheet and team plan section 7, because those documents are not
-present in this repository. This does not defer any runtime parameter value.
+All TBD-D parameter and source decisions are resolved; no documentation
+placeholder remains.
 
 ## Alternatives considered
 
@@ -218,4 +232,6 @@ This ADR must be revisited if any of the following occurs:
 - Requirements: `docs/plans/D/requirements-pack.yaml` (REQ-D-001 through
   REQ-D-013).
 - Human-only rules: `.opencode/rules.md` rules 4, 5, 8, 9, and 10.
-- Planned verification: `test/offline/test_constraints*.py`.
+- Source anchors: CRS §1; CRS D2 items 3 and 6; CRS D3; CRS D4; TP-§7.
+- Planned verification: `test/offline/test_constraints.py` and
+  `test/offline/test_safety_boundary.py`.

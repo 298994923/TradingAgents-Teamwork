@@ -17,12 +17,24 @@ pack:
   test_root: test/offline
 
 sources:
-  - id: CRS-D-SAFETY
-    label: "Course requirement sheet: D safety requirements"
-    clause: "TBD-D-23A exact clause pending source document"
-  - id: TP-§7
-    label: "Team plan section 7: safety and invariants"
-    clause: "TBD-D-23A exact clause pending source document"
+  - id: "CRS-§1"
+    clause: "CRS §1 (Project Overview)"
+    label: "Safety boundary / deterministic constraint"
+  - id: CRS-D2-3
+    clause: "CRS D2 item 3"
+    label: "Invariant register five elements"
+  - id: CRS-D2-6
+    clause: "CRS D2 item 6"
+    label: "Permission model default-deny whitelist"
+  - id: CRS-D3
+    clause: "CRS D3"
+    label: "Negative test per feature; safety-critical ADR plus human approval"
+  - id: CRS-D4
+    clause: "CRS D4"
+    label: "Every invariant has at least one negative test failing on violation"
+  - id: "TP-§7"
+    clause: "TP-§7"
+    label: "Team plan D tasks"
 
 policy:
   position_cap:
@@ -92,7 +104,7 @@ requirements:
       returns PASS, REVIEW, or BLOCK with reason codes. No decision path may emit
       an actionable trade artifact without a guard verdict.
     priority: Must
-    sources: [CRS-D-SAFETY, TP-§7]
+    sources: [CRS-§1, CRS-D3, TP-§7]
     invariants: [INV-D4, INV-D5, INV-D6, INV-D7]
     fit_criteria:
       - metric: "decision paths that emit an actionable trade artifact without a guard verdict"
@@ -109,7 +121,7 @@ requirements:
       produce BLOCK; explicitly modeled unknowns produce REVIEW. An unknown
       position is never treated as zero.
     priority: Must
-    sources: [CRS-D-SAFETY, TP-§7]
+    sources: [CRS-§1, CRS-D2-3, CRS-D3, CRS-D4, TP-§7]
     invariants: [INV-D1]
     fit_criteria:
       - metric: "post-trade gross absolute exposure above 10% NAV emitted as PASS"
@@ -129,7 +141,7 @@ requirements:
       the illustrative entry DEMO-BAN, which is not live policy. Matching uses
       the existing normalized ticker form.
     priority: Must
-    sources: [CRS-D-SAFETY, TP-§7]
+    sources: [CRS-§1, CRS-D2-3, CRS-D2-6, CRS-D3, CRS-D4, TP-§7]
     invariants: [INV-D2]
     fit_criteria:
       - metric: "exposure-increasing actions on DEMO-BAN or a human-curated forbidden ticker emitted as PASS"
@@ -149,7 +161,7 @@ requirements:
       for the Trader action after case-insensitive trimming. Aliases are
       rejected. REVIEW is the only allowed non-tier signal and is not tradeable.
     priority: Must
-    sources: [CRS-D-SAFETY, TP-§7]
+    sources: [CRS-§1, CRS-D2-3, CRS-D3, CRS-D4, TP-§7]
     invariants: [INV-D3]
     fit_criteria:
       - metric: "present rating values outside the canonical domain accepted as tradeable"
@@ -165,7 +177,7 @@ requirements:
       recorded in reports, state logs, and audit records only when labelled
       non-executable. No actionable trade artifact or order may be produced.
     priority: Must
-    sources: [CRS-D-SAFETY, TP-§7]
+    sources: [CRS-§1, CRS-D2-3, CRS-D3, CRS-D4, TP-§7]
     invariants: [INV-D4]
     fit_criteria:
       - metric: "REVIEW dispositions producing an actionable trade artifact, execution callback, or retry"
@@ -182,7 +194,7 @@ requirements:
       never fills a missing value with a default or converts bad input to PASS or
       Hold.
     priority: Must
-    sources: [CRS-D-SAFETY, TP-§7]
+    sources: [CRS-§1, CRS-D2-3, CRS-D3, CRS-D4, TP-§7]
     invariants: [INV-D5]
     fit_criteria:
       - metric: "missing or malformed required-field fixtures yielding PASS"
@@ -201,7 +213,7 @@ requirements:
       again after the final Portfolio Manager output. The final check may raise
       but never lower the verdict. A missing gate is a BLOCK.
     priority: Must
-    sources: [CRS-D-SAFETY, TP-§7]
+    sources: [CRS-§1, CRS-D2-3, CRS-D3, CRS-D4, TP-§7]
     invariants: [INV-D6]
     fit_criteria:
       - metric: "runs missing either the Trader gate or the final PM gate"
@@ -222,7 +234,7 @@ requirements:
       later check may lower a BLOCK. Verdicts merge by maximum severity and are
       monotonic.
     priority: Must
-    sources: [CRS-D-SAFETY, TP-§7]
+    sources: [CRS-§1, CRS-D2-3, CRS-D3, CRS-D4, TP-§7]
     invariants: [INV-D7]
     fit_criteria:
       - metric: "BLOCK verdicts lowered by a later check or any LLM output"
@@ -242,7 +254,7 @@ requirements:
       modeled unknowns and produce REVIEW. Malformed portfolio data produces
       BLOCK. No unknown input may be substituted with zero, empty, or Hold.
     priority: Must
-    sources: [CRS-D-SAFETY, TP-§7]
+    sources: [CRS-§1, CRS-D2-3, CRS-D3, CRS-D4, TP-§7]
     invariants: [INV-D8]
     fit_criteria:
       - metric: "unknown or absent position inputs treated as zero, flat, or PASS-worthy"
@@ -261,7 +273,7 @@ requirements:
       JSONL record per run. The record must include the verdict, reason code,
       checkpoint, observed value, allowed value, and the inputs used.
     priority: Should
-    sources: [CRS-D-SAFETY, TP-§7]
+    sources: [CRS-§1, CRS-D3, TP-§7]
     invariants: [INV-D1, INV-D2, INV-D5, INV-D6, INV-D7, INV-D8]
     fit_criteria:
       - metric: "verdict records missing verdict, reason code, checkpoint, observed value, or allowed value"
@@ -277,7 +289,7 @@ requirements:
       under test/offline/ that would fail if the invariant were removed. Tests
       must not be weakened or deleted to make CI pass.
     priority: Must
-    sources: [CRS-D-SAFETY, TP-§7]
+    sources: [CRS-D2-3, CRS-D3, CRS-D4, TP-§7]
     invariants: [INV-D1, INV-D2, INV-D3, INV-D4, INV-D5, INV-D6, INV-D7, INV-D8]
     fit_criteria:
       - metric: "invariants with at least one negative test under test/offline"
@@ -293,7 +305,7 @@ requirements:
       validated before any LLM call. Missing or invalid configuration fails
       startup rather than running with a partial or unvalidated guard.
     priority: Must
-    sources: [CRS-D-SAFETY, TP-§7]
+    sources: [CRS-§1, CRS-D2-6, CRS-D3, TP-§7]
     invariants: [INV-D1, INV-D2, INV-D5]
     fit_criteria:
       - metric: "runs starting LLM or decision work with missing or invalid constraint configuration"
@@ -309,7 +321,7 @@ requirements:
       inputs must produce identical verdicts and reason codes across repeated
       runs.
     priority: Should
-    sources: [CRS-D-SAFETY, TP-§7]
+    sources: [CRS-§1, CRS-D3, TP-§7]
     invariants: [INV-D1, INV-D2, INV-D3, INV-D5, INV-D6, INV-D7, INV-D8]
     fit_criteria:
       - metric: "guard evaluations performing network, LLM, or order I/O"
@@ -410,16 +422,9 @@ parameter_decisions:
     status: resolved
     adr: ADR-005
   - id: TBD-D-23
-    decision: stable_labels_CRS-D-SAFETY_and_TP_section_7_exact_clauses_deferred
+    decision: source_anchors_CRS_s1_D2_items_3_and_6_D3_D4_and_TP_section_7
     status: resolved
     adr: ADR-005
-
-deferred_items:
-  - id: TBD-D-23A
-    item: "Exact clause anchors in the course requirement sheet and team plan section 7"
-    reason: "Source documents are not present in this repository"
-    owner: safety-guard module maintainer
-    status: open
 
 approval:
   owner_approval: "safety-guard module maintainer, 2026-11-21"
