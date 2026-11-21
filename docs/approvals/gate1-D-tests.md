@@ -9,3 +9,13 @@ Scope: guard tests only; main-graph dual-gate wiring, final-artifact interceptio
 Attachment-commit consistency: SHA-256 hashes verified identical
 Basis: B-门1复审-v2.md (B's gate-1 re-review, v2)
 Recorded by: D, Liu Kehong (Student ID: 60894001), 2026-11-22
+## Addendum: fixture reason-code correction (pre-implementation)
+Change: d7-lattice-review-over-pass.expected_reason_code
+  PRIOR_VERDICT_RETAINED -> REVIEW_TERMINAL (INV-D4: prior REVIEW terminal)
+Reason: byte-identical inputs with d4-review-pm-terminal demanded different
+  reason codes; deterministic guard cannot satisfy both (REQ-D-013).
+Verdict/executable expectations unchanged; no other edits.
+Re-run: 66 failed / 22 passed (red-run-05.txt)
+New safety_cases.json SHA-256: <e6832b230e917ed905adbc77caae22a565c256f03f37a7e153990beed60c8d5e>
+Re-approved by: Zhang Ruiqi, 2026-11-22, via group reply
+Recorded by: D, Liu Kehong (60894001), 2026-11-22

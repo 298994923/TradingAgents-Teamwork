@@ -735,7 +735,7 @@
         "prior_verdict": "REVIEW"
       },
       "expected_verdict": "REVIEW",
-      "expected_reason_code": "PRIOR_VERDICT_RETAINED",
+      "expected_reason_code": "REVIEW_TERMINAL",
       "expected_executable": false
     },
     {
