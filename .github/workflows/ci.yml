@@ -1,22 +1,38 @@
-# CI workflow — TABLE OF CONTENTS ONLY (content added later by E).
-#
-# This file is intentionally not yet a runnable workflow (no jobs defined).
-# Enable the gates below when their scripts exist, and register them as
-# GitHub "required checks".
-#
-# Six required gates (see CS5351 merge checklist):
-#   1. tests-first approval   — tests approved independently before implementation
-#   2. static                 — ruff / lint
-#   3. schema                 — requirements.yaml / req-schema.json validation
-#   4. semantics              — live semantic evaluation of prompt/model changes
-#   5. regression             — original `tests/` + new `test/offline`
-#   6. AI-use log             — docs/ai-use-log.yaml updated for every code/prompt PR
-#
-# Planned jobs:
-#   - test            : pytest (tests/ + test/)          -> scripts: n/a
-#   - smoke-install   : clean `pip install .` + import   -> n/a
-#   - lint            : ruff check .                     -> n/a
-#   - governance-gates: test/offline/test_governance_gates.py
-#   - required checks + CODEOWNERS human review on safety/governance paths
-#
-# TODO(E): implement the jobs above.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - run: python -m pytest -q
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests test
