@@ -1,0 +1,25 @@
+{
+  // Course permission policy source. OpenCode does NOT auto-read this file.
+  // The live opencode.jsonc (maintained separately) must stay in sync.
+  // Permissions are by module, not by person; team task assignment rotates.
+  "default": "deny",
+  "allow": [
+    "src/tradingagents/constraints.py",
+    "src/tradingagents/agents/managers/portfolio_manager.py",
+    "src/tradingagents/agents/risk_mgmt/**",
+    "src/tradingagents/agents/trader/**",
+    "src/tradingagents/portfolio.py",
+    "test/offline/**",
+    "test/fixtures/**"
+  ],
+  "protected": [
+    "src/tradingagents/graph/setup.py",
+    "src/tradingagents/graph/conditional_logic.py",
+    "src/tradingagents/graph/trading_graph.py",
+    "src/tradingagents/agents/state.py",
+    "src/tradingagents/default_config.py",
+    "src/tradingagents/agents/schemas.py"
+  ],
+  "deny": ["**/.env", "**/.git/**", "**/.venv/**", "**/secrets/**"],
+  "human_only": [".opencode/**", ".agent/**", "transcripts/**"]
+}
