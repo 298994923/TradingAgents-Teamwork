@@ -62,3 +62,24 @@ entries:
       accepted with two follow-up corrections (backfill the historical entries here;
       include test/ in the lint command). Session ses_e03d0e90affe6o65s7wLqq531g
       (2026-11-21 11:38 - 12:05).
+
+  - id: "60252993-linan-ai-use-04"
+    pr_id: "N/A"
+    date: "2026-11-21"
+    task: "RunEvent recorder: contract tests written test-first, implementation, read-side validation"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      commits abd040b (tests, red before implementation) and a6a4a6b (implementation);
+      12 offline tests, full suite 1422 passed / 1 skipped, ruff clean. Sent back twice
+      before acceptance: (a) the first test draft silently required a mutable RunEvent
+      and a permissive constructor — both rejected, replaced by TypeError at
+      construction; (b) the implementation skipped the read-side required-key
+      validation that the contract promises — fixed in a follow-up phase. The agent
+      self-reported five judgement calls (frozen dataclass, lowercasing inputs in
+      build_run_id, atomic open("x") for no-overwrite, secret filter scoped to
+      config_snapshot, two ruff fixes in the test file); all reviewed and accepted.
+      Session ses_e03d0e90affe6o65s7wLqq531g (2026-11-21 15:57 - 16:25).
