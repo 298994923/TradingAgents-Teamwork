@@ -1,0 +1,114 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.14.6, pytest-9.0.3, pluggy-1.6.0 -- /opt/anaconda3/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/lkh/Desktop/CS5351-Teamwork
+configfile: pyproject.toml
+plugins: anyio-4.12.1
+collecting ... collected 6 items
+
+test/offline/test_guard_wiring.py::test_trader_over_cap_blocks_and_suppresses_output FAILED [ 16%]
+test/offline/test_guard_wiring.py::test_pm_invalid_rating_blocks_at_final_gate FAILED [ 33%]
+test/offline/test_guard_wiring.py::test_valid_trader_and_pm_decision_passes_executable FAILED [ 50%]
+test/offline/test_guard_wiring.py::test_trader_block_survives_valid_looking_pm_decision FAILED [ 66%]
+test/offline/test_guard_wiring.py::test_absent_structured_portfolio_reviews_non_executable FAILED [ 83%]
+test/offline/test_guard_wiring.py::test_missing_plans_are_unavailable_and_never_fabricated FAILED [100%]
+
+=================================== FAILURES ===================================
+______________ test_trader_over_cap_blocks_and_suppresses_output _______________
+
+    def test_trader_over_cap_blocks_and_suppresses_output():
+        """INV-D6 / REQ-D-007: a Trader plan over the cap is BLOCK and non-executable."""
+        result = create_portfolio_manager(_StructuredLLM(_valid_pm_decision()))(
+            _state(
+                trader_proposal=OVER_CAP_TRADER_PROPOSAL,
+                portfolio=KNOWN_PORTFOLIO,
+            )
+        )
+    
+>       assert result["guard_verdict"] == "BLOCK"
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'guard_verdict'
+
+test/offline/test_guard_wiring.py:164: KeyError
+_________________ test_pm_invalid_rating_blocks_at_final_gate __________________
+
+    def test_pm_invalid_rating_blocks_at_final_gate():
+        """INV-D6 / REQ-D-007: the PM gate rejects a non-canonical rating alias."""
+        result = create_portfolio_manager(_StructuredLLM(_invalid_rating_decision()))(
+            _state(trader_proposal=VALID_TRADER_PROPOSAL, portfolio=KNOWN_PORTFOLIO)
+        )
+    
+>       assert result["guard_verdict"] == "BLOCK"
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'guard_verdict'
+
+test/offline/test_guard_wiring.py:181: KeyError
+_____________ test_valid_trader_and_pm_decision_passes_executable ______________
+
+    def test_valid_trader_and_pm_decision_passes_executable():
+        """INV-D6 / REQ-D-007: both gates passing yields an executable final decision."""
+        result = create_portfolio_manager(_StructuredLLM(_valid_pm_decision()))(
+            _state(trader_proposal=VALID_TRADER_PROPOSAL, portfolio=KNOWN_PORTFOLIO)
+        )
+    
+>       assert result["guard_verdict"] == "PASS"
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'guard_verdict'
+
+test/offline/test_guard_wiring.py:196: KeyError
+_____________ test_trader_block_survives_valid_looking_pm_decision _____________
+
+    def test_trader_block_survives_valid_looking_pm_decision():
+        """INV-D7 / REQ-D-007: PM text cannot lower an earlier Trader BLOCK."""
+        result = create_portfolio_manager(_StructuredLLM(_valid_pm_decision()))(
+            _state(
+                trader_proposal=OVER_CAP_TRADER_PROPOSAL,
+                portfolio=KNOWN_PORTFOLIO,
+            )
+        )
+    
+>       assert result["guard_verdict"] == "BLOCK"
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'guard_verdict'
+
+test/offline/test_guard_wiring.py:211: KeyError
+___________ test_absent_structured_portfolio_reviews_non_executable ____________
+
+    def test_absent_structured_portfolio_reviews_non_executable():
+        """INV-D8 / REQ-D-007: absent structured portfolio is REVIEW, never flat."""
+        result = create_portfolio_manager(_StructuredLLM(_valid_pm_decision()))(
+            _state(trader_proposal=VALID_TRADER_PROPOSAL)
+        )
+    
+>       assert result["guard_verdict"] == "REVIEW"
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'guard_verdict'
+
+test/offline/test_guard_wiring.py:226: KeyError
+___________ test_missing_plans_are_unavailable_and_never_fabricated ____________
+
+    def test_missing_plans_are_unavailable_and_never_fabricated():
+        """INV-D8 / REQ-D-007: absent plans are explicit REVIEW, not invented context."""
+        llm = _StructuredLLM(_valid_pm_decision())
+        result = create_portfolio_manager(llm)(
+            _state(
+                trader_proposal=VALID_TRADER_PROPOSAL,
+                portfolio=KNOWN_PORTFOLIO,
+                investment_plan=None,
+                trader_plan=None,
+            )
+        )
+    
+>       assert result["guard_verdict"] == "REVIEW"
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'guard_verdict'
+
+test/offline/test_guard_wiring.py:246: KeyError
+=========================== short test summary info ============================
+FAILED test/offline/test_guard_wiring.py::test_trader_over_cap_blocks_and_suppresses_output
+FAILED test/offline/test_guard_wiring.py::test_pm_invalid_rating_blocks_at_final_gate
+FAILED test/offline/test_guard_wiring.py::test_valid_trader_and_pm_decision_passes_executable
+FAILED test/offline/test_guard_wiring.py::test_trader_block_survives_valid_looking_pm_decision
+FAILED test/offline/test_guard_wiring.py::test_absent_structured_portfolio_reviews_non_executable
+FAILED test/offline/test_guard_wiring.py::test_missing_plans_are_unavailable_and_never_fabricated
+============================== 6 failed in 0.08s ===============================
