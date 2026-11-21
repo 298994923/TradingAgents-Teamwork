@@ -83,3 +83,23 @@ entries:
       build_run_id, atomic open("x") for no-overwrite, secret filter scoped to
       config_snapshot, two ruff fixes in the test file); all reviewed and accepted.
       Session ses_e03d0e90affe6o65s7wLqq531g (2026-11-21 15:57 - 16:25).
+
+  - id: "60252993-linan-ai-use-05"
+    pr_id: "N/A"
+    date: "2026-11-21"
+    task: "Replace the comment-only ci.yml with the minimal two-job CI and delete the invalid release-assets stub"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      commit e9ed763. The human explicitly approved editing the frozen ci.yml for this
+      session. Two jobs only, named exactly `tests` and `lint`: `pip install -e ".[dev]"`
+      then `pytest -q` / `ruff check src tests test`; workflow-level
+      `permissions: contents: read`; pip cache keyed on pyproject.toml. The invalid
+      comment-only `.github/workflows/release-assets.yml` was deleted. Local YAML parse
+      and pytest (1424 passed / 1 skipped at the time) passed; GitHub Actions was not run
+      in the session. Session ses_e02933be9ffeZqjnn382XBiK6G (2026-11-21 17:25 - 17:35).
+      A later five-job/scripts expansion was generated outside this entry and removed on
+      2026-11-21; it is not claimed here.

@@ -1,8 +1,8 @@
 """Offline tests for the RunEvent recorder (docs/contracts/run-event.md).
 
-Written test-first: ``tradingagents.run_recorder`` does not exist yet, so this
-module is expected to fail at import/collection until step 2b adds it. No custom
-pytest marker is used; the default ``-m "not integration"`` runs these tests.
+Written test-first before the implementation (commit ``abd040b``); the module landed
+in ``a6a4a6b``. No custom pytest marker is used; the default
+``-m "not integration"`` runs these tests.
 """
 
 import json
