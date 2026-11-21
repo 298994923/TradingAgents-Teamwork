@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import socket
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -18,6 +19,14 @@ from tradingagents.constraints import ABSENT, GuardResult, Verdict, validate
 
 CASES_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "safety_cases.json"
 CASES = json.loads(CASES_PATH.read_text(encoding="utf-8"))["cases"]
+
+OVER_CAP_AUDIT_CASE_IDS = (
+    "d1-cap-plus-epsilon",
+    "d1-cap-plus-one-unit",
+    "d1-cap-just-over-relative-tolerance",
+    "d1-existing-oversized-small-delta",
+    "d1-short-gross-abs-over-cap",
+)
 
 
 def _cases_for(invariant_id: str) -> list[dict]:
@@ -57,6 +66,59 @@ def _assert_case(case: dict) -> None:
 @pytest.mark.parametrize("case", _cases_for("INV-D1"), ids=lambda case: case["id"])
 def test_inv_d1_position_cap(case):
     """INV-D1 / REQ-D-002 (plus REQ-D-012/013 cases): cap and NAV handling."""
+    _assert_case(case)
+
+
+def _decimal(value) -> Decimal:
+    return value if isinstance(value, Decimal) else Decimal(str(value))
+
+
+def _post_trade_quantity(payload: dict) -> Decimal:
+    proposal = payload["proposal"]
+    ticker = str(proposal["ticker"]).strip().upper()
+    held = Decimal("0")
+    portfolio = payload.get("portfolio", {})
+    if isinstance(portfolio, dict):
+        for position in portfolio.get("positions", []):
+            if not isinstance(position, dict):
+                continue
+            if str(position.get("ticker", "")).strip().upper() == ticker:
+                held += _decimal(position["quantity"])
+    if "quantity" in proposal:
+        proposed = _decimal(proposal["quantity"])
+    else:
+        proposed = _decimal(proposal["delta_quantity"])
+    return held + proposed
+
+
+def _expected_cap_audit_details(case: dict) -> tuple[Decimal, Decimal, str]:
+    payload = case["input"]
+    proposal = payload["proposal"]
+    exposure = abs(_post_trade_quantity(payload) * _decimal(proposal["price"]))
+    allowed_cap = _decimal(payload["portfolio"]["nav"]) * Decimal("0.10")
+    return exposure, allowed_cap, case["stage"]
+
+
+@pytest.mark.parametrize(
+    "case",
+    [case for case in CASES if case["id"] in OVER_CAP_AUDIT_CASE_IDS],
+    ids=lambda case: case["id"],
+)
+def test_inv_d1_over_cap_audit_details(case):
+    """INV-D1 / REQ-D-002: CAP_EXCEEDED records exposure, allowed cap, checkpoint."""
+    result = validate(**_kwargs(case))
+    expected_exposure, expected_cap, expected_checkpoint = _expected_cap_audit_details(case)
+    assert result.details.get("observed_exposure") == expected_exposure, (
+        f"{case['id']}: observed_exposure {result.details.get('observed_exposure')!r} "
+        f"!= {expected_exposure!r}"
+    )
+    assert result.details.get("allowed_cap") == expected_cap, (
+        f"{case['id']}: allowed_cap {result.details.get('allowed_cap')!r} != {expected_cap!r}"
+    )
+    assert result.details.get("checkpoint") == expected_checkpoint, (
+        f"{case['id']}: checkpoint {result.details.get('checkpoint')!r} "
+        f"!= {expected_checkpoint!r}"
+    )
     _assert_case(case)
 
 
