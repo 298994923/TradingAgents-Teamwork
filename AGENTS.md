@@ -7,23 +7,44 @@ task, read this file, then follow the reading order below.
 
 - CS5351 project under `src/`; tests under `test/offline/` and `test/live/`.
 - Python 3.11+; dependencies per `pyproject.toml` / `requirements.txt`.
-- Repository baseline commit: `bebc5762f41abb5affc63a8cf9755d182f99df70`
-  (upstream TradingAgents import: `9fa1196`, tag `baseline-v0`).
+- Code baseline: the `baseline-v0` tag = commit `b5d2f67` ("import upstream
+  `9fa1196`, migrate to src layout"). Current main HEAD is `bebc576` (a later
+  `.DS_Store` cleanup commit). Upstream TradingAgents import: `9fa1196`, tag
+  `baseline-v0`.
 - All new content in English.
 
 ## Reading order
 
 Read these in order. Check which files exist; any missing file is marked
-"(planned)" and must never be presented as existing.
+"(planned, owner: X)" and must never be presented as existing.
 
-1. `architecture-blueprint.md` — (planned)
-2. `docs/architecture/adr/001-adaptive-collaboration.md` — (planned)
-3. `docs/architecture/invariants.md` — exists
-4. `docs/architecture/trace-matrix.md` — (planned)
-5. `docs/req/requirements.yaml` — (planned)
-6. `docs/code-governance/structural-constraints.md` — (planned)
-7. `docs/code-governance/verification-constraints.md` — (planned)
-8. `Prompt.md` — (planned)
+1. `AGENTS.md` (this file) — task scope, permissions, and startup gate.
+2. `Prompt.md` — approval gate, read at planning-start. (planned, owner: B)
+3. Task-relevant architecture: `architecture-blueprint.md` (planned, owner: C)
+   and the governing ADR for the task (see task-specific reads below).
+4. Requirements and invariants: `docs/req/requirements.yaml` (planned, owner: A)
+   and `docs/architecture/invariants.md` — exists (owner: D).
+5. Interface contracts under `docs/contracts/` (planned; see below).
+6. Traceability and verification: `docs/architecture/trace-matrix.md` (planned,
+   owner: A), `docs/code-governance/structural-constraints.md` — exists
+   (owner: D), and `docs/code-governance/verification-constraints.md` — exists
+   (owner: D).
+
+Also read `docs/architecture/adr/001-adaptive-collaboration.md` (planned,
+owner: C) when the task touches adaptive collaboration.
+
+### Task-specific required reads
+
+- C budget/recovery work: `docs/architecture/adr/004-budget-and-resume.md`
+  (planned, owner: C) and `docs/contracts/execution-budget.md` (planned,
+  owner: C).
+- D deterministic boundary work: `docs/architecture/adr/005-deterministic-guard.md`
+  (exists, owner: D) and `docs/contracts/validation-decision.md` (planned,
+  owner: D).
+
+Missing or conflicting required documents: stop the affected implementation and
+report the missing items. Read-only exploration and personal drafts may
+continue.
 
 ## Independent exploration and requirements review
 
@@ -39,80 +60,111 @@ Read these in order. Check which files exist; any missing file is marked
 
 ## Readable / modifiable / frozen
 
-Person-to-task assignment is managed by the team separately and rotates per
-course policy; permissions here are defined by module, not by person.
+All paths are repository-root-relative. Person-to-task assignment is managed by
+the team separately and rotates per course policy; permissions are defined by
+module, not by person. Default deny: the coding agent may edit only the paths
+allowed below, and only under an approved execution plan.
 
-Paths are relative to `src/tradingagents/` unless stated otherwise.
+### Three permission tiers
 
-Default deny: the coding agent may edit only paths in the whitelist below, and
-only under an approved execution plan.
+| Tier | Paths (repo-root-relative) | Rule |
+| --- | --- | --- |
+| Tier 1 — normally editable within an approved plan scope | Functional module whitelist under `src/tradingagents/` (see ownership below); new module `src/tradingagents/execution_policy.py` (owner: C); `test/offline/`; `test/fixtures/`; `docs/plans/<member>/` | Editable only within an approved plan scope. |
+| Tier 2 — protected (approval required) | `src/tradingagents/graph/setup.py`, `src/tradingagents/graph/conditional_logic.py`, `src/tradingagents/graph/trading_graph.py`, `src/tradingagents/agents/state.py`, `src/tradingagents/default_config.py` (owner: C); `src/tradingagents/agents/schemas.py` (owner: B) | Editable only after an ADR covering the change plus explicit human approval; the owner integrates the change. |
+| Tier 3 — always human-maintained | `.opencode/`, `.agent/`, `transcripts/` (agent never writes); `.env` (never read or committed) | Agent never writes; humans maintain. |
 
-### Source module whitelist (by function)
+### Tier 1 functional module ownership
 
-- Graph orchestration modules — `graph/` (excluding the protected integration
-  files below).
-- Agent schemas, research, review, and context — `agents/researchers/`,
-  `agents/managers/research_manager.py`, `review.py`, `context_builder.py`.
-- Safety guard and portfolio/risk/trader — `constraints.py`,
-  `agents/managers/portfolio_manager.py`, `agents/risk_mgmt/`, `agents/trader/`,
-  `portfolio.py`.
-- Evidence, data, memory, and analysts — `evidence.py`, `dataflows/`,
-  `agents/analysts/`, `memory/`.
-- Recording, reporting, backtest, LLM clients, CLI, and CI — `run_recorder.py`,
-  `reporting.py`, `report_html.py`, `backtest.py`, `llm_clients/`, `src/cli/`,
-  `.github/`.
+- C: the rest of `src/tradingagents/graph/` (excluding the protected integration
+  files above), and the new module `src/tradingagents/execution_policy.py`.
+- B: `src/tradingagents/agents/researchers/`,
+  `src/tradingagents/agents/managers/research_manager.py`,
+  `src/tradingagents/review.py`, `src/tradingagents/context_builder.py`.
+- D: `src/tradingagents/constraints.py`,
+  `src/tradingagents/agents/managers/portfolio_manager.py`,
+  `src/tradingagents/agents/risk_mgmt/`, `src/tradingagents/agents/trader/`,
+  `src/tradingagents/portfolio.py`, and their tests.
+- A: `src/tradingagents/evidence.py`, `src/tradingagents/dataflows/`,
+  `src/tradingagents/agents/analysts/`, `src/tradingagents/memory/`, and
+  `docs/req/`.
+- E: `src/tradingagents/run_recorder.py`, `src/tradingagents/reporting.py`,
+  `src/tradingagents/report_html.py`, `src/tradingagents/backtest.py`,
+  `src/tradingagents/llm_clients/`, `src/cli/`, and `.github/`.
+- Other `src/` paths: role-owned only.
 
-### Protected zones and human-only files
+### Test boundaries
 
-- Protected integration files — `graph/setup.py`, `graph/conditional_logic.py`,
-  `graph/trading_graph.py`, `agents/state.py`, `default_config.py` — and
-  `agents/schemas.py` require an ADR plus explicit human approval before edit.
-- `test/`: tests before implementation; never weaken tests.
+- Existing `tests/` is included in regression.
+- New offline cases live under `test/offline/`; fixtures live under
+  `test/fixtures/`.
+- `test/` is role-owned; tests come before implementation; never weaken tests.
+
+### Shared docs, personal notes, and overlap rule
+
 - `docs/` shared specifications: write only with human approval.
 - `docs/plans/<member>/`: that member's personal notes, freely writable.
-- `.opencode/` and `.agent/`: human-only, agent never writes.
-- `.env`: never read or commit.
-- `transcripts/`: human-only; agents never write; humans export/annotate.
+- Overlap rule: most-restrictive wins. Protected and human-only rules override
+  any general whitelist; explicit per-file rules override directory rules; no
+  broad directory rule overrides a protection rule.
+
+### Config loading: enforced limits vs policy source
+
+- `opencode.jsonc` at the repository root (owner: E) is the enforced live config
+  that actually enforces read/write limits. It is maintained by E and is not
+  present in this checkout until E supplies it.
+- `.opencode/permissions.jsonc` is the course POLICY SOURCE and is NOT
+  auto-loaded by OpenCode.
+- The two must stay in sync (`check_permission_sync`).
 
 ## Module organization
 
-One architectural element per module. Names must match the module names in this
-policy and `architecture-blueprint.md`.
+One architectural element per module. Names must match the ownership map above
+and `architecture-blueprint.md`.
 
 ## Integration contracts
 
-Five contracts under `docs/contracts/`, all "(planned; maintained under human
-review)":
+Five contracts under `docs/contracts/`, all "(planned, to be created by each
+owner)":
 
-- `docs/contracts/evidence.md` — (planned)
-- `docs/contracts/review-context.md` — (planned)
-- `docs/contracts/execution-budget.md` — (planned)
-- `docs/contracts/validation-decision.md` — (planned)
-- `docs/contracts/run-event.md` — (planned)
+- `docs/contracts/evidence.md` — (planned, owner: A)
+- `docs/contracts/review-context.md` — (planned, owner: B)
+- `docs/contracts/execution-budget.md` — (planned, owner: C)
+- `docs/contracts/validation-decision.md` — (planned, owner: D)
+- `docs/contracts/run-event.md` — (planned, owner: E)
 
 ## Verification requirements
 
 - Every fit criterion has at least one test.
 - Every invariant has at least one negative test that fails when violated. (See
-  `docs/architecture/invariants.md` and
-  `docs/architecture/adr/005-deterministic-guard.md`; ADR-005 additionally
-  governs the deterministic guard and fail-closed verdict behavior.)
+  `docs/architecture/invariants.md` — exists, and
+  `docs/architecture/adr/005-deterministic-guard.md` — exists; ADR-005
+  additionally governs the deterministic guard and fail-closed verdict
+  behavior.)
 - Every test references its requirement/invariant ID.
 - Every round runs all prior suites with zero regressions.
 - Safety-critical changes require an ADR plus human approval.
 
 ## Stop rule
 
-Before generating implementation code, produce an execution plan per
-`Prompt.md` and wait for explicit human approval (`APPROVED`). If architecture
-or contracts change beyond approved scope, obtain re-approval. This gate does
-not apply to independent exploration or personal notes.
+Before feature implementation, shared docs (`docs/approvals/`) must show
+independent human approval of the PLAN VERSION, TEST VERSION, and MODIFICATION
+SCOPE. Writing tests-for-review is allowed (it produces the red run); starting
+feature implementation requires approved tests. Protected changes additionally
+require an ADR covering the change plus explicit authorization. Approvals are
+recorded in `docs/approvals/` by humans (approver, time, plan/test version,
+scope); agents never sign approvals.
+
+Re-approval triggers: work exceeds the approved scope; an approved contract is
+changed; an existing safety boundary is affected. On any trigger, pause the
+affected implementation, report the change and pending items, and obtain
+approval before continuing. This gate does not apply to independent exploration
+or personal notes.
 
 ## Root governance ownership
 
-- `AGENTS.md` — repository governance
-- `Prompt.md` — execution-plan approval gate
-- `architecture-blueprint.md` — architecture blueprint
-- `Report.md` — integrated reporting
+- `AGENTS.md` — owner: D
+- `Prompt.md` — owner: B
+- `architecture-blueprint.md` — owner: C
+- `Report.md` — owner: E (integrates)
 
 All changes to these files require human approval.
