@@ -45,6 +45,48 @@
       "expected_executable": false
     },
     {
+      "id": "d1-cap-within-relative-tolerance",
+      "invariant_id": "INV-D1",
+      "requirement_id": "REQ-D-002",
+      "kind": "boundary",
+      "stage": "pm",
+      "input": {
+        "proposal": {"ticker": "AAPL", "action": "Buy", "quantity": "100.00000005", "price": "100"},
+        "portfolio": {"nav": "100000", "currency": "USD", "positions": []}
+      },
+      "expected_verdict": "PASS",
+      "expected_reason_code": "PASS",
+      "expected_executable": true
+    },
+    {
+      "id": "d1-cap-at-relative-tolerance-edge",
+      "invariant_id": "INV-D1",
+      "requirement_id": "REQ-D-002",
+      "kind": "boundary",
+      "stage": "pm",
+      "input": {
+        "proposal": {"ticker": "AAPL", "action": "Buy", "quantity": "100.0000001", "price": "100"},
+        "portfolio": {"nav": "100000", "currency": "USD", "positions": []}
+      },
+      "expected_verdict": "PASS",
+      "expected_reason_code": "PASS",
+      "expected_executable": true
+    },
+    {
+      "id": "d1-cap-just-over-relative-tolerance",
+      "invariant_id": "INV-D1",
+      "requirement_id": "REQ-D-002",
+      "kind": "boundary",
+      "stage": "pm",
+      "input": {
+        "proposal": {"ticker": "AAPL", "action": "Buy", "quantity": "100.000000101", "price": "100"},
+        "portfolio": {"nav": "100000", "currency": "USD", "positions": []}
+      },
+      "expected_verdict": "BLOCK",
+      "expected_reason_code": "CAP_EXCEEDED",
+      "expected_executable": false
+    },
+    {
       "id": "d1-cap-plus-one-unit",
       "invariant_id": "INV-D1",
       "requirement_id": "REQ-D-002",
