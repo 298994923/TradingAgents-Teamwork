@@ -1,0 +1,85 @@
+# AI-use log. Every PR that changes code or prompts adds its own real entry here.
+# E resolves merge conflicts; entries are authored by the PR author, not fabricated.
+# The AI-use-log blocking gate (§6.6) diffs this file against code/prompt changes;
+# the gate itself is a later E step. This file defines the format and three real
+# entries: two backfilled from git history and OpenCode session records, one for the
+# current step.
+
+# Format (one entry per PR that touches code or prompts):
+#   id               <student id>-<student name>-ai-use-01   (per-member sequence)
+#   pr_id            PR number, or "pre-pr" / "N/A" for pre-PR work
+#   date             YYYY-MM-DD
+#   task             short description of what the entry covers
+#   agent            coding-agent name used
+#   model            model / tier used by the agent
+#   prompt_version   versioned runtime prompt id (e.g. prompt_v1.0), or "N/A"
+#   human_reviewed   true | false      (a human reviewed the agent output)
+#   changes_accepted true | false      (the human accepted the changes as-is)
+#   notes            free text (caveats, deviations, follow-ups)
+
+entries:
+  - id: "60252993-linan-ai-use-01"
+    pr_id: "N/A"
+    date: "2026-11-20"
+    task: "Migrate upstream TradingAgents@9fa1196 into the src/ layout and freeze the baseline"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      commit b5d2f67; baseline evidence in docs/evaluation/baseline.md (1412 passed,
+      1 skipped). OpenCode session ses_e07351253ffeuvRerDafeHlJJ6 (2026-11-20 19:50 -
+      2026-11-21 09:31). Human inspected the src layout, re-ran the suite, committed.
+
+  - id: "60252993-linan-ai-use-02"
+    pr_id: "N/A"
+    date: "2026-11-21"
+    task: "Fix tests/test_layering.py passing vacuously after the src migration"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      commit 57a9f97. Root cause: Path.rglob() returns empty for a missing directory,
+      so the "only dataflows imports yfinance" invariant stopped being enforced once the
+      packages moved to src/. Surfaced because the human asked "are there tests that
+      falsely passed?" (same session, 2026-11-21 09:14). Human verified the fix catches
+      a violation by injecting a rogue import into a scratch copy.
+
+  - id: "60252993-linan-ai-use-03"
+    pr_id: "N/A"
+    date: "2026-11-21"
+    task: "RunEvent contract, run-recorder plan, AI-use log initialisation (docs only)"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Documentation only; no src/ or test/ files created. Plan approved for step 1 and
+      accepted with two follow-up corrections (backfill the historical entries here;
+      include test/ in the lint command). Session ses_e03d0e90affe6o65s7wLqq531g
+      (2026-11-21 11:38 - 12:05).
+
+  - id: "60252993-linan-ai-use-04"
+    pr_id: "N/A"
+    date: "2026-11-21"
+    task: "RunEvent recorder: contract tests written test-first, implementation, read-side validation"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      commits abd040b (tests, red before implementation) and a6a4a6b (implementation);
+      12 offline tests, full suite 1422 passed / 1 skipped, ruff clean. Sent back twice
+      before acceptance: (a) the first test draft silently required a mutable RunEvent
+      and a permissive constructor — both rejected, replaced by TypeError at
+      construction; (b) the implementation skipped the read-side required-key
+      validation that the contract promises — fixed in a follow-up phase. The agent
+      self-reported five judgement calls (frozen dataclass, lowercasing inputs in
+      build_run_id, atomic open("x") for no-overwrite, secret filter scoped to
+      config_snapshot, two ruff fixes in the test file); all reviewed and accepted.
+      Session ses_e03d0e90affe6o65s7wLqq531g (2026-11-21 15:57 - 16:25).
