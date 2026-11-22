@@ -24,9 +24,9 @@ what is enforced today.
 | Python | 3.12 (baseline measured on 3.12.16) |
 | Upstream baseline | `TauricResearch/TradingAgents@9fa1196` |
 | License | Apache License 2.0 (see `LICENSE`) |
-| Offline tests | `1424 passed, 1 skipped, 1 deselected` |
+| Offline tests | `1441 passed, 1 skipped, 1 deselected` |
 | Lint | `ruff check src tests test` clean |
-| CI checks | `tests`, `lint` |
+| CI checks | `tests`, `lint`, `schema`, `test-approval`, `ai-use-log` |
 
 ## What the application does
 
@@ -131,9 +131,9 @@ TradingAgents-Coursework/
 └── tests/                       upstream regression suite
 ```
 
-Planned directories such as `docs/approvals/`, `docs/architecture/`,
-`docs/code-governance/`, `prompts/`, `scripts/` and `transcripts/` are added
-only when they contain real, reviewed content.
+Some directories are not here yet: `docs/architecture/`, `docs/code-governance/`,
+`prompts/` and `transcripts/`. They will be added when the team has real content
+for them, not as empty placeholders.
 
 ## Setup
 
@@ -169,40 +169,53 @@ python -m pytest tests -q
 python -m pytest test/live -m integration -q
 
 # Static checks
-ruff check src tests test
+ruff check src tests test scripts
 ```
 
-Current local results (2026-11-21): `1424 passed, 1 skipped, 1 deselected` for
-the full offline suite; `12 passed` for `test/offline`; `ruff` clean. The one
-skip is optional `langchain_aws` not being installed. `test/live/` is currently
-empty, so there is **no** live-test pass to report; a suite that was not run is
-not a suite that passed.
+Current local results (2026-11-22): `1441 passed, 1 skipped, 1 deselected` for
+the full offline suite; `17 passed` for the CI-gate tests. The one skip is
+optional `langchain_aws` not being installed. `test/live/` is empty, so there is
+**no** live-test pass to report; a suite that was not run is not a suite that
+passed.
 
 ## CI and blocking gates
 
 CI runs on every pull request and on pushes to `main`
-([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). Today it has two
-required checks:
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). The workflow has five
+jobs. Two of them only make sense for a PR and skip on a plain push.
 
-- `tests` — installs `-e ".[dev]"` and runs `python -m pytest -q`;
-- `lint` — runs `ruff check src tests test`.
+Here is what each gate actually does today, in plain words:
 
-The course requires six blocking gates. Their design and current status:
+- **`tests`** — runs the upstream `tests/` and our `test/offline/`. If a test
+  fails, the PR is blocked. That's all: it does not count tests or compare
+  against an old number.
+- **`lint`** — runs ruff, compiles the code to catch syntax errors, and checks
+  that every third-party import is declared in `pyproject.toml`. A few packages
+  that the upstream code already gets through its dependencies are allowlisted.
+- **`schema`** — checks `docs/req/requirements.yaml` against
+  `docs/req/req-schema.json`. The check is real, but the registry is only a
+  one-entry seed written by E; A will replace it with the real requirements.
+- **`test-approval`** — if a PR changes a file under `src/`, that file must be
+  listed in `docs/approvals.yaml` with an approver and a date. No matching
+  record, no merge. It only covers `src/`, and the approver is just a name in
+  the file — we do not check who actually approved it.
+- **`ai-use-log`** — if a PR changes `src/`, `scripts/` or `test/`, it must add
+  a new entry to `docs/ai-use-log.yaml` with a fresh unique id and
+  `human_reviewed: true`. Editing only docs, prompts or `.github/` does not
+  trigger it.
 
-| Gate | Design | Status |
-|---|---|---|
-| 1. Test approval | Tests are written and independently approved before implementation; an approval record names the test commit, and CI checks commit ancestry and approver independence. | Planned (`docs/approvals/` + approval script). |
-| 2. Static analysis | Lint on every commit; type-check, dependency, secret, contract and permission checks on the relevant paths. | Partial: `lint` runs ruff. Type/dependency/secret/permission checks are being added. |
-| 3. Schema | `docs/req/requirements.yaml` is validated against `docs/req/req-schema.json` in CI. | Planned. The schema file is currently a proposal, and the registry is not yet adopted. |
-| 4. Semantic evaluation | Prompt/model changes replay a fixed evaluation set against quality thresholds; missing credentials fail the gate instead of silently skipping. | Planned; depends on B's prompts and the evaluation protocol. |
-| 5. Regression | Every change runs all prior suites; baseline comparison blocks deleted tests, new failures and unapproved skips. | Partial: `tests` runs the full suite; baseline comparison is being added. |
-| 6. AI-use log | A PR that changes code or prompts must add a real entry to `docs/ai-use-log.yaml`. | Format and log exist; the blocking gate is planned. |
+To be honest about the state: `tests`, `lint` and `ai-use-log` are real gates
+that will block a bad PR. `test-approval` and `schema` work but run on simple
+seed data. The semantic-evaluation gate (course gate 4) is **not implemented** —
+an earlier placeholder was removed because it was not real evaluation. There is
+a TODO in [`docs/plans/E-ci-gates.md`](docs/plans/E-ci-gates.md): it needs a real
+eval runner and a fixed evaluation set from B. We do not claim all six course
+gates are finished.
 
-Branch protection on `main` is enabled; the checks produced by the current
-workflow are `tests` and `lint`. Safety-critical paths are additionally expected
-to require human review and an associated architecture decision. `CODEOWNERS`
-and per-path permission checks are part of the D-owned governance work and will
-be added with the permission model rather than as an empty placeholder.
+Branch protection on `main` is enabled. Safety-critical paths are still
+expected to require human review and an architecture decision. `CODEOWNERS`
+and per-path permission checks are part of D's governance work and will be
+added when the permission model lands, not as an empty placeholder.
 
 ## Baseline and reproducibility
 

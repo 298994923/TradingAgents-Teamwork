@@ -1,0 +1,11 @@
+# Test-approval record for D7 §6.1 (Gate 1).
+# A human records the src path they approved, who approved it, when, and the tests
+# that back it, BEFORE implementation began. scripts/check_test_approval.py blocks a
+# PR that changes a src file with no covering record. One file; one record per
+# approved src path (or directory prefix).
+
+approvals:
+  - src: "src/tradingagents/run_recorder.py"
+    approver: "60252993"
+    date: "2026-11-21"
+    tests: ["test/offline/test_run_recorder.py"]
