@@ -32,16 +32,3 @@ approvals:
     approver: "61023334"
     date: "2026-11-22"
     tests: ["test/offline/test_guard_wiring.py"]
-
-  # Backfilled 2026-11-22, confirmed by Role C (61023334) in team group;
-  # underlying approvals: Role B Gate-1 plan/test approval 2026-11-21 and
-  # Zhang Ruiqi wiring re-approval 2026-11-22, see docs/approvals/gate1-D-tests.md
-  - src: "src/tradingagents/constraints.py"
-    approver: "61023334"
-    date: "2026-11-22"
-    tests: ["test/offline/test_constraints.py", "test/offline/test_safety_boundary.py"]
-
-  - src: "src/tradingagents/agents/managers/portfolio_manager.py"
-    approver: "61023334"
-    date: "2026-11-22"
-    tests: ["test/offline/test_guard_wiring.py"]
