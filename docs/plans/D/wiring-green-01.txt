@@ -1,0 +1,240 @@
+== guard wiring tests ==
+============================= test session starts ==============================
+platform darwin -- Python 3.14.6, pytest-9.0.3, pluggy-1.6.0 -- /opt/anaconda3/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/lkh/Desktop/CS5351-Teamwork
+configfile: pyproject.toml
+plugins: anyio-4.12.1, langsmith-0.16.0
+collecting ... collected 6 items
+
+test/offline/test_guard_wiring.py::test_trader_over_cap_blocks_and_suppresses_output PASSED [ 16%]
+test/offline/test_guard_wiring.py::test_pm_invalid_rating_blocks_at_final_gate PASSED [ 33%]
+test/offline/test_guard_wiring.py::test_valid_trader_and_pm_decision_passes_executable PASSED [ 50%]
+test/offline/test_guard_wiring.py::test_trader_block_survives_valid_looking_pm_decision PASSED [ 66%]
+test/offline/test_guard_wiring.py::test_absent_structured_portfolio_reviews_non_executable PASSED [ 83%]
+test/offline/test_guard_wiring.py::test_missing_plans_are_unavailable_and_never_fabricated PASSED [100%]
+
+============================== 6 passed in 0.01s ===============================
+
+== full offline suite ==
+============================= test session starts ==============================
+platform darwin -- Python 3.14.6, pytest-9.0.3, pluggy-1.6.0 -- /opt/anaconda3/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/lkh/Desktop/CS5351-Teamwork
+configfile: pyproject.toml
+plugins: anyio-4.12.1, langsmith-0.16.0
+collecting ... collected 94 items
+
+test/offline/test_constraints.py::test_inv_d1_position_cap[d1-below-cap] PASSED [  1%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d1-exact-cap] PASSED [  2%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d1-cap-plus-epsilon] PASSED [  3%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d1-cap-within-relative-tolerance] PASSED [  4%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d1-cap-at-relative-tolerance-edge] PASSED [  5%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d1-cap-just-over-relative-tolerance] PASSED [  6%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d1-cap-plus-one-unit] PASSED [  7%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d1-post-trade-holding-plus-delta] PASSED [  8%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d1-existing-oversized-small-delta] PASSED [  9%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d1-missing-nav] PASSED [ 10%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d1-short-gross-abs-over-cap] PASSED [ 11%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d1-short-within-cap] PASSED [ 12%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d1-currency-mismatch] PASSED [ 13%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d13-determinism-cap-block-100-runs] PASSED [ 14%]
+test/offline/test_constraints.py::test_inv_d1_position_cap[d12-config-negative-cap] PASSED [ 15%]
+test/offline/test_constraints.py::test_inv_d1_over_cap_audit_details[d1-cap-plus-epsilon] PASSED [ 17%]
+test/offline/test_constraints.py::test_inv_d1_over_cap_audit_details[d1-cap-just-over-relative-tolerance] PASSED [ 18%]
+test/offline/test_constraints.py::test_inv_d1_over_cap_audit_details[d1-cap-plus-one-unit] PASSED [ 19%]
+test/offline/test_constraints.py::test_inv_d1_over_cap_audit_details[d1-existing-oversized-small-delta] PASSED [ 20%]
+test/offline/test_constraints.py::test_inv_d1_over_cap_audit_details[d1-short-gross-abs-over-cap] PASSED [ 21%]
+test/offline/test_constraints.py::test_inv_d2_forbidden_tickers[d2-forbidden-buy] PASSED [ 22%]
+test/offline/test_constraints.py::test_inv_d2_forbidden_tickers[d2-forbidden-add] PASSED [ 23%]
+test/offline/test_constraints.py::test_inv_d2_forbidden_tickers[d2-forbidden-new-short] PASSED [ 24%]
+test/offline/test_constraints.py::test_inv_d2_forbidden_tickers[d2-forbidden-reduce] PASSED [ 25%]
+test/offline/test_constraints.py::test_inv_d2_forbidden_tickers[d2-forbidden-exit] PASSED [ 26%]
+test/offline/test_constraints.py::test_inv_d2_forbidden_tickers[d2-forbidden-normalized-ticker] PASSED [ 27%]
+test/offline/test_constraints.py::test_inv_d2_forbidden_tickers[d2-clean-ticker] PASSED [ 28%]
+test/offline/test_constraints.py::test_inv_d2_forbidden_tickers[d2-malformed-ticker] PASSED [ 29%]
+test/offline/test_constraints.py::test_inv_d2_forbidden_tickers[d12-config-forbidden-not-list] PASSED [ 30%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-pm-canonical-buy] PASSED [ 31%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-pm-canonical-overweight] PASSED [ 32%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-pm-canonical-hold] PASSED [ 34%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-pm-canonical-underweight] PASSED [ 35%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-pm-canonical-sell] PASSED [ 36%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-normalized-case-whitespace] PASSED [ 37%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-strong-buy-alias] PASSED [ 38%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-empty-rating] PASSED [ 39%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-numeric-rating] PASSED [ 40%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-trader-three-tier-buy] PASSED [ 41%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-trader-three-tier-hold] PASSED [ 42%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-trader-three-tier-sell] PASSED [ 43%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-trader-five-tier-invalid] PASSED [ 44%]
+test/offline/test_constraints.py::test_inv_d3_rating_domain[d3-review-sentinel] PASSED [ 45%]
+test/offline/test_constraints.py::test_inv_d4_review_terminal[d4-review-trader-terminal] PASSED [ 46%]
+test/offline/test_constraints.py::test_inv_d4_review_terminal[d4-review-pm-terminal] PASSED [ 47%]
+test/offline/test_constraints.py::test_inv_d5_fail_closed[d5-missing-required-action] PASSED [ 48%]
+test/offline/test_constraints.py::test_inv_d5_fail_closed[d5-null-delta] PASSED [ 50%]
+test/offline/test_constraints.py::test_inv_d5_fail_closed[d5-nan-delta] PASSED [ 51%]
+test/offline/test_constraints.py::test_inv_d5_fail_closed[d5-infinity-price] PASSED [ 52%]
+test/offline/test_constraints.py::test_inv_d5_fail_closed[d5-wrong-type-delta] PASSED [ 53%]
+test/offline/test_constraints.py::test_inv_d5_fail_closed[d5-modeled-unknown-not-block] PASSED [ 54%]
+test/offline/test_constraints.py::test_inv_d6_dual_gate[d6-dual-gate-pm-invalid-rating] PASSED [ 55%]
+test/offline/test_constraints.py::test_inv_d6_dual_gate[d6-dual-gate-pm-cap-violation] PASSED [ 56%]
+test/offline/test_constraints.py::test_inv_d6_dual_gate[d6-gate-missing] PASSED [ 57%]
+test/offline/test_constraints.py::test_inv_d7_authority[d7-block-llm-claim-pass] PASSED [ 58%]
+test/offline/test_constraints.py::test_inv_d7_authority[d7-block-regenerated-answer] PASSED [ 59%]
+test/offline/test_constraints.py::test_inv_d7_authority[d7-lattice-block-over-pass] PASSED [ 60%]
+test/offline/test_constraints.py::test_inv_d7_authority[d7-lattice-review-over-pass] PASSED [ 61%]
+test/offline/test_constraints.py::test_inv_d7_authority[d7-lattice-pass-over-pass] PASSED [ 62%]
+test/offline/test_constraints.py::test_inv_d8_unknown_position[d8-absent-context] PASSED [ 63%]
+test/offline/test_constraints.py::test_inv_d8_unknown_position[d8-absent-context-zero-delta] PASSED [ 64%]
+test/offline/test_constraints.py::test_inv_d8_unknown_position[d8-explicit-flat] PASSED [ 65%]
+test/offline/test_constraints.py::test_inv_d8_unknown_position[d8-unknown-nav] PASSED [ 67%]
+test/offline/test_constraints.py::test_inv_d8_unknown_position[d8-malformed-portfolio-nav] PASSED [ 68%]
+test/offline/test_constraints.py::test_inv_d8_unknown_position[d8-malformed-portfolio-positions] PASSED [ 69%]
+test/offline/test_constraints.py::test_inv_d8_unknown_position[d8-unknown-ticker-row] PASSED [ 70%]
+test/offline/test_constraints.py::test_inv_d8_unknown_position[d8-unknown-quantity] PASSED [ 71%]
+test/offline/test_constraints.py::test_inv_d8_unknown_position[d8-malformed-position-quantity] PASSED [ 72%]
+test/offline/test_constraints.py::test_verdict_domain PASSED             [ 73%]
+test/offline/test_constraints.py::test_guard_result_shape_and_positive_executable PASSED [ 74%]
+test/offline/test_constraints.py::test_guard_purity_no_network_io PASSED [ 75%]
+test/offline/test_guard_wiring.py::test_trader_over_cap_blocks_and_suppresses_output PASSED [ 76%]
+test/offline/test_guard_wiring.py::test_pm_invalid_rating_blocks_at_final_gate PASSED [ 77%]
+test/offline/test_guard_wiring.py::test_valid_trader_and_pm_decision_passes_executable PASSED [ 78%]
+test/offline/test_guard_wiring.py::test_trader_block_survives_valid_looking_pm_decision PASSED [ 79%]
+test/offline/test_guard_wiring.py::test_absent_structured_portfolio_reviews_non_executable PASSED [ 80%]
+test/offline/test_guard_wiring.py::test_missing_plans_are_unavailable_and_never_fabricated PASSED [ 81%]
+test/offline/test_safety_boundary.py::test_dual_gate_trader_pass_then_pm_rating_block PASSED [ 82%]
+test/offline/test_safety_boundary.py::test_dual_gate_trader_pass_then_pm_cap_block PASSED [ 84%]
+test/offline/test_safety_boundary.py::test_missing_gate_is_block PASSED  [ 85%]
+test/offline/test_safety_boundary.py::test_verdict_lattice_is_monotonic[BLOCK-BLOCK] PASSED [ 86%]
+test/offline/test_safety_boundary.py::test_verdict_lattice_is_monotonic[REVIEW-REVIEW] PASSED [ 87%]
+test/offline/test_safety_boundary.py::test_verdict_lattice_is_monotonic[PASS-PASS] PASSED [ 88%]
+test/offline/test_safety_boundary.py::test_block_survives_llm_claiming_pass PASSED [ 89%]
+test/offline/test_safety_boundary.py::test_block_survives_later_valid_looking_decision PASSED [ 90%]
+test/offline/test_safety_boundary.py::test_review_is_non_executable_at_both_gates[trader] PASSED [ 91%]
+test/offline/test_safety_boundary.py::test_review_is_non_executable_at_both_gates[pm] PASSED [ 92%]
+test/offline/test_safety_boundary.py::test_absent_context_is_review_not_flat PASSED [ 93%]
+test/offline/test_safety_boundary.py::test_explicit_empty_positions_are_flat PASSED [ 94%]
+test/offline/test_safety_boundary.py::test_unknown_nav_is_review_not_zero PASSED [ 95%]
+test/offline/test_safety_boundary.py::test_malformed_portfolio_is_block PASSED [ 96%]
+test/offline/test_safety_boundary.py::test_determinism_100_identical_runs PASSED [ 97%]
+test/offline/test_safety_boundary.py::test_invalid_config_blocks_before_any_decision[d12-config-negative-cap] PASSED [ 98%]
+test/offline/test_safety_boundary.py::test_invalid_config_blocks_before_any_decision[d12-config-forbidden-not-list] PASSED [100%]
+
+============================== 94 passed in 0.03s ==============================
+
+== upstream regression suite ==
+........................................................................ [  5%]
+.................................s...................................... [ 10%]
+........................................................................ [ 15%]
+........................................................................ [ 20%]
+........................................................................ [ 25%]
+........................................................................ [ 30%]
+............................................................. [ 34%]
+........................................................................ [ 39%]
+........................................................................ [ 45%]
+............................................................................................................................... [ 54%]
+........................................................................ [ 59%]
+........................................................................ [ 64%]
+........................................................................ [ 69%]
+........................................................................ [ 74%]
+........................................................................ [ 79%]
+........................................................................ [ 84%]
+........................................................................ [ 89%]
+........................................................................ [ 94%]
+........................................................................ [ 99%]
+.                                                                        [100%]
+=============================== warnings summary ===============================
+tests/test_anthropic_effort.py::TestEffortGate::test_unsupported_models_do_not_receive_effort[claude-haiku-5-0]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-haiku-5-0' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_unsupported_models_do_not_receive_effort[claude-haiku-4-7-preview]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-haiku-4-7-preview' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_unsupported_models_do_not_receive_effort[claude-sonnet-4-5]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-sonnet-4-5' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_unsupported_models_do_not_receive_effort[claude-sonnet-4-0]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-sonnet-4-0' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_unsupported_models_do_not_receive_effort[claude-sonnet-4-20250514]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-sonnet-4-20250514' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_unsupported_models_do_not_receive_effort[claude-opus-4-20250514]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-opus-4-20250514' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_unsupported_models_do_not_receive_effort[claude-sonnet-4-5-20250929]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-sonnet-4-5-20250929' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_current_opus_and_sonnet_receive_effort[claude-opus-4-5]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-opus-4-5' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_current_opus_and_sonnet_receive_effort[claude-opus-4-6]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-opus-4-6' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_current_opus_and_sonnet_receive_effort[claude-sonnet-4-6]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-sonnet-4-6' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_current_opus_and_sonnet_receive_effort[claude-opus-4-5-20251101]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-opus-4-5-20251101' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_future_opus_sonnet_inherit_effort_via_pattern[claude-opus-5-0]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-opus-5-0' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_future_opus_sonnet_inherit_effort_via_pattern[claude-sonnet-5-0]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-sonnet-5-0' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_claude_5_family_receives_effort[claude-mythos-5]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-mythos-5' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_mythos_preview_receives_effort
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-mythos-preview' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_anthropic_effort.py::TestEffortGate::test_unknown_anthropic_model_does_not_receive_effort
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/anthropic_client.py:62: RuntimeWarning: Model 'claude-experimental-x' is not in the known model list for provider 'anthropic'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_google_thinking_level.py::test_latest_alias_remaps_minimal_to_low[gemini-flash-latest]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/google_client.py:46: RuntimeWarning: Model 'gemini-flash-latest' is not in the known model list for provider 'google'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_google_thinking_level.py::test_latest_alias_remaps_minimal_to_low[gemini-pro-latest]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/google_client.py:46: RuntimeWarning: Model 'gemini-pro-latest' is not in the known model list for provider 'google'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_ollama_base_url.py::test_resolver_does_not_affect_other_providers
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/openai_client.py:346: RuntimeWarning: Model 'm' is not in the known model list for provider 'xai'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_ollama_base_url.py::test_resolver_does_not_affect_other_providers
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/openai_client.py:346: RuntimeWarning: Model 'm' is not in the known model list for provider 'deepseek'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_openai_reasoning_effort.py::test_non_reasoning_model_drops_effort
+tests/test_temperature_config.py::TestTemperatureForwarding::test_temperature_reaches_client_when_set[openai-gpt-4.1]
+tests/test_temperature_config.py::TestTemperatureForwarding::test_temperature_omitted_leaves_provider_default
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/openai_client.py:346: RuntimeWarning: Model 'gpt-4.1' is not in the known model list for provider 'openai'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+tests/test_temperature_config.py::TestTemperatureForwarding::test_temperature_reaches_client_when_set[deepseek-deepseek-chat]
+  /Users/lkh/Desktop/CS5351-Teamwork/src/tradingagents/llm_clients/openai_client.py:346: RuntimeWarning: Model 'deepseek-chat' is not in the known model list for provider 'deepseek'. Continuing anyway.
+    self.warn_if_unknown_model()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_bedrock_provider.py:74: could not import 'langchain_aws': No module named 'langchain_aws'
+1412 passed, 1 skipped, 1 deselected, 24 warnings, 100 subtests passed in 9.25s
