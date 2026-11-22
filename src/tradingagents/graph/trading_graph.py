@@ -2,10 +2,14 @@ import hashlib
 import json
 import logging
 import os
-from contextlib import contextmanager
+import sqlite3
+from collections.abc import Sequence
+from contextlib import closing, contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from langgraph.checkpoint.sqlite import SqliteSaver
 
 import tradingagents
 from tradingagents.agents.context import build_instrument_context, resolve_instrument_identity
@@ -17,9 +21,16 @@ from tradingagents.default_config import DEFAULT_CONFIG
 from tradingagents.llm_clients import create_tier_client, tier_provider
 from tradingagents.memory import TradingMemoryLog, settlement
 from tradingagents.memory.reflection import Reflector
+from tradingagents.portfolio import PortfolioContext
 from tradingagents.reporting import write_report_tree
 
-from .checkpointer import checkpoint_step, clear_checkpoint, get_checkpointer, thread_id
+from .checkpointer import (
+    checkpoint_step,
+    checkpoint_thread_exists,
+    clear_checkpoint,
+    get_checkpointer,
+    thread_id,
+)
 from .conditional_logic import ConditionalLogic
 from .propagation import Propagator
 from .setup import GraphSetup
@@ -48,8 +59,141 @@ _NOT_IN_SIGNATURE = frozenset({
 })
 
 
+def _resolve_workflow_config(
+    config: dict[str, Any] | None, workflow_variant: str | None
+) -> dict[str, Any]:
+    effective_config = config or DEFAULT_CONFIG
+    if workflow_variant is None:
+        return effective_config
+    if not isinstance(workflow_variant, str) or workflow_variant not in ("v0", "v1", "v2"):
+        raise ValueError(f"Invalid workflow_variant: {workflow_variant!r}; expected v0 or v1")
+    if workflow_variant == "v2":
+        raise ValueError("Workflow variant v2 is unavailable")
+    effective_config = effective_config.copy()
+    effective_config["max_debate_rounds"] = 2 if workflow_variant == "v0" else 1
+    return effective_config
+
+
+def _format_run_signature(
+    config: dict[str, Any],
+    selected_analysts: Sequence[str],
+    asset_type: str,
+    portfolio: PortfolioContext | None,
+    workflow_variant: str | None,
+) -> str:
+    settings = {k: v for k, v in config.items() if k not in _NOT_IN_SIGNATURE}
+    digest = hashlib.sha256(json.dumps(settings, sort_keys=True, default=str).encode()).hexdigest()[:12]
+    parts = [
+        "analysts=" + ",".join(selected_analysts),
+        f"debate={config['max_debate_rounds']}",
+        f"risk={config['max_risk_discuss_rounds']}",
+        f"asset={asset_type}",
+        # None, an empty book and a changed book are three different runs.
+        f"portfolio={portfolio.fingerprint() if portfolio is not None else 'none'}",
+        # Older layouts have different pending nodes and memory behavior.
+        "analysts=parallel",
+        "memory=parallel",
+        f"settings={digest}",
+    ]
+    # An explicit preset must not resume legacy work at the same depth.
+    if workflow_variant is not None:
+        parts.append(f"workflow_variant={workflow_variant}")
+    return "|".join(parts)
+
+
+def checkpoint_run_signature(
+    *,
+    selected_analysts: Sequence[str],
+    config: dict[str, Any] | None = None,
+    asset_type: str = "stock",
+    portfolio: PortfolioContext | None = None,
+    workflow_variant: str | None = None,
+) -> str:
+    """Compute the graph's checkpoint signature from ordered analysts and pre-preset config."""
+    effective_config = _resolve_workflow_config(config, workflow_variant)
+    return _format_run_signature(
+        effective_config, selected_analysts, asset_type, portfolio, workflow_variant
+    )
+
+
+def checkpoint_thread_id(
+    ticker: str,
+    trade_date: str,
+    *,
+    selected_analysts: Sequence[str],
+    config: dict[str, Any] | None = None,
+    asset_type: str = "stock",
+    portfolio: PortfolioContext | None = None,
+    workflow_variant: str | None = None,
+    run_key: str = "",
+) -> str:
+    """Compute an ID for a canonical YYYY-MM-DD date without opening a checkpoint."""
+    signature = checkpoint_run_signature(
+        selected_analysts=selected_analysts,
+        config=config,
+        asset_type=asset_type,
+        portfolio=portfolio,
+        workflow_variant=workflow_variant,
+    )
+    return thread_id(ticker, trade_date, signature, run_key=run_key)
+
+
+class CheckpointResumePreflightError(RuntimeError):
+    """An explicit checkpoint target failed preflight."""
+
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+
+
+def preflight_checkpoint_resume(
+    *,
+    db: str | Path,
+    recorded_thread_id: str,
+    run_id: str,
+    ticker: str,
+    trade_date: str,
+    selected_analysts: Sequence[str],
+    config: dict[str, Any] | None = None,
+    asset_type: str = "stock",
+    portfolio: PortfolioContext | None = None,
+    workflow_variant: str | None = None,
+) -> str:
+    """Verify the caller-validated target's keyed identity and existence.
+
+    Only the recorded database and thread are checked. This does not start a
+    run, validate Evidence, or guarantee the target stays present afterward.
+    """
+    if not run_id:
+        raise CheckpointResumePreflightError(
+            "checkpoint_invalid_run_id", "Explicit checkpoint resume requires a nonempty run ID.",
+        )
+
+    expected_thread_id = checkpoint_thread_id(
+        ticker,
+        trade_date,
+        selected_analysts=selected_analysts,
+        config=config,
+        asset_type=asset_type,
+        portfolio=portfolio,
+        workflow_variant=workflow_variant,
+        run_key=run_id,
+    )
+    if expected_thread_id != recorded_thread_id:
+        raise CheckpointResumePreflightError(
+            "checkpoint_signature_mismatch", "Current settings do not match the recorded checkpoint thread.",
+        )
+    if not checkpoint_thread_exists(db, recorded_thread_id):
+        raise CheckpointResumePreflightError(
+            "checkpoint_not_found", "The recorded checkpoint thread is absent from its original database.",
+        )
+    return recorded_thread_id
+
+
 class TradingAgentsGraph:
     """Main class that orchestrates the trading agents framework."""
+
+    _workflow_variant: str | None = None
 
     def __init__(
         self,
@@ -57,6 +201,8 @@ class TradingAgentsGraph:
         debug=False,
         config: dict[str, Any] = None,
         callbacks: list | None = None,
+        *,
+        workflow_variant: str | None = None,
     ):
         """Initialize the trading agents graph and components.
 
@@ -65,9 +211,14 @@ class TradingAgentsGraph:
             debug: Whether to run in debug mode
             config: Configuration dictionary. If None, uses default config
             callbacks: Optional list of callback handlers (e.g., for tracking LLM/tool stats)
+            workflow_variant: ``v0`` for two research debate rounds, ``v1`` for one,
+                or None to keep the configured depth. Risk depth is unchanged.
         """
+        effective_config = _resolve_workflow_config(config, workflow_variant)
+
         self.debug = debug
-        self.config = config or DEFAULT_CONFIG
+        self.config = effective_config
+        self._workflow_variant = workflow_variant
         self.callbacks = callbacks or []
 
         set_config(self.config)
@@ -147,24 +298,13 @@ class TradingAgentsGraph:
         resume must not carry reports that other settings produced. Only where
         the run keeps its files and how it retries are left out.
         """
-        settings = {k: v for k, v in self.config.items() if k not in _NOT_IN_SIGNATURE}
-        digest = hashlib.sha256(json.dumps(settings, sort_keys=True, default=str).encode()).hexdigest()[:12]
-        return "|".join([
-            "analysts=" + ",".join(self.selected_analysts),
-            f"debate={self.config['max_debate_rounds']}",
-            f"risk={self.config['max_risk_discuss_rounds']}",
-            f"asset={asset_type}",
-            # None, an empty book and a changed book are three different runs.
-            f"portfolio={portfolio.fingerprint() if portfolio is not None else 'none'}",
-            # The layout itself: a checkpoint saved when analysts ran one after
-            # another has pending nodes this graph no longer has, and one saved
-            # before the Memory Log step would resume without the lessons.
-            "analysts=parallel",
-            "memory=parallel",
-            f"settings={digest}",
-        ])
+        return _format_run_signature(
+            self.config, self.selected_analysts, asset_type, portfolio, self._workflow_variant
+        )
 
-    def propagate(self, company_name, trade_date, asset_type: str = "stock", portfolio=None):
+    def propagate(
+        self, company_name, trade_date, asset_type: str = "stock", portfolio=None, *, run_key: str = "",
+    ):
         """Run the trading agents graph for a company on a specific date.
 
         ``asset_type`` selects between the stock pipeline (default) and the
@@ -172,7 +312,9 @@ class TradingAgentsGraph:
         from the ticker; programmatic callers pass it explicitly. When
         ``checkpoint_enabled`` is set in config, the graph is recompiled with
         a per-ticker SqliteSaver so a crashed run can resume from the last
-        successful node on a subsequent invocation with the same ticker+date.
+        successful node on a subsequent invocation with the same ticker, date,
+        compatibility signature, and ``run_key``. An empty key uses the legacy
+        thread; a nonempty key isolates runs without changing their signature.
 
         Returns ``(final_state, signal)`` where ``signal`` is one of the 5-tier
         ratings (Buy / Overweight / Hold / Underweight / Sell) or ``"REVIEW"``
@@ -182,14 +324,71 @@ class TradingAgentsGraph:
         """
         trade_date = _validate_trade_date(trade_date)
 
-        with run_config(self.config), \
-                self.checkpoint_scope(company_name, trade_date, asset_type, portfolio) as thread_id_value:
+        with run_config(self.config), self.checkpoint_scope(
+            company_name, trade_date, asset_type, portfolio, run_key=run_key,
+        ) as thread_id_value:
             return self._run_graph(
                 company_name, trade_date, asset_type=asset_type,
-                checkpoint_thread_id=thread_id_value, portfolio=portfolio,
+                checkpoint_thread_id=thread_id_value, portfolio=portfolio, run_key=run_key,
             )
 
-    def begin_checkpoint(self, company_name, trade_date, asset_type: str = "stock", portfolio=None) -> str | None:
+    def resume_checkpoint(
+        self,
+        ticker: str,
+        trade_date: str,
+        *,
+        db: str | Path,
+        recorded_thread_id: str,
+        run_id: str,
+        asset_type: str = "stock",
+        portfolio: PortfolioContext | None = None,
+    ) -> tuple[dict, str]:
+        """Resume a caller-validated original target, returning (final_state, signal).
+
+        The caller owns locator and Evidence validation, publication, and cleanup.
+        This entry point never initializes a fresh run or persists its decision or reports.
+        """
+        path = Path(db).absolute()
+        verified_thread = preflight_checkpoint_resume(
+            db=path,
+            recorded_thread_id=recorded_thread_id,
+            run_id=run_id,
+            ticker=ticker,
+            trade_date=_validate_trade_date(trade_date),
+            selected_analysts=self.selected_analysts,
+            config=self.config,
+            asset_type=asset_type,
+            portfolio=portfolio,
+            workflow_variant=self._workflow_variant,
+        )
+
+        missing_message = "The recorded checkpoint thread is absent from its original database."
+        try:
+            conn = sqlite3.connect(f"{path.as_uri()}?mode=rw", uri=True, check_same_thread=False)
+        except sqlite3.OperationalError as exc:
+            if exc.sqlite_errorcode == sqlite3.SQLITE_CANTOPEN:
+                try:
+                    path.stat()
+                except FileNotFoundError:
+                    raise CheckpointResumePreflightError("checkpoint_not_found", missing_message) from exc
+            raise
+
+        # Use a local compilation so the ordinary propagate() lifecycle stays untouched.
+        with closing(conn), run_config(self.config):
+            saver = SqliteSaver(conn)
+            graph = self.workflow.compile(checkpointer=saver)
+            args = self.propagator.get_graph_args()
+            config = args.setdefault("config", {})
+            config.setdefault("configurable", {})["thread_id"] = verified_thread
+            if saver.get_tuple(config) is None:
+                raise CheckpointResumePreflightError("checkpoint_not_found", missing_message)
+            final_state = graph.invoke(None, **args)
+
+        return final_state, run_rating(final_state)
+
+    def begin_checkpoint(
+        self, company_name, trade_date, asset_type: str = "stock", portfolio=None, *, run_key: str = "",
+    ) -> str | None:
         """Recompile the graph with a per-ticker checkpointer and return the
         ``thread_id`` to inject into the stream/invoke ``config`` (or ``None``
         when checkpointing is disabled).
@@ -209,14 +408,14 @@ class TradingAgentsGraph:
         self.graph = self.workflow.compile(checkpointer=saver)
 
         step = checkpoint_step(
-            self.config["data_cache_dir"], company_name, str(trade_date), signature
+            self.config["data_cache_dir"], company_name, str(trade_date), signature, run_key=run_key,
         )
         self._resuming = step is not None
         if step is not None:
             logger.info("Resuming from step %d for %s on %s", step, company_name, trade_date)
         else:
             logger.info("Starting fresh for %s on %s", company_name, trade_date)
-        return thread_id(company_name, str(trade_date), signature)
+        return thread_id(company_name, str(trade_date), signature, run_key=run_key)
 
     def checkpoint_input(self, init_state):
         """The value to stream/invoke: ``None`` to resume an existing checkpoint,
@@ -237,19 +436,25 @@ class TradingAgentsGraph:
         self._resuming = False
 
     @contextmanager
-    def checkpoint_scope(self, company_name, trade_date, asset_type: str = "stock", portfolio=None):
+    def checkpoint_scope(
+        self, company_name, trade_date, asset_type: str = "stock", portfolio=None, *, run_key: str = "",
+    ):
         """Context-manager form of begin/end_checkpoint for the propagate path."""
         try:
-            yield self.begin_checkpoint(company_name, trade_date, asset_type, portfolio)
+            yield self.begin_checkpoint(company_name, trade_date, asset_type, portfolio, run_key=run_key)
         finally:
             self.end_checkpoint()
 
-    def clear_checkpoint_on_success(self, company_name, trade_date, asset_type: str = "stock", portfolio=None):
+    def clear_checkpoint_on_success(
+        self, company_name, trade_date, asset_type: str = "stock", portfolio=None, *, run_key: str = "",
+    ):
         """Drop a completed run's checkpoint so a later run starts fresh (#1249)."""
         if self.config.get("checkpoint_enabled"):
+            # Keep the four-argument cleanup call for legacy threads.
+            key_args = {"run_key": run_key} if run_key else {}
             clear_checkpoint(
                 self.config["data_cache_dir"], company_name, str(trade_date),
-                self._run_signature(asset_type, portfolio),
+                self._run_signature(asset_type, portfolio), **key_args,
             )
 
     def run_settings(self) -> dict:
@@ -259,7 +464,7 @@ class TradingAgentsGraph:
         local paths are never recorded.
         """
         cfg = self.config
-        return {
+        settings = {
             "version": tradingagents.__version__,
             "llm_provider": cfg.get("llm_provider"),
             "deep_think_provider": tier_provider(cfg, "deep") if cfg.get("llm_provider") else None,
@@ -273,6 +478,9 @@ class TradingAgentsGraph:
             "data_vendors": dict(cfg.get("data_vendors") or {}),
             "tool_vendors": dict(cfg.get("tool_vendors") or {}),
         }
+        if self._workflow_variant is not None:
+            settings["workflow_variant"] = self._workflow_variant
+        return settings
 
     def save_reports(self, final_state, ticker, save_path=None, html=True) -> Path:
         """Write the report tree for a completed run, like the CLI does.
@@ -370,14 +578,15 @@ class TradingAgentsGraph:
             rating=run_rating(final_state),
         )
 
-    def _run_graph(self, company_name, trade_date, asset_type: str = "stock",
-                   checkpoint_thread_id: str | None = None, portfolio=None):
+    def _run_graph(
+        self, company_name, trade_date, asset_type: str = "stock",
+        checkpoint_thread_id: str | None = None, portfolio=None, *, run_key: str = "",
+    ):
         """Execute the graph and write the resulting state to disk and memory log."""
         init_agent_state = self.create_run_state(company_name, trade_date, asset_type, portfolio)
         args = self.propagator.get_graph_args()
 
-        # Inject the checkpoint thread_id (from checkpoint_scope) so the same
-        # ticker+date+graph-shape resumes; a different one starts fresh (#1089).
+        # Use the thread selected by checkpoint_scope for this run.
         if checkpoint_thread_id is not None:
             args.setdefault("config", {}).setdefault("configurable", {})["thread_id"] = checkpoint_thread_id
 
@@ -400,7 +609,7 @@ class TradingAgentsGraph:
         self.record_decision(company_name, trade_date, final_state)
 
         # Clear checkpoint on successful completion to avoid stale state.
-        self.clear_checkpoint_on_success(company_name, trade_date, asset_type, portfolio)
+        self.clear_checkpoint_on_success(company_name, trade_date, asset_type, portfolio, run_key=run_key)
 
         return final_state, run_rating(final_state)
 
