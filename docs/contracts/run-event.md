@@ -1,9 +1,10 @@
 # RunEvent Contract
 
 Owner: E (runtime records, experiments, CI, delivery).
-Status: **step 1 — documentation only.** No `run_recorder.py` and no tests exist yet.
-Consumers: `src/tradingagents/run_recorder.py` (planned), `scripts/compare_runs.py`
-(planned), evaluation results (`docs/evaluation/results/`, planned).
+Status: **step 2 implemented.** `src/tradingagents/run_recorder.py` and
+`test/offline/test_run_recorder.py` exist (commit `a6a4a6b`); the field table below
+is the current v1 contract. Consumers: `scripts/compare_runs.py` (planned) and
+evaluation results (`docs/evaluation/results/`, planned).
 
 This contract defines the on-disk JSON "run manifest" that records one analysis run
 well enough to compare runs and to gate prompt/model changes. It is deliberately

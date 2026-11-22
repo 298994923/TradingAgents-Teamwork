@@ -1,9 +1,8 @@
 # AI-use log. Every PR that changes code or prompts adds its own real entry here.
 # E resolves merge conflicts; entries are authored by the PR author, not fabricated.
-# The AI-use-log blocking gate (§6.6) diffs this file against code/prompt changes;
-# the gate itself is a later E step. This file defines the format and three real
-# entries: two backfilled from git history and OpenCode session records, one for the
-# current step.
+# The AI-use-log blocking gate (§6.6) diffs this file against code/prompt changes.
+# This file defines the format and real entries backfilled from git history and
+# OpenCode session records, plus one entry per gated PR going forward.
 
 # Format (one entry per PR that touches code or prompts):
 #   id               <student id>-<student name>-ai-use-01   (per-member sequence)
@@ -83,6 +82,142 @@ entries:
       build_run_id, atomic open("x") for no-overwrite, secret filter scoped to
       config_snapshot, two ruff fixes in the test file); all reviewed and accepted.
       Session ses_e03d0e90affe6o65s7wLqq531g (2026-11-21 15:57 - 16:25).
+
+  - id: "60252993-linan-ai-use-05"
+    pr_id: "N/A"
+    date: "2026-11-21"
+    task: "Replace the comment-only ci.yml with the minimal two-job CI and delete the invalid release-assets stub"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      commit e9ed763. The human explicitly approved editing the frozen ci.yml for this
+      session. Two jobs only, named exactly `tests` and `lint`: `pip install -e ".[dev]"`
+      then `pytest -q` / `ruff check src tests test`; workflow-level
+      `permissions: contents: read`; pip cache keyed on pyproject.toml. The invalid
+      comment-only `.github/workflows/release-assets.yml` was deleted. Local YAML parse
+      and pytest (1424 passed / 1 skipped at the time) passed; GitHub Actions was not run
+      in the session. Session ses_e02933be9ffeZqjnn382XBiK6G (2026-11-21 17:25 - 17:35).
+      A later five-job/scripts expansion was generated outside this entry and removed on
+      2026-11-21; it is not claimed here.
+
+  - id: "60252993-linan-ai-use-06"
+    pr_id: "N/A"
+    date: "2026-11-22"
+    task: "Add the minimal AI-use log blocking gate (scripts/check_ai_use_log.py + ai-use-log CI job)"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: false
+    notes: >-
+      Gate 1 only (D7 §6.6), simplified on human request. Three checks, nothing more:
+      a gated change (src/, prompts/, scripts/, .github/ only) must add a new entry,
+      ids must not duplicate, and the new entry must say human_reviewed: true. Other
+      fields (pr_id, task, agent, model, date, changes_accepted) are NOT validated.
+      Three-dot ACMRD diff. The human removed scripts/ci_gates.py and the gate tests
+      after review, so this gate currently has no automated tests — a known gap.
+      ci.yml lint also checks scripts; the ai-use-log job runs on pull_request with
+      fetch-depth 0, base=pull_request.base.sha, head=pull_request.head.sha. PyYAML is
+      in the dev extra. Local pytest (1424 passed, 1 skipped) and ruff passed; GitHub
+      Actions was NOT run. human_reviewed was set true after review; changes_accepted
+      remains false.
+
+  - id: "60252993-linan-ai-use-07"
+    pr_id: "N/A"
+    date: "2026-11-22"
+    task: "Implement the remaining D7 gates 1-5: approval, static-analysis dependency check, schema, semantic eval, regression baseline"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Gates 1-5 added with minimal working scaffolds (approvals.yaml, seeded
+      requirements.yaml, docs/eval/semantic-eval.yaml, scripts/test_baseline.txt) so
+      each job runs meaningfully today and tightens as A/B fill inputs. Shared diff
+      logic in scripts/gate_common.py; jsonschema added to the dev extra. Local pytest
+      and ruff only; GitHub Actions was NOT run. Human reviewed the diff and accepted
+      it. Follow-up review fixes (real Gate 1 coverage, Gate 4 scaffold label, correct
+      baseline, truthful status comments) were applied in entry 08.
+
+  - id: "60252993-linan-ai-use-08"
+    pr_id: "N/A"
+    date: "2026-11-22"
+    task: "Review fixes: real Gate 1 src-coverage check, honest Gate 4 label, corrected baseline, truthful CI status comments"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Follow-up to entry 07 after human review. docs/approvals.yaml is now a list of
+      records (src, approver, date, tests); Gate 1 checks that every changed src/ file
+      is covered. Gate 4 relabelled SCAFFOLD (hardcoded keyword match, not real eval).
+      test_baseline.txt recomputed after the test changes to 1444 (1443 passed +
+      1 skipped). ci.yml status header now marks gates 1/3/4 as PARTIAL/PARTIAL/SCAFFOLD.
+      Local pytest 1443 passed, 19 gate tests, ruff clean; GitHub Actions was NOT run.
+      Human reviewed the diff and accepted it.
+
+  - id: "60252993-linan-ai-use-09"
+    pr_id: "N/A"
+    date: "2026-11-22"
+    task: "Simplify Gate 5 and Gate 6: tests job just runs the suites; AI log only gates src/, scripts/ and test/"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Gate 5: deleted scripts/check_regression.py and scripts/test_baseline.txt;
+      the tests job now just runs `pytest -q tests test/offline` and passes when green.
+      Gate 6: GATED_PREFIXES narrowed from src/prompts/scripts/.github to
+      src/scripts/test — prompts and .github are not necessarily written with an AI
+      agent, so they no longer require a log entry. Updated the gate-6 docstring,
+      the ci.yml status comment, the gate-1 scope note, and the offline tests.
+      README.md and docs/plans/E-ci-gates.md were then rewritten in plain language
+      to match what each gate really does today. Local pytest 1441 passed, 17 gate
+      tests, ruff clean; GitHub Actions was NOT run. Human reviewed and accepted.
+
+  - id: "60252993-linan-ai-use-10"
+    pr_id: "N/A"
+    date: "2026-11-22"
+    task: "Remove the fake semantic-eval gate and leave a TODO for the real one"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      We decided Gate 4 was not really checking anything — it just compared two
+      hardcoded sentences, so it could never tell whether a prompt change made
+      things better or worse. Deleted the script, the eval file, the three tests
+      and the CI job. A note in the plan doc now says what is still needed: a
+      real evaluation runner and a fixed set of test cases from B. Updated the
+      workflow list and README to stop claiming the gate exists. Local pytest
+      1438 passed and ruff clean; GitHub Actions was NOT run. Human reviewed and
+      accepted.
+
+  - id: "60252993-linan-ai-use-11"
+    pr_id: "N/A"
+    date: "2026-11-22"
+    task: "Run comparison tool, manifest wiring in the CLI, and configurable variant"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Added scripts/compare_runs.py, test/offline/test_compare_runs.py and
+      docs/evaluation/protocol.md; then wired the recorder into src/cli/run.py so
+      each run writes outputs/runs/<run_id>/manifest.json (success and failure),
+      and added --variant to src/cli/main.py. Human reviewed the output and asked
+      for fixes (file names on read errors, outcome/stop_reason counts, provider
+      guard, duration, run-id collision, variant flag); all fixed and re-tested.
+      Local pytest 1489 passed, 1 skipped; ruff clean. docs/evaluation/env.txt
+      frozen from the local venv (101 pinned packages).
 
   - id: "61023334-LiChengzhi-ai-use-01"
     pr_id: "pre-pr"

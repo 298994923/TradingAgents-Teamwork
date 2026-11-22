@@ -1,9 +1,12 @@
 """Running one analysis from the CLI: build the graph, stream it into the live view, save the report."""
 
 import os
+import re
 import sys
 import time
 import webbrowser
+from dataclasses import replace
+from datetime import UTC, datetime
 from functools import wraps
 from pathlib import Path
 
@@ -24,6 +27,7 @@ from cli.display import (
 )
 from cli.selections import depth_from_env, get_user_selections, unattended_gaps
 from cli.stats_handler import StatsCallbackHandler
+from tradingagents import __version__
 from tradingagents.agents.rating import is_review, run_rating
 from tradingagents.dataflows.symbols import safe_ticker_component
 from tradingagents.default_config import DEFAULT_CONFIG
@@ -31,6 +35,24 @@ from tradingagents.graph.analyst_execution import (
     build_analyst_execution_plan,
 )
 from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.run_recorder import RunEvent, build_run_id, write_manifest
+
+_VALID_VARIANTS = ("v0", "v1", "v2")
+
+
+def _validate_variant(value: str) -> str:
+    """Accept only a known, lowercase architecture variant slug (``v0``/``v1``/``v2``).
+
+    The value becomes the first segment of the manifest ``run_id`` and a directory
+    name under the results root, so an unknown or unsafe value is rejected rather
+    than interpolated.
+    """
+    if value not in _VALID_VARIANTS:
+        raise ValueError(
+            f"invalid variant {value!r}; expected one of {', '.join(_VALID_VARIANTS)}"
+        )
+    return value
+
 
 
 def _run_directory(config: dict, ticker: str, trade_date: str) -> Path:
@@ -40,6 +62,147 @@ def _run_directory(config: dict, ticker: str, trade_date: str) -> Path:
     ".." here would place the run outside the results directory.
     """
     return Path(config["results_dir"]) / safe_ticker_component(ticker) / trade_date
+
+
+def _manifest_config_snapshot(config: dict) -> dict:
+    """Scalars from ``config`` that are safe to record in a run manifest.
+
+    The recorder already drops secret-pattern keys; keeping only scalar values
+    here also excludes nested objects and lists that are not comparable settings.
+    """
+    return {
+        key: value
+        for key, value in config.items()
+        if isinstance(value, (str, int, float, bool)) or value is None
+    }
+
+
+def write_run_manifest(
+    *,
+    config: dict,
+    ticker: str,
+    trade_date: str,
+    asset_type: str,
+    outcome: str | None,
+    usage: dict,
+    failure: str | None,
+    variant: str,
+    repeat: int,
+    at: datetime,
+    version: str,
+    duration_seconds: float | None = None,
+    started_at: float | None = None,
+    clock=None,
+) -> Path:
+    """Write this run's manifest to ``<results_dir>/runs/<run_id>/manifest.json``.
+
+    Fields owned by other members are placeholders until they land: ``stop_reason``
+    (C) is ``None``, ``prompt_hashes`` (B) is ``{}``, ``evidence_snapshot`` (A) is
+    ``None``. ``duration_seconds`` is measured from ``started_at`` and ``clock``
+    (``time.time`` by default) when not supplied; passing both keeps it testable.
+    """
+    run_id = build_run_id(variant, ticker, trade_date, repeat, at)
+    if duration_seconds is None and started_at is not None:
+        now = (clock or time.time)()
+        duration_seconds = max(0.0, now - started_at)
+
+    event = RunEvent(
+        run_id=run_id,
+        created_at=at.astimezone(UTC).isoformat(),
+        version=version,
+        ticker=ticker,
+        trade_date=trade_date,
+        asset_type=asset_type,
+        outcome=outcome,
+        config_snapshot=_manifest_config_snapshot(config),
+        prompt_hashes={},
+        evidence_snapshot=None,
+        usage=usage,
+        duration_seconds=duration_seconds,
+        failure=failure,
+        stop_reason=None,
+    )
+    runs_dir = Path(config["results_dir"]) / "runs"
+    run_id = _unique_run_id(runs_dir, run_id)
+    event = replace(event, run_id=run_id)
+    manifest_dir = runs_dir / run_id
+    manifest_dir.mkdir(parents=True, exist_ok=True)
+    return write_manifest(event, manifest_dir / "manifest.json")
+
+
+def _unique_run_id(runs_dir: Path, run_id: str) -> str:
+    """A run_id whose directory does not exist yet, so a same-minute retry is safe.
+
+    ``build_run_id`` has minute resolution, so two runs started in the same minute
+    (or a retry) produce the same id. Appending ``-<n>`` keeps the id within the
+    recorder's 64-char pattern and never overwrites an earlier manifest.
+    """
+    pattern = re.compile(r"^[a-z0-9][a-z0-9.-]{0,62}$")
+    candidate = run_id
+    suffix = 2
+    while (runs_dir / candidate).exists():
+        candidate = f"{run_id}-{suffix}"
+        if not pattern.match(candidate):
+            raise ValueError(f"no free run_id derived from {run_id!r} within 64 chars")
+        suffix += 1
+    return candidate
+
+
+def _make_manifest_writer(config: dict, selections: dict, stats_handler, started_at=None, variant="v0"):
+    """Return a ``write(failure=..., outcome=...)`` bound to this run's inputs.
+
+    ``variant`` selects the architecture under test and becomes the first segment
+    of the manifest ``run_id``; ``repeat`` is 1 and ``created_at`` is now, both
+    supplied here so the recorder never reads the clock itself. ``started_at`` is
+    the run's start (``time.time()``); forwarding it lets the manifest record a
+    real duration.
+    """
+
+    def write(*, failure, outcome):
+        return write_run_manifest(
+            config=config,
+            ticker=selections["ticker"],
+            trade_date=selections["analysis_date"],
+            asset_type=selections["asset_type"],
+            outcome=outcome,
+            usage=stats_handler.get_stats(),
+            failure=failure,
+            variant=variant,
+            repeat=1,
+            at=datetime.now(UTC),
+            version=__version__,
+            started_at=started_at,
+        )
+
+    return write
+
+
+def _finalize_run_manifest(
+    *,
+    write,
+    graph,
+    ticker: str,
+    trade_date: str,
+    asset_type: str,
+    portfolio,
+    final_state,
+    failure: BaseException | None,
+) -> None:
+    """Write the manifest, then dispose of (or keep) the checkpoint.
+
+    The manifest is written **before** the checkpoint is cleared, so a crash in
+    teardown never loses the record. A failed run still writes a manifest with
+    ``failure`` set and keeps its checkpoint for resume; the failure is re-raised.
+    """
+    outcome = None if final_state is None else run_rating(final_state)
+    write(failure=None if failure is None else str(failure), outcome=outcome)
+
+    if failure is not None:
+        raise failure
+
+    if final_state is not None:
+        graph.record_decision(ticker, trade_date, final_state)
+    graph.clear_checkpoint_on_success(ticker, trade_date, asset_type, portfolio)
 
 
 def _announce_checkpoint_state(graph, ticker: str, trade_date: str) -> None:
@@ -96,8 +259,9 @@ def _build_run_config(selections: dict, checkpoint: bool | None) -> dict:
     return config
 
 
-def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None):
+def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, variant="v0"):
     flags = flags or {}
+    variant = _validate_variant(variant)
     # With no terminal nothing can answer a prompt: name every question still
     # open before any model is called, rather than stopping at the first one.
     if not (sys.stdin and sys.stdin.isatty()):
@@ -347,12 +511,33 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None):
             for chunk in trace:
                 final_state.update(chunk)
 
-            # Clean run: log the decision, then drop this run's checkpoint so a
-            # later run starts fresh. A mid-stream failure skips both, keeping
-            # the checkpoint for resume.
-            graph.record_decision(selections["ticker"], selections["analysis_date"], final_state)
-            graph.clear_checkpoint_on_success(
-                selections["ticker"], selections["analysis_date"], selections["asset_type"], portfolio
+            # Clean run: write the manifest, log the decision, then drop this run's
+            # checkpoint so a later run starts fresh. The manifest is written first,
+            # inside _finalize_run_manifest, so teardown can never lose the record.
+            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=variant)
+            _finalize_run_manifest(
+                write=manifest_write,
+                graph=graph,
+                ticker=selections["ticker"],
+                trade_date=selections["analysis_date"],
+                asset_type=selections["asset_type"],
+                portfolio=portfolio,
+                final_state=final_state,
+                failure=None,
+            )
+        except BaseException as failure:
+            # A failure mid-run still leaves a manifest; the checkpoint is kept for
+            # resume and the failure is re-raised after the finally below.
+            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=variant)
+            _finalize_run_manifest(
+                write=manifest_write,
+                graph=graph,
+                ticker=selections["ticker"],
+                trade_date=selections["analysis_date"],
+                asset_type=selections["asset_type"],
+                portfolio=portfolio,
+                final_state=None,
+                failure=failure,
             )
         finally:
             # Always restore the plain uncheckpointed graph, even on failure.
