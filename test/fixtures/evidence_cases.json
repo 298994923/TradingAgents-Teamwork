@@ -1,0 +1,86 @@
+{
+  "status": "Synthetic review fixtures; not runtime or acceptance evidence.",
+  "complete": {
+    "registration": {
+      "selected_analysts": [
+        "market",
+        "social",
+        "news",
+        "fundamentals"
+      ],
+      "analyst_outputs": {
+        "market": "  Market: synthetic trend.\r\nRSI 55.\n",
+        "social": "Sentiment: synthetic neutral discussion.",
+        "news": "News: synthetic product announcement.",
+        "fundamentals": "Fundamentals: synthetic revenue increased."
+      },
+      "source_run_id": "synthetic-source-001",
+      "captured_at": "2026-11-21T08:00:00.000000Z",
+      "context": {
+        "instrument": {
+          "symbol": "DEMO",
+          "asset_type": "stock"
+        },
+        "instrument_context": "Fictional company; synthetic fixture only.",
+        "analysis_date": "2026-11-20",
+        "analysis_cutoff_at": null
+      }
+    },
+    "expected_snapshot": {
+      "snapshot_id": "sha256:80310fae0eed007900a7a76ff18300788d6d8572dcb8c1735cb6a2771d75c7b2",
+      "schema_version": "1",
+      "source_run_id": "synthetic-source-001",
+      "captured_at": "2026-11-21T08:00:00.000000Z",
+      "context": {
+        "instrument": {
+          "symbol": "DEMO",
+          "asset_type": "stock"
+        },
+        "instrument_context": "Fictional company; synthetic fixture only.",
+        "analysis_date": "2026-11-20",
+        "analysis_cutoff_at": null
+      },
+      "reports": {
+        "market": {
+          "content": "  Market: synthetic trend.\r\nRSI 55.\n",
+          "content_sha256": "8f202822768eca9c65c57eecd988fb03c92ac52acc4b17fee9ad1a4ad17fb641",
+          "report_generated_at": null,
+          "source_available_at": null
+        },
+        "social": {
+          "content": "Sentiment: synthetic neutral discussion.",
+          "content_sha256": "26322e336088d2fb7c1dfbe9bfd5afe2a8207c9bb7a290bc4125a3b0f3a29fb7",
+          "report_generated_at": null,
+          "source_available_at": null
+        },
+        "news": {
+          "content": "News: synthetic product announcement.",
+          "content_sha256": "e4667b734dc02e5491cfec57e674f1a77be96e489e4c6c18f500d6fc2336fc25",
+          "report_generated_at": null,
+          "source_available_at": null
+        },
+        "fundamentals": {
+          "content": "Fundamentals: synthetic revenue increased.",
+          "content_sha256": "4a38ba3ed38069689552aa01f054f9de639bff7aa062dacca3e76cb9e2e84c59",
+          "report_generated_at": null,
+          "source_available_at": null
+        }
+      }
+    },
+    "canonical_payload_utf8": "{\"captured_at\":\"2026-11-21T08:00:00.000000Z\",\"context\":{\"analysis_cutoff_at\":null,\"analysis_date\":\"2026-11-20\",\"instrument\":{\"asset_type\":\"stock\",\"symbol\":\"DEMO\"},\"instrument_context\":\"Fictional company; synthetic fixture only.\"},\"reports\":{\"fundamentals\":{\"content\":\"Fundamentals: synthetic revenue increased.\",\"content_sha256\":\"4a38ba3ed38069689552aa01f054f9de639bff7aa062dacca3e76cb9e2e84c59\",\"report_generated_at\":null,\"source_available_at\":null},\"market\":{\"content\":\"  Market: synthetic trend.\\r\\nRSI 55.\\n\",\"content_sha256\":\"8f202822768eca9c65c57eecd988fb03c92ac52acc4b17fee9ad1a4ad17fb641\",\"report_generated_at\":null,\"source_available_at\":null},\"news\":{\"content\":\"News: synthetic product announcement.\",\"content_sha256\":\"e4667b734dc02e5491cfec57e674f1a77be96e489e4c6c18f500d6fc2336fc25\",\"report_generated_at\":null,\"source_available_at\":null},\"social\":{\"content\":\"Sentiment: synthetic neutral discussion.\",\"content_sha256\":\"26322e336088d2fb7c1dfbe9bfd5afe2a8207c9bb7a290bc4125a3b0f3a29fb7\",\"report_generated_at\":null,\"source_available_at\":null}},\"schema_version\":\"1\",\"source_run_id\":\"synthetic-source-001\"}"
+  },
+  "exact_text": "  Unicode: café 股票 😀\r\n\tend\n",
+  "incomplete": {
+    "selected_analysts": [
+      "market",
+      "social",
+      "news",
+      "fundamentals"
+    ],
+    "analyst_outputs": {
+      "market": "",
+      "social": " \t\r\n",
+      "fundamentals": "DATA_UNAVAILABLE: fictional source returned no data."
+    }
+  }
+}
