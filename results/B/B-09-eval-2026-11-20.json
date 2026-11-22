@@ -1,0 +1,360 @@
+{
+  "timestamp": "2026-11-20T10:36:13.504775+00:00",
+  "model": "CS5351/DeepSeek-V4-Flash",
+  "temperature": 0,
+  "seed": null,
+  "memory": "fresh fixture each call",
+  "prompt_version": "1.0",
+  "prompt_sha256": "a09ae6665830e267201fd5ed16fa321327501eebf095ec502940aacd044bb62c",
+  "case_sha256": "d798a7262b3b051129a6211ecde9f93ba43ead2f0470a07581569103a4bb623a",
+  "run_id": "s9-20261120T103613504775Z",
+  "metrics": {
+    "first_round_leakage": {
+      "samples": 3,
+      "passes": 3,
+      "rate": 0,
+      "mean": 0,
+      "spread": 0,
+      "threshold": 0,
+      "met": true
+    },
+    "target_hit": {
+      "samples": 6,
+      "passes": 6,
+      "rate": 1,
+      "mean": 1,
+      "spread": 0,
+      "threshold": 1,
+      "met": true
+    },
+    "valid_evidence": {
+      "samples": 30,
+      "passes": 30,
+      "rate": 1,
+      "mean": 1,
+      "spread": 0,
+      "threshold": 1,
+      "met": true
+    },
+    "constraint_retention": {
+      "samples": 3,
+      "passes": 3,
+      "rate": 1,
+      "mean": 1,
+      "spread": 0,
+      "threshold": 1,
+      "met": true
+    },
+    "disagreement_retention": {
+      "samples": 3,
+      "passes": 3,
+      "rate": 1,
+      "mean": 1,
+      "spread": 0,
+      "threshold": 1,
+      "met": true
+    },
+    "structural_validity": {
+      "samples": 12,
+      "passes": 12,
+      "rate": 1,
+      "mean": 1,
+      "spread": 0,
+      "threshold": 1,
+      "met": true
+    },
+    "repair_success": {
+      "samples": 0,
+      "passes": 0,
+      "rate": null,
+      "mean": null,
+      "spread": null,
+      "threshold": 1,
+      "met": null
+    }
+  },
+  "observations": [
+    {
+      "case": "blind",
+      "repetition": 1,
+      "run_id": "s9-20261120T103613504775Z-1-blind",
+      "metrics": {
+        "structural_validity": [
+          1
+        ],
+        "first_round_leakage": [
+          0
+        ],
+        "valid_evidence": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "malformed": 0,
+      "fabricated": 0,
+      "estimated": 278,
+      "actual_input": 295,
+      "actual_output": 319,
+      "seconds": 8.907
+    },
+    {
+      "case": "target-full",
+      "repetition": 1,
+      "run_id": "s9-20261120T103613504775Z-1-target-full",
+      "metrics": {
+        "structural_validity": [
+          1
+        ],
+        "target_hit": [
+          1
+        ],
+        "valid_evidence": [
+          1,
+          1
+        ]
+      },
+      "malformed": 0,
+      "fabricated": 0,
+      "estimated": 413,
+      "actual_input": 460,
+      "actual_output": 178,
+      "seconds": 8.896
+    },
+    {
+      "case": "target-compact",
+      "repetition": 1,
+      "run_id": "s9-20261120T103613504775Z-1-target-compact",
+      "metrics": {
+        "structural_validity": [
+          1
+        ],
+        "target_hit": [
+          1
+        ],
+        "valid_evidence": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "constraint_retention": [
+          1
+        ]
+      },
+      "malformed": 0,
+      "fabricated": 0,
+      "estimated": 343,
+      "actual_input": 374,
+      "actual_output": 490,
+      "seconds": 7.96
+    },
+    {
+      "case": "manager",
+      "repetition": 1,
+      "run_id": "s9-20261120T103613504775Z-1-manager",
+      "metrics": {
+        "disagreement_retention": [
+          1
+        ],
+        "structural_validity": [
+          1
+        ]
+      },
+      "malformed": 0,
+      "fabricated": 0,
+      "actual_input": 320,
+      "actual_output": 106,
+      "seconds": 1.14
+    },
+    {
+      "case": "blind",
+      "repetition": 2,
+      "run_id": "s9-20261120T103613504775Z-2-blind",
+      "metrics": {
+        "structural_validity": [
+          1
+        ],
+        "first_round_leakage": [
+          0
+        ],
+        "valid_evidence": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "malformed": 0,
+      "fabricated": 0,
+      "estimated": 278,
+      "actual_input": 295,
+      "actual_output": 324,
+      "seconds": 3.558
+    },
+    {
+      "case": "target-full",
+      "repetition": 2,
+      "run_id": "s9-20261120T103613504775Z-2-target-full",
+      "metrics": {
+        "structural_validity": [
+          1
+        ],
+        "target_hit": [
+          1
+        ],
+        "valid_evidence": [
+          1,
+          1
+        ]
+      },
+      "malformed": 0,
+      "fabricated": 0,
+      "estimated": 413,
+      "actual_input": 460,
+      "actual_output": 178,
+      "seconds": 0.667
+    },
+    {
+      "case": "target-compact",
+      "repetition": 2,
+      "run_id": "s9-20261120T103613504775Z-2-target-compact",
+      "metrics": {
+        "structural_validity": [
+          1
+        ],
+        "target_hit": [
+          1
+        ],
+        "valid_evidence": [
+          1,
+          1
+        ],
+        "constraint_retention": [
+          1
+        ]
+      },
+      "malformed": 0,
+      "fabricated": 0,
+      "estimated": 343,
+      "actual_input": 374,
+      "actual_output": 140,
+      "seconds": 2.543
+    },
+    {
+      "case": "manager",
+      "repetition": 2,
+      "run_id": "s9-20261120T103613504775Z-2-manager",
+      "metrics": {
+        "disagreement_retention": [
+          1
+        ],
+        "structural_validity": [
+          1
+        ]
+      },
+      "malformed": 0,
+      "fabricated": 0,
+      "actual_input": 320,
+      "actual_output": 167,
+      "seconds": 1.666
+    },
+    {
+      "case": "blind",
+      "repetition": 3,
+      "run_id": "s9-20261120T103613504775Z-3-blind",
+      "metrics": {
+        "structural_validity": [
+          1
+        ],
+        "first_round_leakage": [
+          0
+        ],
+        "valid_evidence": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "malformed": 0,
+      "fabricated": 0,
+      "estimated": 278,
+      "actual_input": 295,
+      "actual_output": 319,
+      "seconds": 0.193
+    },
+    {
+      "case": "target-full",
+      "repetition": 3,
+      "run_id": "s9-20261120T103613504775Z-3-target-full",
+      "metrics": {
+        "structural_validity": [
+          1
+        ],
+        "target_hit": [
+          1
+        ],
+        "valid_evidence": [
+          1,
+          1
+        ]
+      },
+      "malformed": 0,
+      "fabricated": 0,
+      "estimated": 413,
+      "actual_input": 460,
+      "actual_output": 167,
+      "seconds": 1.921
+    },
+    {
+      "case": "target-compact",
+      "repetition": 3,
+      "run_id": "s9-20261120T103613504775Z-3-target-compact",
+      "metrics": {
+        "structural_validity": [
+          1
+        ],
+        "target_hit": [
+          1
+        ],
+        "valid_evidence": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "constraint_retention": [
+          1
+        ]
+      },
+      "malformed": 0,
+      "fabricated": 0,
+      "estimated": 343,
+      "actual_input": 374,
+      "actual_output": 490,
+      "seconds": 0.181
+    },
+    {
+      "case": "manager",
+      "repetition": 3,
+      "run_id": "s9-20261120T103613504775Z-3-manager",
+      "metrics": {
+        "disagreement_retention": [
+          1
+        ],
+        "structural_validity": [
+          1
+        ]
+      },
+      "malformed": 0,
+      "fabricated": 0,
+      "actual_input": 320,
+      "actual_output": 106,
+      "seconds": 0.266
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+ID	技术复核状态	类别建议	优先级建议	指标	判据	具体反馈及取舍	测试节点
+B-REQ-01	CONFIRMED	functional	Must	opponent_fingerprint_hits_across_both_speaking_orders	eq 0	双向首轮各检查一次，对手指纹命中数为零。	test/offline/test_review.py::test_researcher_actual_prompts | test/offline/test_context_builder.py::test_blind_round_and_reverse_control
+B-REQ-02	CONFIRMED	functional	Must	accepted_off_target_or_unlinked_responses	eq 0	拒收越界或缺失目标的回复；S9 固定集命中 6/6。	test/offline/test_review.py::test_researcher_actual_prompts | test/offline/test_review.py::test_claim_validation
+B-REQ-03	CONFIRMED	functional	Must	invalid_batches_accepted	eq 0	接受前整批校验；负例覆盖结构、身份和回指。	test/offline/test_review.py::test_claim_validation
+B-REQ-04	MATERIALS TO FOLLOW	functional	Must	accepted_invalid_unknown_time_or_future_citations_in_strict_mode	eq 0	严格模式未知时间必须拒绝；S9 的 30/30 只验证夹具引用。	test/offline/test_review.py::test_claim_validation
+B-REQ-05	CONFIRMED	functional	Must	maximum_repair_calls_per_invalid_output	le 1	每个初次无效输出及其修复构成一次计数单位，修复调用上限为一；有效输出零次，线上零尝试，成功率无样本。	test/offline/test_review.py::test_repair_once
+B-REQ-06	CONFIRMED	functional	Must	incorrect_layer_sequences_accepted	eq 0	按 L0–L5 顺序组装，允许同层多个块。	test/offline/test_context_builder.py::test_budget_boundary_and_compaction
+B-REQ-07	CONFIRMED	functional	Must	accepted_contexts_above_budget_or_missed_threshold_crossings	eq 0	严格超过阈值触发；必需内容放不下时停止调用。	test/offline/test_context_builder.py::test_budget_boundary_and_compaction | test/offline/test_context_builder.py::test_impossible_budget
+B-REQ-08	CONFIRMED	quality	Must	hard_constraint_retention_ratio_per_emitted_context	eq 1	逐个已发出上下文计算，分母是原始 L1 出现次数，分子是按原次序匹配 ID 和精确文本摘要的次数，含重复项；空分母记 N/A 并检查输出 L1 为空。预算失败无输出另计。	test/offline/test_context_builder.py::test_budget_boundary_and_compaction | test/offline/test_context_builder.py::test_impossible_budget
+B-REQ-09	CONFIRMED	functional	Must	distinct_fingerprint_items_merged_or_identical_eligible_items_retained_twice	eq 0	只对可去重块按规范指纹去重，保留不同措辞。	test/offline/test_context_builder.py::test_context_dedup | test/offline/test_review.py::test_fingerprint
+B-REQ-10	MATERIALS TO FOLLOW	functional	Must	unaccounted_unresolved_fixture_disagreements	eq 0	正常及降级均计入，须保留未决对和决策理由；最终图传递待接线。	test/offline/test_review.py::test_manager_decision
+B-REQ-11	MATERIALS TO FOLLOW	quality	Must	legacy_prompt_or_returned_state_differences_against_pinned_baseline	eq 0	匹配回放只比较协议表现；与固定旧版逐字提示及返回状态一致需要独立基线证据。	test/live/test_baseline_compare.py::test_matched_protocol
+B-REQ-12	CONFIRMED	quality	Must	measurements_missing_source_or_reported_at_unsupported_granularity	eq 0	逐条标注实测或估计及粒度；S9 管理器三次均无估计，估计覆盖 9/12。	test/offline/test_context_builder.py::test_metrics_and_placement

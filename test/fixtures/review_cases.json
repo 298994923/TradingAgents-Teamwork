@@ -1,0 +1,350 @@
+[
+  {
+    "case_id": "missing",
+    "scenario": "missing",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "R2",
+          "statement": "Demand is slowing.",
+          "evidence_ids": [
+            "EV-1"
+          ],
+          "responds_to": [
+            "R1"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        }
+      ]
+    },
+    "expected_status": "violation",
+    "expected_violation": "MISSING_FIELD",
+    "expected_degraded": false,
+    "notes": "B-REQ-03 / INV-B2",
+    "expected_detail": null
+  },
+  {
+    "case_id": "duplicate",
+    "scenario": "duplicate",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "R2",
+          "speaker": "bear",
+          "statement": "Demand is slowing.",
+          "evidence_ids": [
+            "EV-1"
+          ],
+          "responds_to": [
+            "R1"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        },
+        {
+          "claim_id": "R2",
+          "speaker": "bear",
+          "statement": "Demand is slowing.",
+          "evidence_ids": [
+            "EV-1"
+          ],
+          "responds_to": [
+            "R1"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        }
+      ]
+    },
+    "expected_status": "violation",
+    "expected_violation": "DUP_ID",
+    "expected_degraded": false,
+    "notes": "B-REQ-03 / INV-B2",
+    "expected_detail": null
+  },
+  {
+    "case_id": "blank",
+    "scenario": "blank",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "R2",
+          "speaker": "bear",
+          "statement": "  ",
+          "evidence_ids": [
+            "EV-1"
+          ],
+          "responds_to": [
+            "R1"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        }
+      ]
+    },
+    "expected_status": "violation",
+    "expected_violation": "EMPTY_STATEMENT",
+    "expected_degraded": false,
+    "notes": "B-REQ-03 / INV-B2",
+    "expected_detail": null
+  },
+  {
+    "case_id": "long",
+    "scenario": "long",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "R2",
+          "speaker": "bear",
+          "statement": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "evidence_ids": [
+            "EV-1"
+          ],
+          "responds_to": [
+            "R1"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        }
+      ]
+    },
+    "expected_status": "violation",
+    "expected_violation": "TOO_LONG",
+    "expected_degraded": false,
+    "notes": "B-REQ-03 / INV-B2",
+    "expected_detail": null
+  },
+  {
+    "case_id": "unknown-target",
+    "scenario": "unknown target",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "R2",
+          "speaker": "bear",
+          "statement": "Demand is slowing.",
+          "evidence_ids": [
+            "EV-1"
+          ],
+          "responds_to": [
+            "R404"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        }
+      ]
+    },
+    "expected_status": "violation",
+    "expected_violation": "BAD_RESPONDS_TO",
+    "expected_degraded": false,
+    "notes": "B-REQ-03 / INV-B2",
+    "expected_detail": null
+  },
+  {
+    "case_id": "self-target",
+    "scenario": "self target",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "R2",
+          "speaker": "bear",
+          "statement": "Demand is slowing.",
+          "evidence_ids": [
+            "EV-1"
+          ],
+          "responds_to": [
+            "R2"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        }
+      ]
+    },
+    "expected_status": "violation",
+    "expected_violation": "BAD_RESPONDS_TO",
+    "expected_degraded": false,
+    "notes": "B-REQ-03 / INV-B2",
+    "expected_detail": null
+  },
+  {
+    "case_id": "future-target",
+    "scenario": "future target",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "R2",
+          "speaker": "bear",
+          "statement": "Demand is slowing.",
+          "evidence_ids": [
+            "EV-1"
+          ],
+          "responds_to": [
+            "R3"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        }
+      ]
+    },
+    "expected_status": "violation",
+    "expected_violation": "FUTURE_REF",
+    "expected_degraded": false,
+    "notes": "B-REQ-03 / INV-B2",
+    "expected_detail": null
+  },
+  {
+    "case_id": "empty-evidence",
+    "scenario": "empty evidence",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "R2",
+          "speaker": "bear",
+          "statement": "Demand is slowing.",
+          "evidence_ids": [],
+          "responds_to": [
+            "R1"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        }
+      ]
+    },
+    "expected_status": "violation",
+    "expected_violation": "INVALID_EVIDENCE",
+    "expected_degraded": false,
+    "notes": "B-REQ-04 / INV-B3",
+    "expected_detail": "EMPTY"
+  },
+  {
+    "case_id": "malformed-evidence",
+    "scenario": "malformed evidence",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "R2",
+          "speaker": "bear",
+          "statement": "Demand is slowing.",
+          "evidence_ids": [
+            "!"
+          ],
+          "responds_to": [
+            "R1"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        }
+      ]
+    },
+    "expected_status": "violation",
+    "expected_violation": "INVALID_EVIDENCE",
+    "expected_degraded": false,
+    "notes": "B-REQ-04 / INV-B3",
+    "expected_detail": "MALFORMED"
+  },
+  {
+    "case_id": "missing-evidence",
+    "scenario": "missing evidence",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "R2",
+          "speaker": "bear",
+          "statement": "Demand is slowing.",
+          "evidence_ids": [
+            "EV-9"
+          ],
+          "responds_to": [
+            "R1"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        }
+      ]
+    },
+    "expected_status": "violation",
+    "expected_violation": "INVALID_EVIDENCE",
+    "expected_degraded": false,
+    "notes": "B-REQ-04 / INV-B3",
+    "expected_detail": "MISSING"
+  },
+  {
+    "case_id": "undated-evidence",
+    "scenario": "undated evidence",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "R2",
+          "speaker": "bear",
+          "statement": "Demand is slowing.",
+          "evidence_ids": [
+            "EV-2"
+          ],
+          "responds_to": [
+            "R1"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        }
+      ]
+    },
+    "expected_status": "violation",
+    "expected_violation": "INVALID_EVIDENCE",
+    "expected_degraded": false,
+    "notes": "B-REQ-04 / INV-B3",
+    "expected_detail": "UNKNOWN_TIME"
+  },
+  {
+    "case_id": "future-evidence",
+    "scenario": "future evidence",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "R2",
+          "speaker": "bear",
+          "statement": "Demand is slowing.",
+          "evidence_ids": [
+            "EV-3"
+          ],
+          "responds_to": [
+            "R1"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        }
+      ]
+    },
+    "expected_status": "violation",
+    "expected_violation": "INVALID_EVIDENCE",
+    "expected_degraded": false,
+    "notes": "B-REQ-04 / INV-B3",
+    "expected_detail": "FUTURE"
+  },
+  {
+    "case_id": "valid",
+    "scenario": "valid",
+    "input": {
+      "claims": [
+        {
+          "claim_id": "R2",
+          "speaker": "bear",
+          "statement": "Demand is slowing.",
+          "evidence_ids": [
+            "EV-1"
+          ],
+          "responds_to": [
+            "R1"
+          ],
+          "unresolved_questions": [],
+          "round_index": 2
+        }
+      ]
+    },
+    "expected_status": "ok",
+    "expected_violation": null,
+    "expected_degraded": false,
+    "notes": "B-REQ-03 / INV-B2",
+    "expected_detail": null
+  }
+]

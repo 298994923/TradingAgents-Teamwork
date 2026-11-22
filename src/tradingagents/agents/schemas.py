@@ -377,3 +377,28 @@ def render_sentiment_report(report: SentimentReport) -> str:
         "",
         report.narrative,
     ])
+
+
+# Package B wire types use the same dataclasses as the producer nodes.
+from tradingagents.context_builder import ContextPack, LayerBudget
+from tradingagents.review import Claim, ClaimBatch, ReviewResult
+
+
+class ClaimDisposition(BaseModel):
+    claim_id: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+
+
+class OpenDisagreement(BaseModel):
+    bull_claim_id: str = Field(min_length=1)
+    bear_claim_id: str = Field(min_length=1)
+    why_unresolved: str = Field(min_length=1)
+    decision_impact: str = Field(min_length=1)
+
+
+class ManagerDecision(BaseModel):
+    adopted_claims: list[ClaimDisposition]
+    rejected_claims: list[ClaimDisposition]
+    unresolved_disagreements: list[OpenDisagreement]
+    decision_summary: Literal["BUY", "OVERWEIGHT", "HOLD", "UNDERWEIGHT", "SELL", "REVIEW"]
+    evidence_refs: list[str]
