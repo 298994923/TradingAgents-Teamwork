@@ -9,3 +9,13 @@ approvals:
     approver: "60252993"
     date: "2026-11-21"
     tests: ["test/offline/test_run_recorder.py"]
+
+  - src: "src/cli/run.py"
+    approver: "60252993"
+    date: "2026-11-22"
+    tests: ["test/offline/test_cli_run_manifest.py", "test/offline/test_compare_runs.py"]
+
+  - src: "src/cli/main.py"
+    approver: "60252993"
+    date: "2026-11-22"
+    tests: ["test/offline/test_cli_run_manifest.py"]

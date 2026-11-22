@@ -199,3 +199,22 @@ entries:
       workflow list and README to stop claiming the gate exists. Local pytest
       1438 passed and ruff clean; GitHub Actions was NOT run. Human reviewed and
       accepted.
+
+  - id: "60252993-linan-ai-use-11"
+    pr_id: "N/A"
+    date: "2026-11-22"
+    task: "Run comparison tool, manifest wiring in the CLI, and configurable variant"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Added scripts/compare_runs.py, test/offline/test_compare_runs.py and
+      docs/evaluation/protocol.md; then wired the recorder into src/cli/run.py so
+      each run writes outputs/runs/<run_id>/manifest.json (success and failure),
+      and added --variant to src/cli/main.py. Human reviewed the output and asked
+      for fixes (file names on read errors, outcome/stop_reason counts, provider
+      guard, duration, run-id collision, variant flag); all fixed and re-tested.
+      Local pytest 1489 passed, 1 skipped; ruff clean.docs/evaluation/env.txt 
+      frozen from the local venv (101 pinned packages).
