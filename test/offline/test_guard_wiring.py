@@ -248,3 +248,21 @@ def test_missing_plans_are_unavailable_and_never_fabricated():
     assert result["final_rating"] == "REVIEW"
     assert "unavailable" in result["final_trade_decision"].lower()
     assert llm.calls == []
+
+
+def test_guarded_mode_publishes_machine_readable_guard_result():
+    """INV-D6 / INV-D7 / REQ-D-007: guarded mode exposes a stable guard_result."""
+    result = create_portfolio_manager(_StructuredLLM(_valid_pm_decision()))(
+        _state(trader_proposal=VALID_TRADER_PROPOSAL, portfolio=KNOWN_PORTFOLIO)
+    )
+
+    guard_result = result["guard_result"]
+    assert guard_result["contract"] == "validation-decision/1.1"
+    assert guard_result["verdict"] in {"PASS", "BLOCK", "REVIEW"}
+    assert guard_result["executable"] is (guard_result["verdict"] == "PASS")
+    assert guard_result["reason_code"]
+    assert guard_result["checkpoint"]
+    assert guard_result["rules_hit"] == [
+        {"checkpoint": "trader", "reason_code": "PASS"},
+        {"checkpoint": "pm", "reason_code": "PASS"},
+    ]

@@ -70,6 +70,27 @@ def _guard_fields(trader_result, pm_result, reason_code):
     }
 
 
+def _guard_result_payload(trader_result, pm_result):
+    """Machine-readable final safety result for the guarded run."""
+    return {
+        "contract": "validation-decision/1.1",
+        "verdict": pm_result.verdict.value,
+        "reason_code": pm_result.reason_code,
+        "checkpoint": pm_result.checkpoint,
+        "executable": pm_result.executable,
+        "rules_hit": [
+            {
+                "checkpoint": trader_result.checkpoint,
+                "reason_code": trader_result.reason_code,
+            },
+            {
+                "checkpoint": pm_result.checkpoint,
+                "reason_code": pm_result.reason_code,
+            },
+        ],
+    }
+
+
 def _suppressed_decision(pm_result):
     """A non-executable disposition that carries no tradeable rating or action."""
     return (
@@ -231,6 +252,7 @@ Write these sections, in this order, starting with the rating on its own line:
             "risk_debate_state": new_risk_debate_state,
             "final_trade_decision": final_trade_decision,
             "final_rating": final_rating,
+            "guard_result": _guard_result_payload(trader_result, pm_result),
             **_guard_fields(trader_result, pm_result, reason_code),
         }
 
