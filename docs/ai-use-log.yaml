@@ -234,3 +234,21 @@ entries:
       The delivery record reports 13 policy tests passed, 1437 offline tests passed
       (1 skipped, 1 deselected, 100 subtests passed), and Ruff passed on Python 3.14.4.
       Member C confirmed acceptance at delivery. Graph integration was not included.
+
+  - id: "60252993-linan-ai-use-12"
+    pr_id: "N/A"
+    date: "2026-11-22"
+    task: "E interfaces E2/E3/E4: per-call usage, recovery records, and evidence-mode sidecar"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Added CallUsage, calls(), call(), track(stage) to stats_handler; added
+      resume.py (attempts, locator, resolve_run); added evidence-mode.json sidecar
+      and made compare_runs treat evidence_mode as a control. Also made missing
+      tokens null, display show --, and removed results_dir from the manifest.
+      Human reviewed the output and asked for fixes (strict as the default mode);
+      fixed and re-tested. Local pytest 1574 passed, 1 skipped; ruff clean.
+      GitHub Actions was NOT run.

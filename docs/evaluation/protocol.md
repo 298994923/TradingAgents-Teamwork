@@ -2,14 +2,15 @@
 
 Owner: E (runtime records, experiments, CI, delivery). Reviewers: B (collaboration /
 prompt versioning) and D (deterministic safety) per the team split §3.
-Status: **tooling only.** `scripts/compare_runs.py` and `test/offline/test_compare_runs.py`
-exist and pass offline; **no experiments have run yet**. The comparison tables the
-report needs (`docs/evaluation/results/`) do not exist and must not be fabricated.
+Status: **tooling implemented; V0 has run three times.** `scripts/compare_runs.py` and
+`test/offline/test_compare_runs.py` exist and pass offline. Three V0 manifests were
+recorded under `outputs/runs/` on the trading day 2026-11-20 (NVDA, `--variant v0`). Those runs have
+**empty `prompt_hashes`** (B has not delivered prompt fingerprints yet), so the tool
+**refuses** to compare them; no comparison table exists yet and none may be fabricated.
 
 This protocol fixes *how* runs are compared and *what* a comparison may claim. It
 does not define semantic-quality scoring: that spec is owned by B and D and is not
-implemented in this slice (see "Out of scope" below). Until real runs exist, this
-document and the tool are the only deliverables here.
+implemented in this slice (see "Out of scope" below).
 
 ## Fixed inputs (the comparison set)
 
@@ -27,7 +28,11 @@ tool enforces this; a mismatch is refused, not averaged or shown side by side.
 | prompt | `prompt_hashes` (name → hash) | a prompt change invalidates a like-for-like comparison |
 
 A missing required config key (model, provider, language) is treated as
-**incomparable** — the tool refuses rather than guessing a default.
+**incomparable** — the tool refuses rather than guessing a default. An **empty
+`prompt_hashes`** (`{}` or `null`) is also refused: without a real prompt fingerprint
+the runs cannot be shown to use the same prompts. This is why the three V0 runs are
+not yet comparable. `results_dir` is a machine-local output path and is **not**
+recorded in the manifest, so it can never be a spurious difference.
 
 ## Variants
 
@@ -49,6 +54,9 @@ Only quantities the manifest actually records. Per run: `outcome`, `usage`
 (`llm_calls`, `tool_calls`, `tokens_in`, `tokens_out`), `duration_seconds`,
 `failure`, `stop_reason`. Per variant: **count of runs** and the **average** of each
 numeric field (`null` values excluded from that field's average).
+
+A **missing token count stays `null`, never `0`**: an unreported count is unknown,
+not zero. In the human-readable table it prints as `--`; in `--json` it is `null`.
 
 The token-reduction goal from the team plan (e.g. 20–25%) is a *target*, not a
 result: the protocol reports measured averages; it does not assert the target was
@@ -88,6 +96,11 @@ paths recorded — **only after the runs actually happen**.
 
 ## Current state
 
-- Comparison tooling: implemented, 20 offline tests green.
-- Experiments: **none run.** No `results/` files exist. Do not add comparison tables
-  until real manifests are produced from real runs.
+- Comparison tooling: implemented, offline tests green.
+- Experiments: **V0 run three times** on the trading day 2026-11-20 (NVDA), manifests
+  under `outputs/runs/v0-nvda-2026-11-20-r1-*`. Raw data is recorded in
+  `docs/evaluation/results/v0-nvda-2026-11-20.md`. The manifests have empty
+  `prompt_hashes`, so they are **refused** by the tool and are **not** a comparison
+  table. Once B delivers prompt fingerprints (and a re-run carries them), and C
+  delivers V1/V2, comparable runs can be produced. Do not write a comparison table
+  from the empty-hash manifests.
