@@ -38,13 +38,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from tradingagents.dataflows.symbols import normalize_symbol
 
 
-class Verdict(str, Enum):
+class Verdict(StrEnum):
     """Deterministic guard verdict. Severity: BLOCK > REVIEW > PASS."""
 
     PASS = "PASS"
@@ -293,10 +293,11 @@ def _resolve_portfolio(
             held += quantity
 
     raw_nav = portfolio.get("nav", _MISSING)
-    if raw_nav is _MISSING or raw_nav is None:
-        nav = None
-    else:
-        nav = _portfolio_decimal(raw_nav, "nav")
+    nav = (
+        None
+        if raw_nav is _MISSING or raw_nav is None
+        else _portfolio_decimal(raw_nav, "nav")
+    )
 
     raw_portfolio_currency = portfolio.get("currency")
     if raw_portfolio_currency is not None and not isinstance(raw_portfolio_currency, str):
@@ -378,9 +379,13 @@ def _validate_cap(
         raise _GuardFailure(Verdict.REVIEW, "CURRENCY_MISMATCH")
     if len(currencies) > 1:
         raise _GuardFailure(Verdict.REVIEW, "CURRENCY_MISMATCH")
-    if proposal_currency and portfolio_currency is None and position_currencies:
-        if proposal_currency not in position_currencies:
-            raise _GuardFailure(Verdict.REVIEW, "CURRENCY_MISMATCH")
+    if (
+        proposal_currency
+        and portfolio_currency is None
+        and position_currencies
+        and proposal_currency not in position_currencies
+    ):
+        raise _GuardFailure(Verdict.REVIEW, "CURRENCY_MISMATCH")
 
     if nav is None:
         raise _GuardFailure(Verdict.REVIEW, "NAV_UNKNOWN", {"field": "nav"})
