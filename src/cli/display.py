@@ -180,6 +180,19 @@ def format_tokens(n):
     return str(n)
 
 
+def _format_token_line(stats):
+    """The token line for the live display, ``Tokens: --`` when unknown.
+
+    A ``None`` token count means usage was never reported; it is shown as ``--``
+    rather than a fabricated zero, and never compared with ``>``.
+    """
+    tokens_in = stats.get("tokens_in")
+    tokens_out = stats.get("tokens_out")
+    if tokens_in is None or tokens_out is None:
+        return "Tokens: --"
+    return f"Tokens: {format_tokens(tokens_in)}\u2191 {format_tokens(tokens_out)}\u2193"
+
+
 def update_display(layout, spinner_text=None, stats_handler=None, start_time=None):
     # Header with welcome message
     layout["header"].update(
@@ -355,11 +368,7 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
         stats_parts.append(f"Tools: {stats['tool_calls']}")
 
         # Token display with graceful fallback
-        if stats["tokens_in"] > 0 or stats["tokens_out"] > 0:
-            tokens_str = f"Tokens: {format_tokens(stats['tokens_in'])}\u2191 {format_tokens(stats['tokens_out'])}\u2193"
-        else:
-            tokens_str = "Tokens: --"
-        stats_parts.append(tokens_str)
+        stats_parts.append(_format_token_line(stats))
 
     stats_parts.append(f"Reports: {reports_completed}/{reports_total}")
 
