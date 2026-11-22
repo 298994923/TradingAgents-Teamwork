@@ -1,0 +1,109 @@
+requirements:
+  - id: B-REQ-01
+    type: invariant
+    statement: "Exclude opponent claims from both first-round model inputs."
+    fit:
+      metric: "opponent fingerprint hits across both speaking orders"
+      threshold: "0"
+      verification: "Capture both final prompts using unique opponent canaries and reversed speaker order."
+    priority: Must
+    source: "Package B execution brief, INV-B1"
+  - id: B-REQ-02
+    type: functional
+    statement: "Address only scheduler-selected claims in later rounds."
+    fit:
+      metric: "accepted off-target or unlinked responses"
+      threshold: "0"
+      verification: "Feed valid, off-target and empty target sets; require a reason on empty targets."
+    priority: Must
+    source: "Package B execution brief, INV-B2"
+  - id: B-REQ-03
+    type: invariant
+    statement: "Validate claim_id, speaker, statement, evidence_ids, responds_to and unresolved_questions; enforce unique IDs and valid earlier non-self targets."
+    fit:
+      metric: "invalid batches accepted"
+      threshold: "0"
+      verification: "Mutate each field and inject duplicate, unknown, self and future claim references."
+    priority: Must
+    source: "Package B execution brief, INV-B2"
+  - id: B-REQ-04
+    type: invariant
+    statement: "Validate every evidence ID against the evidence checker and the historical cutoff."
+    fit:
+      metric: "accepted invalid, unknown-time or future citations in strict mode"
+      threshold: "0"
+      verification: "Inject valid, missing, malformed, future and unknown-time verdicts."
+    priority: Must
+    source: "Package B execution brief, INV-B3"
+  - id: B-REQ-05
+    type: invariant
+    statement: "Allow one structural repair; preserve disagreements and a reason on persistent failure."
+    fit:
+      metric: "maximum repair calls per invalid output"
+      threshold: "1"
+      verification: "Count repair calls on success and double failure; inspect the degraded result."
+    priority: Must
+    source: "Package B execution brief, INV-B5"
+  - id: B-REQ-06
+    type: invariant
+    statement: "Assemble identity, hard constraints, evidence, task, necessary history and resume state in fixed order."
+    fit:
+      metric: "incorrect layer sequences accepted"
+      threshold: "0"
+      verification: "Assert ordered layer keys and reject swapped or missing layers."
+    priority: Must
+    source: "Package B execution brief, INV-B6"
+  - id: B-REQ-07
+    type: functional
+    statement: "Enforce the configured context budget and compact when the estimate exceeds the configured threshold."
+    fit:
+      metric: "accepted contexts above budget or missed threshold crossings"
+      threshold: "0"
+      verification: "Test below, at and just above threshold, plus an infeasible budget; inspect dropped IDs and reasons."
+    priority: Must
+    source: "Package B execution brief, S5"
+  - id: B-REQ-08
+    type: invariant
+    statement: "Re-inject all hard constraints after compaction with identical multiplicities and text fingerprints."
+    fit:
+      metric: "hard constraint retention on every emitted context"
+      threshold: "100%"
+      verification: "Compare fingerprint multisets and counts before and after compaction; require ContextBudgetError when they cannot fit."
+    priority: Must
+    source: "Package B execution brief, INV-B4"
+  - id: B-REQ-09
+    type: functional
+    statement: "Deduplicate only by the documented text fingerprint."
+    fit:
+      metric: "distinct-fingerprint items merged or identical eligible items retained twice"
+      threshold: "0"
+      verification: "Compare exact duplicates with differently worded claims; preserve separate speakers and references when collapsing repeated context text."
+    priority: Must
+    source: "Package B execution brief, S5"
+  - id: B-REQ-10
+    type: functional
+    statement: "Require the manager to identify adopted arguments, reasons and unresolved disagreements, including in degraded results."
+    fit:
+      metric: "unaccounted unresolved fixture disagreements"
+      threshold: "0"
+      verification: "Use a conflicting pair, check adoption IDs and reasons and check unresolved IDs after fallback."
+    priority: Must
+    source: "Package B execution brief, S6"
+  - id: B-REQ-11
+    type: quality
+    statement: "Keep legacy behavior on identical recorded inputs."
+    fit:
+      metric: "legacy prompt or returned-state differences against pinned baseline"
+      threshold: "0"
+      verification: "Use the same scripted LLM responses and compare prompts and returned state in both checkouts."
+    priority: Must
+    source: "Package B execution brief, S7"
+  - id: B-REQ-12
+    type: governance
+    statement: "Record usage provenance and granularity for every comparison."
+    fit:
+      metric: "measurements missing source or reported at unsupported granularity"
+      threshold: "0"
+      verification: "Audit each table row against the run manifest or a reasoned not_run entry."
+    priority: Must
+    source: "Package B execution brief, S7/S9"

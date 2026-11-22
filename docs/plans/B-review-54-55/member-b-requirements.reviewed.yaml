@@ -1,0 +1,180 @@
+- id: B-REQ-01
+  owner: B
+  type: functional
+  statement: Exclude opponent claims from both first-round model inputs.
+  priority: Must
+  source: handoff_from_teammates/B-trace-for-A.tsv#B-REQ-01
+  tradeoff: Preserve B's stated behavior; dependencies and reported verification limits
+    remain separate confirmation items.
+  fit_criterion:
+    metric: opponent_fingerprint_hits_across_both_speaking_orders
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_review.py::test_researcher_actual_prompts
+    - test/offline/test_context_builder.py::test_blind_round_and_reverse_control
+- id: B-REQ-02
+  owner: B
+  type: functional
+  statement: Address only scheduler-selected claims in later rounds.
+  priority: Must
+  source: handoff_from_teammates/B-trace-for-A.tsv#B-REQ-02
+  tradeoff: Preserve B's stated behavior; dependencies and reported verification limits
+    remain separate confirmation items.
+  fit_criterion:
+    metric: accepted_off_target_or_unlinked_responses
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_review.py::test_researcher_actual_prompts
+    - test/offline/test_review.py::test_claim_validation
+- id: B-REQ-03
+  owner: B
+  type: functional
+  statement: Validate claim_id, speaker, statement, evidence_ids, responds_to and
+    unresolved_questions; enforce unique IDs and valid earlier non-self targets.
+  priority: Must
+  source: handoff_from_teammates/B-trace-for-A.tsv#B-REQ-03
+  tradeoff: Preserve B's stated behavior; dependencies and reported verification limits
+    remain separate confirmation items.
+  fit_criterion:
+    metric: invalid_batches_accepted
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_review.py::test_claim_validation
+- id: B-REQ-04
+  owner: B
+  type: functional
+  statement: Validate every evidence ID against the evidence checker and the historical
+    cutoff.
+  priority: Must
+  source: handoff_from_teammates/B-trace-for-A.tsv#B-REQ-04
+  tradeoff: Strict historical suitability remains a B/C/D policy decision; A reference
+    resolution alone is insufficient.
+  fit_criterion:
+    metric: accepted_invalid_unknown_time_or_future_citations_in_strict_mode
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_review.py::test_claim_validation
+- id: B-REQ-05
+  owner: B
+  type: functional
+  statement: Allow one structural repair; preserve disagreements and a reason on persistent
+    failure.
+  priority: Must
+  source: handoff_from_teammates/B-trace-for-A.tsv#B-REQ-05
+  tradeoff: Allow zero or one repair call; do not require a repair when none is needed.
+    Live repair remains no_sample.
+  fit_criterion:
+    metric: maximum_repair_calls_per_invalid_output
+    operator: le
+    threshold: 1
+    verification:
+    - test/offline/test_review.py::test_repair_once
+- id: B-REQ-06
+  owner: B
+  type: functional
+  statement: Assemble identity, hard constraints, evidence, task, necessary history
+    and resume state in fixed order.
+  priority: Must
+  source: handoff_from_teammates/B-trace-for-A.tsv#B-REQ-06
+  tradeoff: Preserve B's stated behavior; dependencies and reported verification limits
+    remain separate confirmation items.
+  fit_criterion:
+    metric: incorrect_layer_sequences_accepted
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_context_builder.py::test_budget_boundary_and_compaction
+- id: B-REQ-07
+  owner: B
+  type: functional
+  statement: Enforce the configured context budget and compact when the estimate exceeds
+    the configured threshold.
+  priority: Must
+  source: handoff_from_teammates/B-trace-for-A.tsv#B-REQ-07
+  tradeoff: Preserve B's stated behavior; dependencies and reported verification limits
+    remain separate confirmation items.
+  fit_criterion:
+    metric: accepted_contexts_above_budget_or_missed_threshold_crossings
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_context_builder.py::test_budget_boundary_and_compaction
+    - test/offline/test_context_builder.py::test_impossible_budget
+- id: B-REQ-08
+  owner: B
+  type: quality
+  statement: Re-inject all hard constraints after compaction with identical multiplicities
+    and text fingerprints.
+  priority: Must
+  source: handoff_from_teammates/B-trace-for-A.tsv#B-REQ-08
+  tradeoff: Preserve B's stated behavior; dependencies and reported verification limits
+    remain separate confirmation items.
+  fit_criterion:
+    metric: hard_constraint_retention_ratio_per_emitted_context
+    operator: eq
+    threshold: 1
+    verification:
+    - test/offline/test_context_builder.py::test_budget_boundary_and_compaction
+    - test/offline/test_context_builder.py::test_impossible_budget
+- id: B-REQ-09
+  owner: B
+  type: functional
+  statement: Deduplicate only by the documented text fingerprint.
+  priority: Must
+  source: handoff_from_teammates/B-trace-for-A.tsv#B-REQ-09
+  tradeoff: Preserve B's stated behavior; dependencies and reported verification limits
+    remain separate confirmation items.
+  fit_criterion:
+    metric: distinct_fingerprint_items_merged_or_identical_eligible_items_retained_twice
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_context_builder.py::test_context_dedup
+    - test/offline/test_review.py::test_fingerprint
+- id: B-REQ-10
+  owner: B
+  type: functional
+  statement: Require the manager to identify adopted arguments, reasons and unresolved
+    disagreements, including in degraded results.
+  priority: Must
+  source: handoff_from_teammates/B-trace-for-A.tsv#B-REQ-10
+  tradeoff: Preserve B's stated behavior; dependencies and reported verification limits
+    remain separate confirmation items.
+  fit_criterion:
+    metric: unaccounted_unresolved_fixture_disagreements
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_review.py::test_manager_decision
+- id: B-REQ-11
+  owner: B
+  type: quality
+  statement: Keep legacy behavior on identical recorded inputs.
+  priority: Must
+  source: handoff_from_teammates/B-trace-for-A.tsv#B-REQ-11
+  tradeoff: Preserve B's stated behavior; dependencies and reported verification limits
+    remain separate confirmation items.
+  fit_criterion:
+    metric: legacy_prompt_or_returned_state_differences_against_pinned_baseline
+    operator: eq
+    threshold: 0
+    verification:
+    - test/live/test_baseline_compare.py::test_matched_protocol
+- id: B-REQ-12
+  owner: B
+  type: quality
+  statement: Record usage provenance and granularity for every comparison.
+  priority: Must
+  source: handoff_from_teammates/B-trace-for-A.tsv#B-REQ-12
+  tradeoff: Preserve B's stated behavior; dependencies and reported verification limits
+    remain separate confirmation items.
+  fit_criterion:
+    metric: measurements_missing_source_or_reported_at_unsupported_granularity
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_context_builder.py::test_metrics_and_placement

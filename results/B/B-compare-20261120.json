@@ -1,0 +1,264 @@
+{
+  "baseline_sha": "9fa1196fffbcfd9de5146d2dd2869df84ab99838",
+  "model": "offline scripted replay",
+  "temperature": null,
+  "memory": "identical fresh state per paired call",
+  "rows": [
+    {
+      "dimension": "First-round leaks / 2",
+      "legacy": 2,
+      "collab": 0,
+      "delta": -2,
+      "interpretation": "Both speaker orders, same opponent canary.",
+      "verdict": "pass"
+    },
+    {
+      "dimension": "Valid target links / 2",
+      "legacy": 0,
+      "collab": 2,
+      "delta": 2,
+      "interpretation": "Counted in accepted state, not echoed text.",
+      "verdict": "pass"
+    },
+    {
+      "dimension": "Validated batches / 6",
+      "legacy": 0,
+      "collab": 4,
+      "delta": 4,
+      "interpretation": "Four valid replies and two deliberately malformed replies per mode.",
+      "verdict": "pass"
+    },
+    {
+      "dimension": "Explicit degradations / 2 malformed",
+      "legacy": 0,
+      "collab": 2,
+      "delta": 2,
+      "interpretation": "Legacy stores malformed text. Collaboration surfaces degradation.",
+      "verdict": "pass"
+    },
+    {
+      "dimension": "Open pairs retained / 1",
+      "legacy": 0,
+      "collab": 1,
+      "delta": 1,
+      "interpretation": "Same invalid manager reply; tests fallback retention.",
+      "verdict": "pass"
+    },
+    {
+      "dimension": "Estimated prompt tokens",
+      "legacy": [
+        395.0,
+        395.0
+      ],
+      "collab": [
+        257.0,
+        316.0
+      ],
+      "delta": [
+        -138.0,
+        -79.0
+      ],
+      "interpretation": "Opening and targeted fixture means; two speakers each. Character estimate or local wall clock, including adapter I/O.",
+      "verdict": "pass"
+    },
+    {
+      "dimension": "Local researcher elapsed ms",
+      "legacy": [
+        2.455,
+        2.559
+      ],
+      "collab": [
+        11.954,
+        17.88
+      ],
+      "delta": [
+        9.499,
+        15.321
+      ],
+      "interpretation": "Opening and targeted fixture means; two speakers each. Character estimate or local wall clock, including adapter I/O.",
+      "verdict": "measured"
+    },
+    {
+      "dimension": "Provider input tokens and latency",
+      "legacy": "not_run",
+      "collab": "not_run",
+      "delta": null,
+      "interpretation": "Scripted replay has no provider usage or latency.",
+      "verdict": "not_run"
+    },
+    {
+      "dimension": "Repair calls / 2 malformed",
+      "legacy": 0,
+      "collab": 2,
+      "delta": 2,
+      "interpretation": "One retry per broken collaboration response.",
+      "verdict": "pass"
+    },
+    {
+      "dimension": "Full graph loop bound",
+      "legacy": "not_run",
+      "collab": "not_run",
+      "delta": null,
+      "interpretation": "Independent node replays do not exercise C's scheduler.",
+      "verdict": "not_run"
+    }
+  ],
+  "observations": [
+    {
+      "role": "bear",
+      "case": "opening",
+      "round": 1,
+      "mode": "legacy",
+      "leak": true,
+      "linked": false,
+      "validated": false,
+      "degraded": false,
+      "repairs": 0,
+      "input_estimate": 403,
+      "elapsed_ms": 2.773
+    },
+    {
+      "role": "bear",
+      "case": "opening",
+      "round": 1,
+      "mode": "collab",
+      "leak": false,
+      "linked": false,
+      "validated": true,
+      "degraded": false,
+      "repairs": 0,
+      "input_estimate": 257,
+      "elapsed_ms": 11.92
+    },
+    {
+      "role": "bear",
+      "case": "reply",
+      "round": 2,
+      "mode": "legacy",
+      "leak": true,
+      "linked": false,
+      "validated": false,
+      "degraded": false,
+      "repairs": 0,
+      "input_estimate": 403,
+      "elapsed_ms": 2.199
+    },
+    {
+      "role": "bear",
+      "case": "reply",
+      "round": 2,
+      "mode": "collab",
+      "leak": true,
+      "linked": true,
+      "validated": true,
+      "degraded": false,
+      "repairs": 0,
+      "input_estimate": 316,
+      "elapsed_ms": 8.843
+    },
+    {
+      "role": "bear",
+      "case": "broken",
+      "round": 2,
+      "mode": "legacy",
+      "leak": true,
+      "linked": false,
+      "validated": false,
+      "degraded": false,
+      "repairs": 0,
+      "input_estimate": 403,
+      "elapsed_ms": 1.955
+    },
+    {
+      "role": "bear",
+      "case": "broken",
+      "round": 2,
+      "mode": "collab",
+      "leak": true,
+      "linked": false,
+      "validated": false,
+      "degraded": true,
+      "repairs": 1,
+      "input_estimate": 316,
+      "elapsed_ms": 10.729
+    },
+    {
+      "role": "bull",
+      "case": "opening",
+      "round": 1,
+      "mode": "legacy",
+      "leak": true,
+      "linked": false,
+      "validated": false,
+      "degraded": false,
+      "repairs": 0,
+      "input_estimate": 387,
+      "elapsed_ms": 2.137
+    },
+    {
+      "role": "bull",
+      "case": "opening",
+      "round": 1,
+      "mode": "collab",
+      "leak": false,
+      "linked": false,
+      "validated": true,
+      "degraded": false,
+      "repairs": 0,
+      "input_estimate": 257,
+      "elapsed_ms": 11.987
+    },
+    {
+      "role": "bull",
+      "case": "reply",
+      "round": 2,
+      "mode": "legacy",
+      "leak": true,
+      "linked": false,
+      "validated": false,
+      "degraded": false,
+      "repairs": 0,
+      "input_estimate": 387,
+      "elapsed_ms": 2.919
+    },
+    {
+      "role": "bull",
+      "case": "reply",
+      "round": 2,
+      "mode": "collab",
+      "leak": true,
+      "linked": true,
+      "validated": true,
+      "degraded": false,
+      "repairs": 0,
+      "input_estimate": 316,
+      "elapsed_ms": 26.918
+    },
+    {
+      "role": "bull",
+      "case": "broken",
+      "round": 2,
+      "mode": "legacy",
+      "leak": true,
+      "linked": false,
+      "validated": false,
+      "degraded": false,
+      "repairs": 0,
+      "input_estimate": 387,
+      "elapsed_ms": 3.026
+    },
+    {
+      "role": "bull",
+      "case": "broken",
+      "round": 2,
+      "mode": "collab",
+      "leak": true,
+      "linked": false,
+      "validated": false,
+      "degraded": true,
+      "repairs": 1,
+      "input_estimate": 316,
+      "elapsed_ms": 12.539
+    }
+  ]
+}
