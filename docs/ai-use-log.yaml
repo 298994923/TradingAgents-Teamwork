@@ -216,5 +216,21 @@ entries:
       and added --variant to src/cli/main.py. Human reviewed the output and asked
       for fixes (file names on read errors, outcome/stop_reason counts, provider
       guard, duration, run-id collision, variant flag); all fixed and re-tested.
-      Local pytest 1489 passed, 1 skipped; ruff clean.docs/evaluation/env.txt 
+      Local pytest 1489 passed, 1 skipped; ruff clean. docs/evaluation/env.txt
       frozen from the local venv (101 pinned packages).
+
+  - id: "61023334-LiChengzhi-ai-use-01"
+    pr_id: "pre-pr"
+    date: "2026-11-22"
+    task: "Implement and verify the standalone execution budget policy"
+    agent: "opencode"
+    model: "openai/gpt-6.2-sol"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      D approved plan v0.2, the interface with IF-1′, and concrete tests v0.3
+      before implementation. The approved test appendix was copied byte-for-byte.
+      The delivery record reports 13 policy tests passed, 1437 offline tests passed
+      (1 skipped, 1 deselected, 100 subtests passed), and Ruff passed on Python 3.14.4.
+      Member C confirmed acceptance at delivery. Graph integration was not included.
