@@ -1,22 +1,104 @@
-# CI workflow — TABLE OF CONTENTS ONLY (content added later by E).
-#
-# This file is intentionally not yet a runnable workflow (no jobs defined).
-# Enable the gates below when their scripts exist, and register them as
-# GitHub "required checks".
-#
-# Six required gates (see CS5351 merge checklist):
-#   1. tests-first approval   — tests approved independently before implementation
-#   2. static                 — ruff / lint
-#   3. schema                 — requirements.yaml / req-schema.json validation
-#   4. semantics              — live semantic evaluation of prompt/model changes
-#   5. regression             — original `tests/` + new `test/offline`
-#   6. AI-use log             — docs/ai-use-log.yaml updated for every code/prompt PR
-#
-# Planned jobs:
-#   - test            : pytest (tests/ + test/)          -> scripts: n/a
-#   - smoke-install   : clean `pip install .` + import   -> n/a
-#   - lint            : ruff check .                     -> n/a
-#   - governance-gates: test/offline/test_governance_gates.py
-#   - required checks + CODEOWNERS human review on safety/governance paths
-#
-# TODO(E): implement the jobs above.
+name: CI
+
+# CS5351 D7 blocking gates — status (last updated 2026-11-22)
+#   Gate 1  Test approval ......... PARTIAL — test-approval job; checks src/ coverage only
+#   Gate 2  Static analysis ....... DONE — lint job (ruff + compileall + dependency check)
+#   Gate 3  Schema ................ PARTIAL — registry is a seed; A owns requirements.yaml
+#   Gate 4  Semantic evaluation ... TODO — no job yet; needs a real eval runner + fixed
+#                                     cases from B (see docs/plans/E-ci-gates.md)
+#   Gate 5  Regression ............ DONE — tests job (runs tests/ and test/offline)
+#   Gate 6  AI-use log ............ DONE — ai-use-log job (3 checks)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # Gate 5 (Regression) — run tests/ and test/offline; pass when green.
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - run: python -m pytest -q tests test/offline
+
+  # Gate 2 (Static analysis) — ruff, bytecode compile, and dependency check.
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests test scripts
+      - run: python -m compileall -q src scripts
+      - run: python scripts/check_dependencies.py
+
+  # Gate 3 (Schema) — the requirements registry validates against its JSON schema.
+  schema:
+    name: schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - run: python scripts/check_req_schema.py
+
+  # Gate 1 (Test approval) — PARTIAL: gated src/ changes must be covered by an
+  # approval record (src, approver, date) in docs/approvals.yaml.
+  test-approval:
+    name: test-approval
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - run: python scripts/check_test_approval.py "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+
+  # Gate 6 (AI-use log) — PR changing src/, scripts/ or test/ must add a
+  # new log entry with a unique id and human_reviewed: true.
+  ai-use-log:
+    name: ai-use-log
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - run: python scripts/check_ai_use_log.py "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"

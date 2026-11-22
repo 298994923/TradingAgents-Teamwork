@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cs5351:requirements:compact-proposal-2",
+  "title": "Compact requirements registry proposal; not adopted",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "required": ["id", "owner", "type", "statement", "priority", "source", "tradeoff", "fit_criterion"],
+    "additionalProperties": false,
+    "properties": {
+      "id": {"type": "string", "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$"},
+      "owner": {"enum": ["A", "B", "C", "D", "E"]},
+      "type": {"enum": ["functional", "invariant", "quality", "performance", "cost", "governance", "security"]},
+      "statement": {"$ref": "#/$defs/text"},
+      "priority": {"enum": ["Must", "Should", "Could", "Wont"]},
+      "source": {"$ref": "#/$defs/text"},
+      "tradeoff": {"$ref": "#/$defs/text"},
+      "fit_criterion": {
+        "type": "object",
+        "required": ["metric", "operator", "threshold", "verification"],
+        "additionalProperties": false,
+        "properties": {
+          "metric": {"$ref": "#/$defs/text"},
+          "operator": {"enum": ["eq", "lt", "le", "gt", "ge"]},
+          "threshold": {"type": "number"},
+          "verification": {
+            "type": ["string", "array"], "minLength": 1, "minItems": 1, "uniqueItems": true,
+            "items": {"$ref": "#/$defs/text"}
+          }
+        }
+      }
+    }
+  },
+  "$defs": {"text": {"type": "string", "minLength": 1}}
+}

@@ -1,0 +1,21 @@
+# Requirements registry seed (D7 §6.3 / D1).
+# Validated by docs/req/req-schema.json via scripts/check_req_schema.py. This is a
+# minimal, schema-conforming seed so the schema gate runs meaningfully from day one;
+# A replaces the statement/fit_criterion with the real registry entries.
+- id: GOV-001
+  owner: E
+  type: governance
+  statement: >-
+    The CI pipeline blocks a pull request that changes src/, prompts/, scripts/, or
+    .github/ without adding an AI-use log entry with a unique id and human_reviewed true.
+  priority: Must
+  source: CS5351 project sheet, D7 §6.6 (AI-use log gate)
+  tradeoff: >-
+    Requires an extra log entry per code PR; accepted to keep an auditable AI-use record.
+  fit_criterion:
+    metric: ai-use-log gate exit code
+    operator: eq
+    threshold: 0
+    verification:
+      - scripts/check_ai_use_log.py
+      - test/offline/test_ci_gates.py

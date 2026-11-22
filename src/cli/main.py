@@ -8,7 +8,7 @@ from rich.markup import escape
 from cli.display import console
 from cli.models import AnalystType, AssetType
 from cli.prompts import filter_analysts_for_asset_type, parse_analysts
-from cli.run import run_analysis
+from cli.run import _validate_variant, run_analysis
 from tradingagents.backtest import iter_grid, run_backtest, summarize
 from tradingagents.default_config import DEFAULT_CONFIG
 from tradingagents.llm_clients.openai_client import SIGNED_IN_PROVIDERS
@@ -68,6 +68,10 @@ def analyze(
         None, "--html/--no-html",
         help="Save the report as one HTML page too, complete_report.html, without asking (default: yes)",
     ),
+    variant: str = typer.Option(
+        "v0", "--variant",
+        help="Architecture variant for the run manifest: v0 (original), v1 (trimmed), v2 (adaptive).",
+    ),
 ):
     """Run an analysis. This is what a bare `tradingagents` does.
 
@@ -80,6 +84,11 @@ def analyze(
         from tradingagents.graph.checkpointer import clear_all_checkpoints
         n = clear_all_checkpoints(DEFAULT_CONFIG["data_cache_dir"])
         console.print(f"[yellow]Cleared {n} checkpoint(s).[/yellow]")
+    try:
+        variant = _validate_variant(variant)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from None
     portfolio_context = None
     if portfolio:
         try:
@@ -90,7 +99,7 @@ def analyze(
 
     try:
         flags = {"ticker": ticker, "date": date, "analysts": analysts, "save": save, "show": show, "html": html}
-        run_analysis(checkpoint=checkpoint, portfolio=portfolio_context, flags=flags)
+        run_analysis(checkpoint=checkpoint, portfolio=portfolio_context, flags=flags, variant=variant)
     except _NO_CONSOLE_ERRORS:
         # A terminal with no console buffer cannot host the interactive prompts.
         # Emit one actionable line on stderr instead of a prompt_toolkit
