@@ -302,3 +302,38 @@ entries:
       in D-to-C-guard-opt-in-acceptance.md and extended the authorization
       to main in D-to-C-opt-in-main-target-ruling.md on 2026-11-23.
       Main verification: 4 focused and 127 expanded tests passed.
+
+  - id: "A-evidence-ai-use-01"
+    pr_id: "pre-pr"
+    date: "2026-11-23"
+    task: "Develop Evidence V1 snapshots and artifact-key helpers, then prepare the unchanged six-file component for main"
+    agent: "Codex and ChatGPT"
+    model: "GPT; exact historical model identifiers were not recorded"
+    prompt_version: "N/A (interactive project and review conversations)"
+    human_reviewed: true
+    changes_accepted: false
+    notes: >-
+      Member A used Codex for contract/test-first implementation and verification,
+      with ChatGPT-assisted design and review discussions; this work did not use
+      OpenCode. Exact historical model identifiers are not inferred. The role-based
+      entry ID is used because A's student ID was not established in the inspected
+      records. Human review refers to the previously reviewed component and A's
+      decision to deliver it, including C's component-compatibility reply; it does
+      not assert E's independent Gate-1 approval or acceptance of this main PR.
+      C reviewed source SHA-256
+      717a24977fe8acad551470231dbb0f4a93cb79a40f2d250e0221123835dbaf88
+      on integration@91821fb. That component was delivered in commit 6fbd09f
+      (PR #8) and cherry-picked without source changes to 10bfc79 on
+      main@ab30058, branch feature/a-main-delivery. No graph, locator, CLI,
+      manifest or guard integration is claimed. Local main-candidate verification
+      used an isolated committed-tree snapshot without personal dotenv files or
+      inherited provider credentials: 1729 passed, 1 optional Bedrock skip,
+      1 configured integration deselection and 100 subtests passed, including
+      83 Evidence V1 and 45 helper cases. Seven initial sandbox loopback-bind
+      failures disappeared when the unchanged full suite ran with loopback
+      sockets allowed. Ruff over src/tests/test/scripts, compileall and dependency
+      checks passed. The schema check covered only the existing GOV-001 seed.
+      Local verification used macOS/Python 3.13.2; hosted Ubuntu/Python 3.12 CI
+      and main-target human acceptance remain pending. changes_accepted remains
+      false for the new main delivery. The separate integration lint cleanup
+      is stashed and is not part of this entry or this candidate.
