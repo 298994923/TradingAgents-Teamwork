@@ -203,6 +203,54 @@ def test_nested_tracks_isolated():
         assert inner.call_ids == (str(inner_rid),)
 
 
+# --- close-boundary race, scoped to the window ------------------------------
+
+
+def test_inflight_start_in_window_makes_settlement_unknown():
+    # C's case: a call started while the window is active (its global record is
+    # written and it is registered as started) but its ``_collect`` membership has
+    # not run when the window closes. The window must report unknown, not a
+    # partial sum, even though the collected call alone looks complete.
+    h = StatsCallbackHandler()
+    first, second = _rid(), _rid()
+    with h.track("follow_up") as handle:
+        _start(h, first)
+        # Simulate the in-flight start: global record + started registration happen,
+        # but membership (``_collect``) is delayed until after the window closes.
+        real_collect = h._collect
+        h._collect = lambda call_id: None
+        _start(h, second)
+        h._collect = real_collect
+
+    settlement = h.settle(handle)
+    assert handle.call_ids == (str(first),)
+    assert str(second) in settlement.pending
+    assert settlement.complete is False
+    assert settlement.units is None
+
+
+def test_old_unfinished_call_does_not_poison_later_window():
+    # A callback from an earlier window that never finished is in the *old*
+    # window's started set, not a later window's, so a later complete window is
+    # not dragged to unknown by it.
+    h = StatsCallbackHandler()
+    stale = _rid()
+    later = _rid()
+    with h.track("first") as w1:  # start and leave unfinished
+        _start(h, stale)
+    # ... later window completes normally ...
+    with h.track("second") as w2:
+        _start(h, later)
+        _end(h, later, 8, 4)
+
+    s1 = h.settle(w1)
+    s2 = h.settle(w2)
+    assert s1.complete is False  # the stale call is in-flight for its own window
+    assert s2.complete is True
+    assert s2.units == 12
+    assert s2.pending == ()
+
+
 # --- settlement via get_stats() ---------------------------------------------
 
 

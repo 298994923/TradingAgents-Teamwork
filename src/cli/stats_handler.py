@@ -46,8 +46,18 @@ class _StageWindow:
     def __init__(self, stage: str) -> None:
         self.stage = stage
         self.ids: list[str] = []
+        # Call ids whose start callback fired while this window was active. Recorded
+        # at start time (before the delayed ``_collect`` membership step), so an
+        # in-flight start that has not yet joined ``ids`` is still known to *this*
+        # window and cannot be confused with an old unrelated unfinished call.
+        self.started: set[str] = set()
         self.closed = False
         self._lock = threading.Lock()
+
+    def record_started(self, call_id: str) -> None:
+        with self._lock:
+            if not self.closed:
+                self.started.add(call_id)
 
     def record(self, call_id: str) -> None:
         with self._lock:
@@ -58,6 +68,10 @@ class _StageWindow:
         with self._lock:
             self.closed = True
             return tuple(self.ids)
+
+    def started_ids(self) -> set[str]:
+        with self._lock:
+            return set(self.started)
 
 
 # The collector for the innermost active ``track`` in the current context, if any.
@@ -178,6 +192,13 @@ class StatsCallbackHandler(BaseCallbackHandler):
                 output_tokens=None,
                 total_tokens=None,
             )
+            # Tell the active window this call started here, before the (possibly
+            # delayed) ``_collect`` membership step. This is what lets the freeze
+            # see an in-flight start without scanning (and being polluted by)
+            # unrelated, older unfinished calls.
+            window = _active_collector.get()
+            if window is not None:
+                window.record_started(call_id)
         self._collect(call_id)
 
     def on_llm_end(self, response: LLMResult, **kwargs: Any) -> None:
@@ -300,13 +321,28 @@ class StatsCallbackHandler(BaseCallbackHandler):
             with self._lock:
                 ids = window.close()
                 usages = tuple((cid, self._calls.get(cid)) for cid in ids)
+                collected = set(ids)
+                # Race guard, scoped to this window: a start callback writes its
+                # global record (and registers in ``window.started``) under this
+                # lock, before the possibly-delayed ``_collect`` membership step.
+                # Any call that started in this window but is not yet in ``ids`` and
+                # is still unfinalized is in flight: report the window unknown
+                # rather than a complete partial sum. Calls from earlier windows are
+                # not in this window's ``started`` set and so cannot poison it.
+                inflight = tuple(
+                    cid
+                    for cid in sorted(window.started_ids() - collected)
+                    if (self._calls.get(cid) is None
+                        or self._calls[cid].status in _UNKNOWN_STATUSES)
+                )
                 pending = tuple(
                     cid for cid, usage in usages
                     if usage is None or usage.status in _UNKNOWN_STATUSES
-                )
+                ) + inflight
                 count_matches = expected_calls is None or len(ids) == expected_calls
                 complete = (
                     count_matches
+                    and not inflight
                     and bool(ids)
                     and all(
                         usage is not None

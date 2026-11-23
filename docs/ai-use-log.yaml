@@ -440,3 +440,27 @@ entries:
       and explicitly authorised this commit. Local: 19 settlement, 49 targeted,
       1593 full (1 skipped, 1 deselected, 100 subtests), ruff clean on both files.
       GitHub Actions was NOT run.
+
+  - id: "60252993-linan-ai-use-14"
+    pr_id: "N/A"
+    date: "2026-11-23"
+    task: "Scope in-flight callback detection to the active window (reply to C)"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      C's inflight-close probe showed a callback that started before the window
+      closed but had not yet registered membership was omitted from the frozen
+      settlement, reporting a partial token sum as complete. The first fix scanned
+      the handler's global _calls, which let one old unfinished callback make every
+      later window unknown. The second fix adds _StageWindow.started (recorded at
+      start time) and checks only started minus ids at freeze, so an in-flight call
+      makes the window units=None / complete=False without cross-window pollution.
+      Added two regression tests in test/offline/test_stats_calls.py. Human reviewed
+      the result and authorised this record. Local: 51 targeted, 1595 full
+      (1 skipped, 1 deselected, 100 subtests), ruff clean. C's probe second test
+      still fails by design because it characterizes the old behaviour; the
+      corrected-contract assertion is the new regression test.
+      GitHub Actions was NOT run.
