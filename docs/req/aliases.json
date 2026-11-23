@@ -1,0 +1,129 @@
+{
+  "revision": "2026-11-23-registration-r3",
+  "owner_confirmation": "C confirms all ten semantics/mappings in latest response",
+  "shared_branch_adoption": false,
+  "aliases": {
+    "C-P01": "REQ-C-01",
+    "C-P02": "REQ-C-02",
+    "C-P03": "REQ-C-03",
+    "C-P04": "REQ-C-04",
+    "C-P05": "REQ-C-05",
+    "C-P06": "REQ-C-06",
+    "REQ-C-FR-01": "REQ-C-FR-01",
+    "INV-C-FR-01": "INV-C-FR-01",
+    "INV-C-FR-02": "INV-C-FR-02",
+    "INV-C-FR-03": "INV-C-FR-03",
+    "REQ-C-LOCAL-V1-001": "REQ-C-FR-01",
+    "C-FR-01": "REQ-C-FR-01",
+    "INV-C-LOCAL-V1-001": "INV-C-FR-01",
+    "C-FR-02": "INV-C-FR-02",
+    "INV-C-LOCAL-V1-002": "INV-C-FR-02",
+    "INV-C-LOCAL-V1-003": "INV-C-FR-03",
+    "REQ-C-01": "REQ-C-01",
+    "REQ-C-02": "REQ-C-02",
+    "REQ-C-03": "REQ-C-03",
+    "REQ-C-04": "REQ-C-04",
+    "REQ-C-05": "REQ-C-05",
+    "REQ-C-06": "REQ-C-06"
+  },
+  "entries": [
+    {
+      "id": "REQ-C-01",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "REQ-C-02",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "REQ-C-03",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "REQ-C-04",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE",
+      "verification_status": "pending; no concrete adaptive graph selector supplied"
+    },
+    {
+      "id": "REQ-C-05",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "REQ-C-06",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "REQ-C-FR-01",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "INV-C-FR-01",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "INV-C-FR-02",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "INV-C-FR-03",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    }
+  ],
+  "prepared_against": "a61b7b587169bcfb20300be1b95f721e1a496caa",
+  "record_type": "pre_merge_registration_proposal",
+  "note": "Proposal status as prepared; merged registry adoption and implementation acceptance are separate. Preserve signed historical IDs/hashes.",
+  "additional_entries": [
+    {
+      "id": "A-EV-08",
+      "status": "STILL CANDIDATE",
+      "software_available_on_target": true,
+      "consumer_acceptance": "separate C/E integration"
+    },
+    {
+      "id": "REQ-D-007",
+      "status": "STILL CANDIDATE",
+      "canonical_invariant": "INV-D6",
+      "compact_fit_adapter_review": "pending D review"
+    }
+  ]
+}

@@ -19,3 +19,220 @@
     verification:
       - scripts/check_ai_use_log.py
       - test/offline/test_ci_gates.py
+
+# Registration proposal 2026-11-23-registration-r3, prepared against integration@a61b7b5.
+# Adoption follows the documentation PR; registration is not implementation acceptance.
+- id: REQ-C-01
+  owner: C
+  type: functional
+  statement: Protect final-review budget before optional follow-ups. In the independent policy fixture with 3
+    versus 2 allowance units, reserve 2 before routing and invoke final review once in both cases; invoke the
+    1-unit follow-up only with 3 units. Separately, the whole-graph 2-unit scenario terminates after the Research
+    Manager requests review and makes zero Portfolio Manager calls.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-01
+  tradeoff: Independent policy and whole-graph assertions have different scopes; do not impose the fixture final-review
+    call count on the whole graph.
+  fit_criterion:
+    metric: final_review_reservation_or_invocation_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_execution_policy.py::test_same_input_scales_with_budget
+    - pending-whole-graph-test:C-P01-2-unit-review-stop
+- id: REQ-C-02
+  owner: C
+  type: functional
+  statement: Refuse unaffordable calls and emit no actionable recommendation when required review cannot run.
+    With 2 units protected, invoke zero follow-ups and expose a denial reason. With 1 unit available for a 2-unit
+    review, invoke zero final reviews and expose an insufficient-budget reason.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-02
+  tradeoff: D confirms non-executable, zero further model/PM calls and preservation of a more severe prior verdict,
+    otherwise REVIEW; graph enforcement remains pending.
+  fit_criterion:
+    metric: unaffordable_call_or_actionable_output_or_denial_signal_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_execution_policy.py::test_denied_call_preserves_reservation_and_is_not_invoked
+    - test/offline/test_execution_policy.py::test_t_p1_failed_reservation_locks_the_terminal_state
+    - pending-whole-graph-test:C-P02-public-outcome
+- id: REQ-C-03
+  owner: C
+  type: functional
+  statement: 'Record reported usage separately from reservations. Repeat the adaptive high/low fixtures without
+    usage metadata: reservation/invocation assertions still hold and usage is unknown, not zero or the reserved
+    amount. A known-usage control reports the supplied value separately.'
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-03
+  tradeoff: E has confirmed aggregate usage/null semantics. Per-call reconciliation acceptance requires current
+    C/E integration evidence.
+  fit_criterion:
+    metric: reservation_or_reported_usage_provenance_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_execution_policy.py::test_reservation_is_reported_separately_from_usage
+    - test/offline/test_execution_policy.py::test_missing_usage_is_unknown_not_zero
+    - pending-integration-test:C-P03-per-call-reconciliation
+- id: REQ-C-04
+  owner: C
+  type: functional
+  statement: Route unresolved questions only to eligible mapped responders and bound every routing loop. With
+    ample budget, separately script no progress, malformed output and continuing valid progress; expose stop reasons
+    and invoke no further research after the configured hard cap.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-04
+  tradeoff: B must confirm eligibility/progress/invalid-output signals; C must supply the configured cap and exact
+    test selectors.
+  fit_criterion:
+    metric: ineligible_routes_or_missing_stop_reasons_or_post_cap_invocations
+    operator: eq
+    threshold: 0
+    verification:
+    - pending-owner-test-reference:C-P04-whole-graph-eligibility-progress-cap
+- id: REQ-C-05
+  owner: C
+  type: functional
+  statement: 'Resume only compatible checkpoints and expose incompatibility. Use independent copies of one interrupted
+    checkpoint: unchanged control resumes without replaying completed work; independently changing policy version,
+    protocol version, prompt fingerprint or evidence snapshot identity exposes the changed-input reason, reuses
+    no saved state and preserves the old checkpoint.'
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-05
+  tradeoff: C owns the end-to-end checkpoint requirement. A-EV-02/05/07 support identity/loading/assessment; they
+    do not replace it. Automatic fresh fallback is not approved.
+  fit_criterion:
+    metric: checkpoint_compatibility_or_state_reuse_or_preservation_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - tests/test_graph_end_to_end.py::test_an_interrupted_run_resumes_from_its_checkpoint
+    - test/offline/test_v1_fixed_pruning.py::test_legacy_custom_depth_and_signature_are_preserved
+    - test/offline/test_v1_fixed_pruning.py::test_explicit_signature_distinguishes_preset_at_equal_depth
+    - pending-owner-test-reference:C-P05-compatibility-and-checkpoint-preservation
+- id: REQ-C-06
+  owner: C
+  type: functional
+  statement: Preserve baseline behavior on the candidate build when adaptive mode is off. Existing scripted free-text,
+    structured-output and interrupted-run regressions retain fixed research/risk routing, final rating/logging
+    and same-input resume.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-06
+  tradeoff: C's reported V0 baseline is reference evidence only, not candidate adaptive-off or adaptive-build
+    acceptance.
+  fit_criterion:
+    metric: adaptive_off_candidate_baseline_behavior_differences
+    operator: eq
+    threshold: 0
+    verification:
+    - tests/test_graph_end_to_end.py::test_a_full_run_reaches_a_logged_decision
+    - tests/test_graph_end_to_end.py::test_an_interrupted_run_resumes_from_its_checkpoint
+    - test/offline/test_v1_fixed_pruning.py::test_omitted_variant_keeps_default_route
+    - test/offline/test_v1_fixed_pruning.py::test_legacy_custom_depth_and_signature_are_preserved
+    - test/offline/test_v1_fixed_pruning.py::test_explicit_variants_use_fixed_depth_and_finish_reports
+- id: REQ-C-FR-01
+  owner: C
+  type: functional
+  statement: For explicit workflow_variant v0 and v1, use fixed Bull/Bear depths of two and one respectively.
+    In the supplied offline case, complete the three-role risk path, final decision, state log and Markdown/HTML
+    reports with the effective variant and depths recorded.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-fr-01
+  tradeoff: Fixed pruning only; no adaptive-routing, budget, CLI comparison or performance acceptance.
+  fit_criterion:
+    metric: fixed_preset_route_or_report_assertion_violations
+    operator: eq
+    threshold: 0
+    verification: test/offline/test_v1_fixed_pruning.py::test_explicit_variants_use_fixed_depth_and_finish_reports
+- id: INV-C-FR-01
+  owner: C
+  type: invariant
+  statement: Preserve omitted/None legacy workflow configuration and tested caller/default configuration. The
+    omitted default retains Bull/Bear depth one; omitted and None retain custom depth three. In the tested risk-depth-one
+    paths preserve Aggressive, Conservative and Neutral once each. Explicit presets must not mutate caller or
+    default configuration.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#inv-c-fr-01
+  tradeoff: Fixed-pruning compatibility supports but does not replace full adaptive-off C-P06 acceptance.
+  fit_criterion:
+    metric: legacy_configuration_or_risk_path_preservation_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_v1_fixed_pruning.py::test_omitted_variant_keeps_default_route
+    - test/offline/test_v1_fixed_pruning.py::test_legacy_custom_depth_and_signature_are_preserved
+    - test/offline/test_v1_fixed_pruning.py::test_explicit_variants_use_fixed_depth_and_finish_reports
+- id: INV-C-FR-02
+  owner: C
+  type: invariant
+  statement: Reject unavailable v2 and invalid v3, V1, empty-string and integer selectors before the tested global
+    configuration write, client construction, model calls or runtime-artifact creation; distinguish unavailable
+    from invalid reasons and do not silently fall back.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#inv-c-fr-02
+  tradeoff: Implements the C-FR-02 proposal's rejection behavior; not a safety invariant assigned by D.
+  fit_criterion:
+    metric: rejected_preset_reason_or_construction_side_effect_violations
+    operator: eq
+    threshold: 0
+    verification: test/offline/test_v1_fixed_pruning.py::test_rejected_variant_has_no_construction_side_effects
+- id: INV-C-FR-03
+  owner: C
+  type: invariant
+  statement: Preserve the tested omitted/None custom-depth legacy signature algorithm. Distinguish explicit v1
+    from a legacy path at equal depth one and keep equivalent explicit v1 signatures stable.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#inv-c-fr-03
+  tradeoff: Signature-only coverage supports C-P05; actual checkpoint rejection, resume and old-file preservation
+    remain separate end-to-end acceptance owned by C.
+  fit_criterion:
+    metric: legacy_or_explicit_preset_signature_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_v1_fixed_pruning.py::test_legacy_custom_depth_and_signature_are_preserved
+    - test/offline/test_v1_fixed_pruning.py::test_explicit_signature_distinguishes_preset_at_equal_depth
+- id: A-EV-08
+  owner: A
+  type: functional
+  statement: Convert canonical complete snapshot IDs and version-1 artifact keys exactly in both directions, rejecting
+    non-string and noncanonical values with stable error code/path findings without I/O.
+  priority: Must
+  source: docs/contracts/evidence.md
+  tradeoff: Pure syntax only; existence, content identity, root containment, symlinks and runtime reference-envelope
+    construction remain outside these helpers.
+  fit_criterion:
+    metric: incorrect_artifact_key_conversion_or_rejection_results_in_fixed_cases
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_evidence_artifact_keys.py::test_valid_conversion_and_both_round_trips
+    - test/offline/test_evidence_artifact_keys.py::test_non_string_inputs_have_stable_errors
+    - test/offline/test_evidence_artifact_keys.py::test_noncanonical_snapshot_ids_are_rejected
+    - test/offline/test_evidence_artifact_keys.py::test_noncanonical_artifact_keys_are_rejected
+    - test/offline/test_evidence_artifact_keys.py::test_helpers_do_not_delegate_to_storage_or_identity_generation
+    - test/offline/test_evidence_artifact_keys.py::test_existing_fixture_and_apis_remain_compatible
+- id: REQ-D-007
+  owner: D
+  type: functional
+  statement: 'Every run must pass the deterministic guard after the Trader proposal and again after the final
+    Portfolio Manager output. The final check may raise but never lower the verdict. A missing gate is a BLOCK.
+
+    '
+  priority: Must
+  source: docs/plans/D/requirements-pack.yaml#REQ-D-007
+  tradeoff: D retains guard authority and INV-D6; this compact adaptation preserves the source statement and combines
+    its two zero-violation criteria without claiming new policy adoption.
+  fit_criterion:
+    metric: missing_dual_gates_or_lowered_final_verdict_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_constraints.py::test_inv_d6_dual_gate
+    - test/offline/test_safety_boundary.py::test_dual_gate_trader_pass_then_pm_rating_block
+    - test/offline/test_safety_boundary.py::test_dual_gate_trader_pass_then_pm_cap_block
+    - test/offline/test_safety_boundary.py::test_missing_gate_is_block
+    - test/offline/test_safety_boundary.py::test_verdict_lattice_is_monotonic
+    - test/offline/test_safety_boundary.py::test_review_is_non_executable_at_both_gates
