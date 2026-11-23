@@ -1,0 +1,37 @@
+# execution-budget.md
+
+**C main contract candidate v0.2 · Not adopted · 2026-11-23**
+
+Target: `main@54bb43bdb14385d55366ae0f365b602ac4cd2273`. The programmatic keyed checkpoint lifecycle in `C-keyed-checkpoint-graph-review-package.md` v0.1 and `004-budget-and-resume.md` does not enable, change, or persist budget behavior. This contract distinguishes the standalone policy on main, E's separately verified component, and proposed graph integration. The V2 research-budget addendum is separate and follows initial ADR adoption.
+
+## Standalone policy: implemented and previously verified
+
+`src/tradingagents/execution_policy.py` uses non-negative integer units (not booleans); it does not know what a unit represents. `BudgetPolicy` has no model, graph, or recorder dependency.
+
+| Boundary | Contract |
+| --- | --- |
+| Protect capacity before invocation | `reserve_final_review(units)` ring-fences capacity before any metered `follow_up` admission. Reserved capacity is not usage or a debit. Follow-ups can spend only the balance outside the reserve. |
+| Admit before calling | `admit(stage, cost)` commits the estimate before invocation. A `final_review` requires an existing reservation and must fit the remaining reserved capacity. Its one permitted admission consumes the reservation and debits the committed cost once; unused reserved capacity is released. A successful admission does not lock the policy; graph routing must enforce stage order. |
+| Reconcile once | `record_usage(stage, reported_units)` settles the oldest pending admission for that stage. Known usage replaces the estimate (`balance += committed - reported_units`). Explicit verified `0` is `reported` and releases the whole commitment. `None` is `unknown`: no refund or invented usage. Truthful usage above the commitment is retained, sets `overspend`, and carries any deficit internally; visible available capacity is floored at zero. |
+| Deny without invocation | A denied request creates no new commitment and must produce zero model calls and zero settlements. A stage never admitted is `not_invoked`, not reported zero. `usage_for(stage)` is a latest-by-stage view, not a per-call audit trail; a later denial does not overwrite an earlier report. |
+| Report the stop scope | `INSUFFICIENT_BUDGET_FOLLOW_UP` is research-scoped and leaves final-review capacity protected. Insufficient final-review reservation or admission yields `INSUFFICIENT_BUDGET_FINAL_REVIEW`; attempting to reserve or admit a second final review yields `RESERVATION_ALREADY_COMMITTED`. Under IF-1′ the first terminal denial locks later admissions with its original reason. The policy does not decide verdict or executability. |
+
+`D-to-C-execution-policy-v0.2-signoff.md` and `D-to-C-execution-policy-v0.3-test-approval.md` cover the standalone plan/interface v0.2 with IF-1′ and tests v0.3 only. The integration copy of `test_execution_policy.py` matches the signed SHA-256 `386dbe6fee2a51b3ecd680e490c21354f67fcb4b4207d1d3f1ed9cd4c26a232c`. `E-to-C-budget-usage-response.md` records **13 passed** for `python -m pytest -q test/offline/test_execution_policy.py` at `nanli@c0513de` on Python 3.12.16. Coverage includes the synthetic 3/2/1 balance cases, reserve/commit separation, known remainder vs unknown, denied invocations, terminal lock, and overspend. Verified zero is supported by the implementation and separately distinguished by E's callback tests; the standalone suite does not directly exercise settlement with zero. No graph verification follows from the standalone result.
+
+The test at `test/offline/test_execution_policy.py` on the pinned main SHA matches that same digest. This is a byte check, not a fresh main test run.
+
+## Proposed C graph integration (separate approval and tests)
+
+- Meter additional Bull/Bear follow-ups and the final Portfolio Manager initially, in tokens. The budget, estimate, and verified actual all use the same unit: validated input plus output tokens. These limits do not describe total run usage. Keep estimates, commitments, reported usage, and missing usage separately observable.
+- One admitted application-level model invocation gets one settlement, in admission order within each stage, including failed or degraded outcomes. Enforce one Portfolio Manager invocation with no application-level fallback on the metered path; preserve fallback on the default path. Multiple callback IDs within one invocation are not multiple admissions, and callback starts do not count hidden SDK retry attempts.
+- Record terminal `stop_reason` and separate `research_stop_reason` in proposed public graph state. Per `D-to-C-budget-graph-integration-reply.md`, if final review cannot run, make no further model calls, preserve any stricter prior guard verdict, and emit a non-executable result with actionable fields suppressed. Research-only denial is not permission to fabricate missing evidence or send an inadmissible plan to Trader. D's deterministic guard remains authoritative; budget stop codes are separate from guard verdicts.
+
+## E usage handoff: component verified separately; main wiring pending
+
+`C-to-E-budget-usage-settlement-response.md`, `C-to-E-per-call-usage-contract-follow-up.md`, and `E-to-C-per-call-usage-reply (1).md` establish the intended window rule: sum once if every associated ID has a complete `reported` or `explicit_zero` result; settle once with `None` for absent, incomplete, invalid, failed, unresolved, or ambiguously attributed data. If parsing fails after complete usage has been reported, still settle the known amount. Do not infer zero from cumulative counter deltas.
+
+Historical integration at `a61b7b587169bcfb20300be1b95f721e1a496caa` provided `track(stage)`, `calls()`, `call(call_id)`, and `CallUsage`; `test_stats_calls.py` covered zero, missing usage, and context isolation. That revision exposed a handle's IDs and live call records, not a frozen public settlement snapshot. Pinned main has the legacy `StatsCallbackHandler`, neither E's frozen-window API nor a production graph consumer connecting usage to `BudgetPolicy.record_usage()`.
+
+E's candidate at `nanli@b49af8dd1fcd6f8d9aeca372f43addc6642503f3` was verified with real `track(stage, expected_calls=n)` and `settle(handle)` plus the standalone policy. `C-budget-usage-settlement-evidence.md` records **58 baseline passes and 61 final combined passes**. The test-only harness `test_budget_usage_settlement_boundary.py` (SHA-256 `8b7cf8bb2823a021ef84a325b51eb973359af8bbc0297cf51505d425330121ad`) submitted one settlement per admitted window in stage order. Known usage refunded the overestimate; an in-flight callback at close produced immutable unknown with no later refund; a denial produced no call, window, or settlement. Re-reading the frozen settlement is not a second policy submission. This verifies the tested component boundary, not main runtime wiring or general concurrent graph execution.
+
+E's component delivery to main and production graph settlement acceptance remain pending for the actual target, including correct expected call counts and one settlement per admission. Missing or ambiguous usage remains unknown. These are prerequisites for budget graph wiring, not for keyed checkpoint identity. E retains the sole manifest writer: RunEvent v1 keeps run-level actual usage and `stop_reason`; fixed limits can go in `config_snapshot`, while per-admission balances and decisions stay in C state and verification evidence. Do not add another writer or a v1 schema field.
