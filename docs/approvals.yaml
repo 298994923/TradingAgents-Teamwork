@@ -50,3 +50,13 @@ approvals:
     approver: "60894001"
     date: "2026-11-23"
     tests: ["test/offline/test_graph_guard_opt_in.py", "test/offline/test_graph_guard_opt_in_reason_chain.py"]
+
+  # D-to-C-checkpoint-storage-ruling.md, v0.1 plan/test/scope approval.
+  - src: "src/tradingagents/graph/checkpointer.py"
+    approver: "60894001"
+    date: "2026-11-23"
+    tests:
+      - "test/offline/test_checkpoint_thread_identity.py"
+      - "test/offline/test_checkpoint_run_key_storage.py"
+      - "test/offline/test_checkpoint_exact_thread_lookup.py"
+      - "test/offline/test_checkpoint_exact_thread_cleanup.py"
