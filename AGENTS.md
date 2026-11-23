@@ -22,9 +22,9 @@ Read these in order. Check which files exist; any missing file is marked
 2. `Prompt.md` — approval gate, read at planning-start. (planned, owner: B)
 3. Task-relevant architecture: `architecture-blueprint.md` (planned, owner: C)
    and the governing ADR for the task (see task-specific reads below).
-4. Requirements and invariants: `docs/req/requirements.yaml` (planned, owner: A)
+4. Requirements and invariants: `docs/req/requirements.yaml` (exists, owner: A)
    and `docs/architecture/invariants.md` — exists (owner: D).
-5. Interface contracts under `docs/contracts/` (planned; see below).
+5. Interface contracts under `docs/contracts/` (per-file status below).
 6. Traceability and verification: `docs/architecture/trace-matrix.md` (planned,
    owner: A), `docs/code-governance/structural-constraints.md` — exists
    (owner: D), and `docs/code-governance/verification-constraints.md` — exists
@@ -36,10 +36,10 @@ owner: C) when the task touches adaptive collaboration.
 ### Task-specific required reads
 
 - C budget/recovery work: `docs/architecture/adr/004-budget-and-resume.md`
-  (planned, owner: C) and `docs/contracts/execution-budget.md` (planned,
+  (exists, owner: C) and `docs/contracts/execution-budget.md` (exists,
   owner: C).
 - D deterministic boundary work: `docs/architecture/adr/005-deterministic-guard.md`
-  (exists, owner: D) and `docs/contracts/validation-decision.md` (planned,
+  (exists, owner: D) and `docs/contracts/validation-decision.md` (exists,
   owner: D).
 
 Missing or conflicting required documents: stop the affected implementation and
@@ -123,14 +123,13 @@ and `architecture-blueprint.md`.
 
 ## Integration contracts
 
-Five contracts under `docs/contracts/`, all "(planned, to be created by each
-owner)":
+Contracts under `docs/contracts/` (status verified against main, 2026-11-23):
 
 - `docs/contracts/evidence.md` — (planned, owner: A)
 - `docs/contracts/review-context.md` — (planned, owner: B)
-- `docs/contracts/execution-budget.md` — (planned, owner: C)
-- `docs/contracts/validation-decision.md` — (planned, owner: D)
-- `docs/contracts/run-event.md` — (planned, owner: E)
+- `docs/contracts/execution-budget.md` — (exists, owner: C)
+- `docs/contracts/validation-decision.md` — (exists, owner: D)
+- `docs/contracts/run-event.md` — (exists, owner: E)
 
 ## Verification requirements
 
