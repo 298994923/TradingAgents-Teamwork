@@ -302,3 +302,22 @@ entries:
       in D-to-C-guard-opt-in-acceptance.md and extended the authorization
       to main in D-to-C-opt-in-main-target-ruling.md on 2026-11-23.
       Main verification: 4 focused and 127 expanded tests passed.
+
+  - id: "61023334-LiChengzhi-ai-use-03"
+    pr_id: "pre-pr"
+    date: "2026-11-23"
+    task: "Reproduce and verify the reviewed keyed checkpoint storage candidate"
+    agent: "opencode"
+    model: "openai/gpt-6.2-sol"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Liu Kehong (Role D, 60894001) independently reviewed and approved the
+      exact checkpointer.py change and four fixed tests on 2026-11-23 in
+      D-to-C-checkpoint-storage-ruling.md, after the historical local prototype.
+      OpenCode session ses_e068a4c8dffe1zl0wRjxuCc0m7 subsequently reproduced the
+      approved candidate on main 2248d06, verified the hashes, and ran 23 storage
+      and 13 legacy tests successfully. Full offline regression: 1624 passed,
+      1 skipped, 1 deselected and 100 subtests passed. Ruff and diff checks passed.
+      Graph, CLI, and Evidence integration are separate.
