@@ -10,8 +10,12 @@ Settlement rule for a window of calls: if every call is ``reported`` or
 ``missing``/``failed`` the window is ``None`` (unknown), never a fabricated number.
 
 ``track(stage)`` scopes the call ids seen while it is active using a ``ContextVar``,
-so concurrent threads/tasks do not see each other's ids. A late callback only updates
-the global record; it never writes back into a handle that has already closed.
+so concurrent threads/tasks do not see each other's ids. At context exit the window
+is closed atomically and frozen into a ``StageSettlement`` (see ``settle``): the
+handle's ``call_ids`` and ``settlement`` never change afterwards. A late callback
+can still update the handler's global records, but it cannot extend a closed
+window, cannot rewrite a frozen settlement, and cannot turn a settled ``None``
+into a refund.
 """
 
 from __future__ import annotations
@@ -29,8 +33,35 @@ from langchain_core.outputs import LLMResult
 # Statuses that make a settled window unknown (any one -> None for the window).
 _UNKNOWN_STATUSES = frozenset({"partial", "invalid", "missing", "failed"})
 
+
+class _StageWindow:
+    """Mutable collector for one ``track`` window; closed once at context exit.
+
+    ``closed`` is the important part: a context copied into another thread or an
+    asyncio task keeps a reference to this object, so a late callback must be
+    refused explicitly instead of relying only on ``ContextVar.reset`` (which
+    affects only the context that opened the window).
+    """
+
+    def __init__(self, stage: str) -> None:
+        self.stage = stage
+        self.ids: list[str] = []
+        self.closed = False
+        self._lock = threading.Lock()
+
+    def record(self, call_id: str) -> None:
+        with self._lock:
+            if not self.closed and call_id not in self.ids:
+                self.ids.append(call_id)
+
+    def close(self) -> tuple[str, ...]:
+        with self._lock:
+            self.closed = True
+            return tuple(self.ids)
+
+
 # The collector for the innermost active ``track`` in the current context, if any.
-_active_collector: ContextVar[list[str] | None] = ContextVar(
+_active_collector: ContextVar[_StageWindow | None] = ContextVar(
     "stats_active_collector", default=None
 )
 
@@ -48,20 +79,48 @@ class CallUsage:
     total_tokens: int | None  # E local input+output; provider ``total`` not trusted
 
 
+@dataclass(frozen=True)
+class StageSettlement:
+    """An immutable snapshot of one ``track`` window, frozen at context exit.
+
+    ``units`` is ``sum(total_tokens)`` only when every call is ``reported`` or
+    ``explicit_zero`` with a usable total; otherwise it is ``None`` (unknown).
+    A later callback never changes this object, so an unknown settlement cannot
+    be turned into a refund by a late end.
+    """
+
+    stage: str
+    call_ids: tuple[str, ...]
+    usages: tuple[tuple[str, CallUsage | None], ...]
+    pending: tuple[str, ...]
+    units: int | None
+    complete: bool
+
+
 class TrackHandle:
-    """The result of ``track(stage)``: the call ids seen while the stage was active."""
+    """The result of ``track(stage)``: ids seen while active, frozen at exit."""
 
-    def __init__(self, stage: str) -> None:
+    def __init__(self, stage: str, window: _StageWindow) -> None:
         self.stage = stage
-        self._ids: list[str] = []
+        self._window = window
+        self._settlement: StageSettlement | None = None
 
-    def _record(self, call_id: str) -> None:
-        if call_id not in self._ids:
-            self._ids.append(call_id)
+    def _freeze(self, settlement: StageSettlement) -> None:
+        self._settlement = settlement
 
     @property
     def call_ids(self) -> tuple[str, ...]:
-        return tuple(self._ids)
+        if self._settlement is not None:
+            return self._settlement.call_ids
+        return tuple(self._window.ids)
+
+    @property
+    def settlement(self) -> StageSettlement:
+        if self._settlement is None:
+            raise RuntimeError(
+                "stage window is still open; the settlement is frozen when track() exits"
+            )
+        return self._settlement
 
 
 def _as_int(value: Any) -> int | None:
@@ -206,18 +265,58 @@ class StatsCallbackHandler(BaseCallbackHandler):
 
     @contextmanager
     def track(self, stage: str):
-        """Collect the call ids seen while this stage is active (context-isolated)."""
-        handle = TrackHandle(stage)
-        token = _active_collector.set(handle._ids)
+        """Collect ids while active, then atomically close and freeze a settlement.
+
+        The freeze takes ``self._lock``, so it cannot race a callback writing a
+        new ``CallUsage``. ``window.close()`` marks the window closed first; a
+        copied context that still holds the window is refused from then on.
+        """
+        window = _StageWindow(stage)
+        handle = TrackHandle(stage, window)
+        token = _active_collector.set(window)
         try:
             yield handle
         finally:
+            with self._lock:
+                ids = window.close()
+                usages = tuple((cid, self._calls.get(cid)) for cid in ids)
+                pending = tuple(
+                    cid for cid, usage in usages
+                    if usage is None or usage.status in _UNKNOWN_STATUSES
+                )
+                complete = bool(ids) and all(
+                    usage is not None
+                    and usage.status in {"reported", "explicit_zero"}
+                    and usage.total_tokens is not None
+                    for _, usage in usages
+                )
+                units = (
+                    sum(usage.total_tokens or 0 for _, usage in usages if usage is not None)
+                    if complete else None
+                )
+                handle._freeze(StageSettlement(
+                    stage=stage,
+                    call_ids=ids,
+                    usages=usages,
+                    pending=pending,
+                    units=units,
+                    complete=complete,
+                ))
             _active_collector.reset(token)
 
+    def settle(self, handle: TrackHandle) -> StageSettlement:
+        """Return the immutable settlement for a closed ``track`` window.
+
+        This is the public entry C should call once, immediately after the
+        ``with stats.track(stage)`` block, then pass ``units`` to
+        ``BudgetPolicy.record_usage(stage, units)`` (``None`` when unknown).
+        """
+        return handle.settlement
+
     def _collect(self, call_id: str) -> None:
-        collector = _active_collector.get()
-        if collector is not None and call_id not in collector:
-            collector.append(call_id)
+        window = _active_collector.get()
+        if window is not None:
+            window.record(call_id)
 
     # --- aggregate ----------------------------------------------------------
 
