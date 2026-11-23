@@ -50,3 +50,16 @@ approvals:
     approver: "60894001"
     date: "2026-11-23"
     tests: ["test/offline/test_graph_guard_opt_in.py", "test/offline/test_graph_guard_opt_in_reason_chain.py"]
+
+  # Recorded on 2026-11-24 from Member A's explicit human confirmation that
+  # Li Chengzhi (Role C) completed the independent plan, contract, test and
+  # source approval; C replaces E as reviewer for this delivery.
+  # Scope: PR #16, main@2248d06, implementation 3512fff; the six component
+  # hashes match C-to-A-evidence-main-compatibility-review.md.
+  # This records completed postimplementation approval and the current human
+  # confirmation date, not a verified preimplementation independent approval.
+  # Historical preimplementation approval remains unverified; no backdating.
+  - src: "src/tradingagents/evidence.py"
+    approver: "61023334"
+    date: "2026-11-24"
+    tests: ["test/offline/test_evidence.py", "test/offline/test_evidence_artifact_keys.py"]
