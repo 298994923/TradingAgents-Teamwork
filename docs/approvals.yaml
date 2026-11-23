@@ -20,6 +20,13 @@ approvals:
     date: "2026-11-22"
     tests: ["test/offline/test_cli_run_manifest.py"]
 
+  # Backfill for PR #4. Decision: D-to-C-execution-policy-v0.3-test-approval.md.
+  # The formal signature is dated 2026-11-22; the decision section records 2026-11-21.
+  - src: "src/tradingagents/execution_policy.py"
+    approver: "60894001"
+    date: "2026-11-22"
+    tests: ["test/offline/test_execution_policy.py"]
+
   # Backfilled 2026-11-22, confirmed by Role C (61023334) in team group;
   # underlying approvals: Role B Gate-1 plan/test approval 2026-11-21 and
   # Zhang Ruiqi wiring re-approval 2026-11-22, see docs/approvals/gate1-D-tests.md
@@ -32,3 +39,14 @@ approvals:
     approver: "61023334"
     date: "2026-11-22"
     tests: ["test/offline/test_guard_wiring.py"]
+
+  # Guard opt-in scope and main target approved by D on 2026-11-23.
+  - src: "src/tradingagents/agents/state.py"
+    approver: "60894001"
+    date: "2026-11-23"
+    tests: ["test/offline/test_graph_guard_opt_in.py", "test/offline/test_graph_guard_opt_in_reason_chain.py"]
+
+  - src: "src/tradingagents/graph/trading_graph.py"
+    approver: "60894001"
+    date: "2026-11-23"
+    tests: ["test/offline/test_graph_guard_opt_in.py", "test/offline/test_graph_guard_opt_in_reason_chain.py"]

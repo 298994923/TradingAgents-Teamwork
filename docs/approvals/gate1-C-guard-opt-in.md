@@ -1,0 +1,10 @@
+# Gate 1 Approval Record - C Guard Opt-In State Transport
+
+- Independent reviewer and protected-path authorizer: Liu Kehong, Role D (60894001). Signature date: 2026-11-23.
+- Approved plan and scope: C-to-D-guard-opt-in-state-scope-review.md and D-to-C-state-scope-ruling.md. Only the two optional, absent-by-default channels in AgentState and explicit-True seeding in create_run_state() are covered. The Portfolio Manager hook remains the sole writer of guard_result for this path.
+- Original approved test: test/offline/test_graph_guard_opt_in.py, SHA-256 b41f75acb46f39dd850243b603d67752a9f3dcbafe128fb812b592154a4bace1. Separate strengthened test: test/offline/test_graph_guard_opt_in_reason_chain.py, SHA-256 b2a09b63ad421b7a726009b987def6d1dae9e26c6df50497709239568aa88ac3. The original test remained byte-identical.
+- Historical integration evidence: a61b7b587169bcfb20300be1b95f721e1a496caa produced one expected failure and 113 passes before the production patch. After D's approval, the pinned patch and tests produced 4 focused, 114 baseline-scope, and 129 expanded passes. D formally accepted those results in D-to-C-guard-opt-in-acceptance.md.
+- Main verification: 54bb43bdb14385d55366ae0f365b602ac4cd2273, one expected original-test failure and one legacy pass before applying the same source patch. After application: 4 focused and 127 expanded passes; scoped Ruff and diff check passed. The two CLI prompt-receipt cases in the earlier suite are absent on main.
+- D-to-C-opt-in-main-target-ruling.md explicitly extends the scope to this main base. The exact authorized source patch SHA-256 is 23a7fd63d799aef7e635d6a8cac6f4bd03d18fd5b64afdf51f2ab92f4b6f30dd.
+- Observed Chain B: validation-decision/1.1, BLOCK, OVERRIDE_REJECTED, checkpoint pm, executable=false, with Trader MISSING_FIELD followed by PM OVERRIDE_REJECTED. D-to-C-invcitation-confirmation.md confirms INV-D6 / REQ-D-007.
+- ADR: 005-deterministic-guard.md covers explicit opt-in and the legacy comparison. Role D owns the state-channel addendum on the same PR branch.
