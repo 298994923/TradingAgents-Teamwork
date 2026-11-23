@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 import sqlite3
 from collections.abc import Generator
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from pathlib import Path
 
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -25,13 +25,24 @@ def _db_path(data_dir: str | Path, ticker: str) -> Path:
     return p / f"{safe}.db"
 
 
-def thread_id(ticker: str, date: str, signature: str = "") -> str:
-    """Deterministic thread ID for a ticker+date pair.
+def thread_id(ticker: str, date: str, signature: str = "", *, run_key: str = "") -> str:
+    """Deterministic thread ID for a ticker, date, and optional run key.
 
     ``signature`` folds in graph-shape-affecting run choices so a resume under a
-    different graph can't reuse this checkpoint (#1089); omitting it keeps the
-    legacy ID.
+    different graph can't reuse this checkpoint (#1089). ``run_key`` separates
+    individual runs without changing the signature. An empty key preserves the
+    original ID.
     """
+    if run_key:
+        import json
+
+        base = json.dumps(
+            ["checkpoint-thread-v1", ticker.upper(), date, signature, run_key],
+            ensure_ascii=True,
+            separators=(",", ":"),
+        )
+        return hashlib.sha256(base.encode("ascii")).hexdigest()[:16]
+
     base = f"{ticker.upper()}:{date}"
     if signature:
         base = f"{base}:{signature}"
@@ -51,18 +62,45 @@ def get_checkpointer(data_dir: str | Path, ticker: str) -> Generator[SqliteSaver
         conn.close()
 
 
-def checkpoint_step(data_dir: str | Path, ticker: str, date: str, signature: str = "") -> int | None:
-    """Return the step number of the latest checkpoint, or None if none exists."""
+def checkpoint_step(
+    data_dir: str | Path, ticker: str, date: str, signature: str = "", *, run_key: str = ""
+) -> int | None:
+    """Return the latest checkpoint step for the requested thread, or None."""
     db = _db_path(data_dir, ticker)
     if not db.exists():
         return None
-    tid = thread_id(ticker, date, signature)
+    tid = thread_id(ticker, date, signature, run_key=run_key)
     with get_checkpointer(data_dir, ticker) as saver:
         config = {"configurable": {"thread_id": tid}}
         cp = saver.get_tuple(config)
         if cp is None:
             return None
         return cp.metadata.get("step")
+
+
+def checkpoint_thread_exists(db: str | Path, thread_id: str) -> bool:
+    """Check the locator's exact thread without reading or changing its state.
+
+    A missing database or thread returns False; storage errors propagate.
+    """
+    path = Path(db).absolute()
+    try:
+        conn = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True)
+    except sqlite3.OperationalError as exc:
+        if exc.sqlite_errorcode == sqlite3.SQLITE_CANTOPEN:
+            # SQLite uses CANTOPEN for access failures as well as missing files.
+            try:
+                path.stat()
+            except FileNotFoundError:
+                return False
+        raise
+
+    try:
+        return conn.execute(
+            "SELECT 1 FROM checkpoints WHERE thread_id = ? LIMIT 1", (thread_id,),
+        ).fetchone() is not None
+    finally:
+        conn.close()
 
 
 def clear_all_checkpoints(data_dir: str | Path) -> int:
@@ -82,12 +120,14 @@ def clear_all_checkpoints(data_dir: str | Path) -> int:
     return len(dbs)
 
 
-def clear_checkpoint(data_dir: str | Path, ticker: str, date: str, signature: str = "") -> None:
-    """Remove checkpoint for a specific ticker+date by deleting the thread's rows."""
+def clear_checkpoint(
+    data_dir: str | Path, ticker: str, date: str, signature: str = "", *, run_key: str = ""
+) -> None:
+    """Delete the checkpoint and write rows for the requested thread."""
     db = _db_path(data_dir, ticker)
     if not db.exists():
         return
-    tid = thread_id(ticker, date, signature)
+    tid = thread_id(ticker, date, signature, run_key=run_key)
     conn = sqlite3.connect(str(db))
     try:
         for table in ("writes", "checkpoints"):
@@ -97,3 +137,29 @@ def clear_checkpoint(data_dir: str | Path, ticker: str, date: str, signature: st
         pass
     finally:
         conn.close()
+
+
+def clear_checkpoint_thread(db: str | Path, thread_id: str) -> bool:
+    """Delete the exact thread from the caller-validated original database.
+
+    Call only after durably publishing a successful terminal manifest. Return
+    False for a missing database or thread; storage errors propagate.
+    """
+    path = Path(db).absolute()
+    try:
+        conn = sqlite3.connect(f"{path.as_uri()}?mode=rw", uri=True)
+    except sqlite3.OperationalError as exc:
+        if exc.sqlite_errorcode == sqlite3.SQLITE_CANTOPEN:
+            # Distinguish an absent database from access and other open failures.
+            try:
+                path.stat()
+            except FileNotFoundError:
+                return False
+        raise
+
+    with closing(conn), conn:
+        writes = conn.execute("DELETE FROM writes WHERE thread_id = ?", (thread_id,)).rowcount
+        checkpoints = conn.execute(
+            "DELETE FROM checkpoints WHERE thread_id = ?", (thread_id,),
+        ).rowcount
+    return writes > 0 or checkpoints > 0
