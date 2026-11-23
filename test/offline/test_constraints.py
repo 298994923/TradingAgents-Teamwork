@@ -197,3 +197,52 @@ def test_guard_purity_no_network_io(monkeypatch):
         stage="pm",
     )
     assert result.verdict == Verdict.PASS
+
+
+def test_stop_result_empty_is_review():
+    """INV-D5 / REQ-D-010: no recorded stop evidence is an explicit REVIEW."""
+    from tradingagents.constraints import stop_result
+
+    assert stop_result([]) == {
+        "contract": "validation-decision/1.1",
+        "verdict": "REVIEW",
+        "reason_code": "KNOWN_UNKNOWN",
+        "checkpoint": "budget-stop",
+        "executable": False,
+        "rules_hit": [],
+    }
+
+
+def test_stop_result_block_is_retained_without_verdict_field():
+    """INV-D7 / REQ-D-008: a recorded BLOCK is retained monotonically."""
+    from tradingagents.constraints import stop_result
+
+    result = stop_result([
+        {"checkpoint": "trader", "reason_code": "CAP_EXCEEDED", "verdict": "BLOCK"},
+    ])
+
+    assert result["verdict"] == "BLOCK"
+    assert result["reason_code"] == "PRIOR_VERDICT_RETAINED"
+    assert result["checkpoint"] == "budget-stop"
+    assert result["executable"] is False
+    assert result["rules_hit"] == [
+        {"checkpoint": "trader", "reason_code": "CAP_EXCEEDED"},
+    ]
+
+
+def test_stop_result_review_preserves_entries_verbatim():
+    """INV-D4 / REQ-D-005: recorded REVIEW entries stay verbatim in rules_hit."""
+    from tradingagents.constraints import stop_result
+
+    entry = {
+        "checkpoint": "pm",
+        "reason_code": "POSITION_UNKNOWN",
+        "verdict": "REVIEW",
+    }
+    result = stop_result([entry])
+
+    assert result["verdict"] == "REVIEW"
+    assert result["reason_code"] == "KNOWN_UNKNOWN"
+    assert result["checkpoint"] == "budget-stop"
+    assert result["executable"] is False
+    assert result["rules_hit"] == [entry]
