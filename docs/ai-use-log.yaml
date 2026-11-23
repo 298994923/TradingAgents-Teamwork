@@ -278,3 +278,22 @@ entries:
       wiring-green-01.txt (94 passed; upstream 1412 passed, 1 skipped, 1 deselected).
       Human executed every test command, archived outputs, signed approvals,
       resolved the merge conflict and performed all pushes.
+
+  - id: "60894001-LiuKehong-ai-use-03"
+    pr_id: "10"
+    date: "2026-11-23"
+    task: "Add stop_result guard-envelope helper (D-to-C-v2-slice-ruling section 3.2); retroactively records the same-day guard_result state-key exposure and lint remediation phase"
+    agent: "opencode"
+    model: "deepseek-v4.1-flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Tests-first: three assertions authored from the signed state-scope ruling and
+      the signed budget-stop envelope; red before implementation (3 failing on the
+      missing helper), then minimal implementation. Human ran the offline suite
+      (421 passed, zero regressions) and verified only the two whitelist files
+      changed. The lint remediation (StrEnum adopted only with full regression
+      proof) and the guard_result key exposure happened under the same human
+      approval sequence on 2026-11-22 and are recorded here for completeness.
+      Role C imports this helper instead of handcrafting envelopes.
