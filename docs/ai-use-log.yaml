@@ -321,3 +321,47 @@ entries:
       and 13 legacy tests successfully. Full offline regression: 1624 passed,
       1 skipped, 1 deselected and 100 subtests passed. Ruff and diff checks passed.
       Graph, CLI, and Evidence integration are separate.
+
+  - id: "A-evidence-ai-use-01"
+    pr_id: "16"
+    date: "2026-11-23"
+    task: "Develop Evidence V1 snapshots and artifact-key helpers, then prepare the unchanged six-file component for main"
+    agent: "Codex and ChatGPT"
+    model: "GPT; exact historical model identifiers were not recorded"
+    prompt_version: "N/A (interactive project and review conversations)"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Member A used Codex for contract/test-first implementation and verification,
+      with ChatGPT-assisted design and review discussions; this work did not use
+      OpenCode. Exact historical model identifiers are not inferred. The role-based
+      entry ID is used because A's student ID was not established in the inspected
+      records. Human review refers to the previously reviewed component and A's
+      decision to deliver it, including C's component-compatibility reply.
+      On 2026-11-24, Member A explicitly confirmed that C had completed all
+      independent approval responsibilities for this delivery and that E no
+      longer held this approval role. The source approval record attributes
+      that completed review to Li Chengzhi (61023334), based on this human
+      confirmation. It does not claim independently verified preimplementation
+      approval or backdate the current confirmation.
+      C reviewed source SHA-256
+      717a24977fe8acad551470231dbb0f4a93cb79a40f2d250e0221123835dbaf88
+      on integration@91821fb. That component was delivered in commit 6fbd09f
+      (PR #8) and cherry-picked without source changes to 10bfc79 on
+      main@ab30058, branch feature/a-main-delivery. No graph, locator, CLI,
+      manifest or guard integration is claimed. Local main-candidate verification
+      used an isolated committed-tree snapshot without personal dotenv files or
+      inherited provider credentials: 1729 passed, 1 optional Bedrock skip,
+      1 configured integration deselection and 100 subtests passed, including
+      83 Evidence V1 and 45 helper cases. Seven initial sandbox loopback-bind
+      failures disappeared when the unchanged full suite ran with loopback
+      sockets allowed. Ruff over src/tests/test/scripts, compileall and dependency
+      checks passed. The schema check covered only the existing GOV-001 seed.
+      The branch was subsequently rebased onto main@2248d06, producing unchanged
+      implementation commit 3512fff; PR #16 targets main. All six component
+      hashes still match C's reviewed package. Local verification used
+      macOS/Python 3.13.2; the hosted CI result is tracked in PR #16 rather than
+      inferred from that local run. changes_accepted records the human-confirmed
+      acceptance of the reviewed component, not completion of the GitHub merge.
+      The separate integration lint cleanup is stashed and is not part of this
+      entry or this candidate.
