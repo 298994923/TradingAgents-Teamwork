@@ -164,7 +164,10 @@ class TradingAgentsGraph:
             f"settings={digest}",
         ])
 
-    def propagate(self, company_name, trade_date, asset_type: str = "stock", portfolio=None):
+    def propagate(
+        self, company_name, trade_date, asset_type: str = "stock", portfolio=None,
+        *, run_key: str = "",
+    ):
         """Run the trading agents graph for a company on a specific date.
 
         ``asset_type`` selects between the stock pipeline (default) and the
@@ -172,7 +175,8 @@ class TradingAgentsGraph:
         from the ticker; programmatic callers pass it explicitly. When
         ``checkpoint_enabled`` is set in config, the graph is recompiled with
         a per-ticker SqliteSaver so a crashed run can resume from the last
-        successful node on a subsequent invocation with the same ticker+date.
+        successful node on a subsequent invocation with the same ticker, date,
+        compatibility signature, and run key. An empty key uses the legacy thread.
 
         Returns ``(final_state, signal)`` where ``signal`` is one of the 5-tier
         ratings (Buy / Overweight / Hold / Underweight / Sell) or ``"REVIEW"``
@@ -183,13 +187,18 @@ class TradingAgentsGraph:
         trade_date = _validate_trade_date(trade_date)
 
         with run_config(self.config), \
-                self.checkpoint_scope(company_name, trade_date, asset_type, portfolio) as thread_id_value:
+                self.checkpoint_scope(
+                    company_name, trade_date, asset_type, portfolio, run_key=run_key,
+                ) as thread_id_value:
             return self._run_graph(
                 company_name, trade_date, asset_type=asset_type,
-                checkpoint_thread_id=thread_id_value, portfolio=portfolio,
+                checkpoint_thread_id=thread_id_value, portfolio=portfolio, run_key=run_key,
             )
 
-    def begin_checkpoint(self, company_name, trade_date, asset_type: str = "stock", portfolio=None) -> str | None:
+    def begin_checkpoint(
+        self, company_name, trade_date, asset_type: str = "stock", portfolio=None,
+        *, run_key: str = "",
+    ) -> str | None:
         """Recompile the graph with a per-ticker checkpointer and return the
         ``thread_id`` to inject into the stream/invoke ``config`` (or ``None``
         when checkpointing is disabled).
@@ -209,14 +218,15 @@ class TradingAgentsGraph:
         self.graph = self.workflow.compile(checkpointer=saver)
 
         step = checkpoint_step(
-            self.config["data_cache_dir"], company_name, str(trade_date), signature
+            self.config["data_cache_dir"], company_name, str(trade_date), signature,
+            run_key=run_key,
         )
         self._resuming = step is not None
         if step is not None:
             logger.info("Resuming from step %d for %s on %s", step, company_name, trade_date)
         else:
             logger.info("Starting fresh for %s on %s", company_name, trade_date)
-        return thread_id(company_name, str(trade_date), signature)
+        return thread_id(company_name, str(trade_date), signature, run_key=run_key)
 
     def checkpoint_input(self, init_state):
         """The value to stream/invoke: ``None`` to resume an existing checkpoint,
@@ -237,20 +247,30 @@ class TradingAgentsGraph:
         self._resuming = False
 
     @contextmanager
-    def checkpoint_scope(self, company_name, trade_date, asset_type: str = "stock", portfolio=None):
+    def checkpoint_scope(
+        self, company_name, trade_date, asset_type: str = "stock", portfolio=None,
+        *, run_key: str = "",
+    ):
         """Context-manager form of begin/end_checkpoint for the propagate path."""
         try:
-            yield self.begin_checkpoint(company_name, trade_date, asset_type, portfolio)
+            yield self.begin_checkpoint(company_name, trade_date, asset_type, portfolio, run_key=run_key)
         finally:
             self.end_checkpoint()
 
-    def clear_checkpoint_on_success(self, company_name, trade_date, asset_type: str = "stock", portfolio=None):
+    def clear_checkpoint_on_success(
+        self, company_name, trade_date, asset_type: str = "stock", portfolio=None,
+        *, run_key: str = "",
+    ):
         """Drop a completed run's checkpoint so a later run starts fresh (#1249)."""
         if self.config.get("checkpoint_enabled"):
-            clear_checkpoint(
+            args = (
                 self.config["data_cache_dir"], company_name, str(trade_date),
                 self._run_signature(asset_type, portfolio),
             )
+            if run_key:
+                clear_checkpoint(*args, run_key=run_key)
+            else:
+                clear_checkpoint(*args)
 
     def run_settings(self) -> dict:
         """What produces this graph's runs, for the saved report and state log.
@@ -373,14 +393,15 @@ class TradingAgentsGraph:
             rating=run_rating(final_state),
         )
 
-    def _run_graph(self, company_name, trade_date, asset_type: str = "stock",
-                   checkpoint_thread_id: str | None = None, portfolio=None):
+    def _run_graph(
+        self, company_name, trade_date, asset_type: str = "stock",
+        checkpoint_thread_id: str | None = None, portfolio=None, *, run_key: str = "",
+    ):
         """Execute the graph and write the resulting state to disk and memory log."""
         init_agent_state = self.create_run_state(company_name, trade_date, asset_type, portfolio)
         args = self.propagator.get_graph_args()
 
-        # Inject the checkpoint thread_id (from checkpoint_scope) so the same
-        # ticker+date+graph-shape resumes; a different one starts fresh (#1089).
+        # Use the exact thread selected by checkpoint_scope for this invocation.
         if checkpoint_thread_id is not None:
             args.setdefault("config", {}).setdefault("configurable", {})["thread_id"] = checkpoint_thread_id
 
@@ -403,7 +424,7 @@ class TradingAgentsGraph:
         self.record_decision(company_name, trade_date, final_state)
 
         # Clear checkpoint on successful completion to avoid stale state.
-        self.clear_checkpoint_on_success(company_name, trade_date, asset_type, portfolio)
+        self.clear_checkpoint_on_success(company_name, trade_date, asset_type, portfolio, run_key=run_key)
 
         return final_state, run_rating(final_state)
 
