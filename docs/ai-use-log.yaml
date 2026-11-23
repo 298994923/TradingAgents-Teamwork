@@ -234,3 +234,52 @@ entries:
       The delivery record reports 13 policy tests passed, 1437 offline tests passed
       (1 skipped, 1 deselected, 100 subtests passed), and Ruff passed on Python 3.14.4.
       Member C confirmed acceptance at delivery. Graph integration was not included.
+
+  - id: "60894001-LiuKehong-ai-use-01"
+    pr_id: "6"
+    date: "2026-11-21"
+    task: "Write offline test suite and fixtures for the deterministic safety guard before implementation"
+    agent: "opencode"
+    model: "deepseek-v4.1-flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Test-first approach approved at gate 1 (docs/approvals/gate1-D-tests.md,
+      reviewer Role B; fixture fix re-approved by Zhang Ruiqi). Five red runs
+      recorded under docs/plans/D/red-run-01..05.txt before any implementation
+      existed; OpenCode only edited whitelisted test files under human plan approval.
+
+  - id: "60894001-LiuKehong-ai-use-02"
+    pr_id: "6"
+    date: "2026-11-22"
+    task: "Implement constraints.validate and wire opt-in dual safety gates into portfolio manager"
+    agent: "opencode"
+    model: "deepseek-v4.1-flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Implementation followed the approved test suite with no test weakening.
+      Green evidence: docs/plans/D/green-run-01.txt (88 passed) and
+      wiring-green-01.txt (94 passed; upstream 1412 passed, 1 skipped, 1 deselected).
+      Human executed every test command, archived outputs, signed approvals,
+      resolved the merge conflict and performed all pushes.
+
+  - id: "60894001-LiuKehong-ai-use-03"
+    pr_id: "6"
+    date: "2026-11-22"
+    task: "Expose guard_result contract key, add wiring test, resolve lint findings, backfill approval records"
+    agent: "opencode"
+    model: "deepseek-v4.1-flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Test-first: a new wiring test was approved red before implementing the
+      state["guard_result"] key (commit 3ae4202). Lint fixes (StrEnum, SIM108,
+      SIM102) were adopted only with full regression proof (185 offline, 1412
+      upstream unchanged, commit 2a5b1f2); the unsafe-fix candidate StrEnum would
+      have been reverted had any test disagreed. Approval backfill, the merge
+      conflict adjudication and the integration merge were decided and executed
+      by the human; the agent proposed code only.
