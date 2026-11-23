@@ -81,8 +81,9 @@ approvals:
 
   - src: "src/cli/stats_handler.py"
     approver: "60252993"
-    date: "2026-11-22"
-    tests: ["test/offline/test_stats_calls.py", "test/offline/test_token_usage.py"]
+    date: "2026-11-23"
+    tests: ["test/offline/test_stats_calls.py", "test/offline/test_token_usage.py",
+            "test/offline/test_usage_window.py"]
 
   - src: "src/cli/display.py"
     approver: "60252993"
@@ -93,3 +94,10 @@ approvals:
     approver: "60252993"
     date: "2026-11-22"
     tests: ["test/offline/test_resume.py"]
+
+# 2026-11-23: the stats_handler.py entry above was refreshed for the
+# StageSettlement / expected_calls change (19 tests in test_usage_window.py).
+# The human (E, 60252993) reviewed the analysis and explicitly authorised the
+# commit in the session; the log entry is docs/ai-use-log.yaml#13. Per the team
+# split §9 an independent reviewer (C) should still countersign this src change;
+# that countersign is not recorded here and is not claimed.

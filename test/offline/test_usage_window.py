@@ -227,3 +227,76 @@ def test_copied_context_late_start_does_not_extend_closed_handle():
     # The late call is still visible globally, but not in the closed window.
     assert handler.call(str(late)).status == "reported"
     assert str(late) in {row.call_id for row in handler.calls()}
+
+
+# --- 4. expected_calls: a partial window is never a complete one ------------
+
+
+def test_expected_calls_match_settles_full_sum():
+    """C's example: two complete callbacks must settle to 1550, once."""
+    handler, budget = StatsCallbackHandler(), _admitted()
+    with handler.track(FOLLOW_UP, expected_calls=2) as handle:
+        a, b = _start(handler), _start(handler)
+        _end(handler, a, (1000, 200))
+        _end(handler, b, (300, 50))
+    settlement = handler.settle(handle)
+    assert settlement.call_ids == (str(a), str(b))
+    assert settlement.units == 1550
+    assert settlement.complete is True
+    assert settlement.expected_calls == 2
+    assert settlement.count_matches is True
+    budget.record_usage(FOLLOW_UP, settlement.units)
+    assert budget.usage_for(FOLLOW_UP).reported_units == 1550
+
+
+def test_expected_calls_mismatch_refuses_partial_sum():
+    """One complete callback + a declared count of 2 must be unknown, not 1200."""
+    handler = StatsCallbackHandler()
+    with handler.track(FOLLOW_UP, expected_calls=2) as handle:
+        only = _start(handler)
+        _end(handler, only, (1000, 200))
+    settlement = handler.settle(handle)
+    assert settlement.call_ids == (str(only),)
+    assert settlement.units is None            # was a fake 1200 before this guard
+    assert settlement.complete is False
+    assert settlement.expected_calls == 2
+    assert settlement.count_matches is False
+
+
+def test_expected_calls_covers_late_start_outside_window():
+    """C's exit-boundary case: the second start arrives from a copied context."""
+    handler = StatsCallbackHandler()
+    with handler.track(FOLLOW_UP, expected_calls=2) as handle:
+        first = _start(handler)
+        _end(handler, first, (1000, 200))
+        inherited = copy_context()
+    settlement = handler.settle(handle)
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        late = pool.submit(inherited.run, _start, handler).result(timeout=5)
+    _end(handler, late, (300, 50))
+
+    assert settlement.units is None
+    assert settlement.count_matches is False
+    assert settlement.call_ids == (str(first),)
+    assert str(late) not in settlement.call_ids
+    # Global records may update; the frozen unknown settlement never becomes a refund.
+    assert handler.call(str(late)).status == "reported"
+
+
+def test_expected_calls_zero_requires_an_empty_window():
+    handler = StatsCallbackHandler()
+    with handler.track(FOLLOW_UP, expected_calls=0) as handle:
+        pass
+    settlement = handler.settle(handle)
+    assert settlement.units is None
+    assert settlement.count_matches is True     # 0 ids == 0 expected
+    assert settlement.complete is False         # but an empty window has no units
+
+
+@pytest.mark.parametrize("bad", [True, -1, "2", 1.5, 0.0])
+def test_invalid_expected_calls_are_rejected(bad):
+    handler = StatsCallbackHandler()
+    with pytest.raises(ValueError, match="expected_calls"), \
+            handler.track(FOLLOW_UP, expected_calls=bad):
+        pass

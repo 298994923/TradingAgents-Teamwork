@@ -83,10 +83,12 @@ class CallUsage:
 class StageSettlement:
     """An immutable snapshot of one ``track`` window, frozen at context exit.
 
-    ``units`` is ``sum(total_tokens)`` only when every call is ``reported`` or
-    ``explicit_zero`` with a usable total; otherwise it is ``None`` (unknown).
-    A later callback never changes this object, so an unknown settlement cannot
-    be turned into a refund by a late end.
+    ``units`` is ``sum(total_tokens)`` only when the window is complete:
+    every recorded call is ``reported``/``explicit_zero`` with a usable total
+    **and** the observed id count matches ``expected_calls`` (when the caller
+    declared it). Otherwise ``units`` is ``None``. A later callback never
+    changes this object, so an unknown settlement cannot become a refund, and
+    a partial window cannot be mistaken for a complete one.
     """
 
     stage: str
@@ -95,6 +97,8 @@ class StageSettlement:
     pending: tuple[str, ...]
     units: int | None
     complete: bool
+    expected_calls: int | None
+    count_matches: bool
 
 
 class TrackHandle:
@@ -264,13 +268,29 @@ class StatsCallbackHandler(BaseCallbackHandler):
             return self._calls.get(call_id)
 
     @contextmanager
-    def track(self, stage: str):
+    def track(self, stage: str, *, expected_calls: int | None = None):
         """Collect ids while active, then atomically close and freeze a settlement.
+
+        ``expected_calls`` is the number of callback ids the caller admitted for
+        this stage. Declaring it makes a window with fewer ids than expected
+        ``units=None`` instead of a partial sum -- this is the answer to C's
+        "one complete callback, another not collected at the exit boundary"
+        case. Without a declared count, a window that simply saw fewer callbacks
+        cannot be distinguished from a complete one, so callers that need that
+        guarantee must declare it.
 
         The freeze takes ``self._lock``, so it cannot race a callback writing a
         new ``CallUsage``. ``window.close()`` marks the window closed first; a
         copied context that still holds the window is refused from then on.
+        Callbacks must finish inside the ``with`` block: anything arriving after
+        the freeze only updates the handler's global records.
         """
+        if expected_calls is not None and (
+            isinstance(expected_calls, bool)
+            or not isinstance(expected_calls, int)
+            or expected_calls < 0
+        ):
+            raise ValueError("expected_calls must be a non-negative int or None")
         window = _StageWindow(stage)
         handle = TrackHandle(stage, window)
         token = _active_collector.set(window)
@@ -284,11 +304,16 @@ class StatsCallbackHandler(BaseCallbackHandler):
                     cid for cid, usage in usages
                     if usage is None or usage.status in _UNKNOWN_STATUSES
                 )
-                complete = bool(ids) and all(
-                    usage is not None
-                    and usage.status in {"reported", "explicit_zero"}
-                    and usage.total_tokens is not None
-                    for _, usage in usages
+                count_matches = expected_calls is None or len(ids) == expected_calls
+                complete = (
+                    count_matches
+                    and bool(ids)
+                    and all(
+                        usage is not None
+                        and usage.status in {"reported", "explicit_zero"}
+                        and usage.total_tokens is not None
+                        for _, usage in usages
+                    )
                 )
                 units = (
                     sum(usage.total_tokens or 0 for _, usage in usages if usage is not None)
@@ -301,6 +326,8 @@ class StatsCallbackHandler(BaseCallbackHandler):
                     pending=pending,
                     units=units,
                     complete=complete,
+                    expected_calls=expected_calls,
+                    count_matches=count_matches,
                 ))
             _active_collector.reset(token)
 

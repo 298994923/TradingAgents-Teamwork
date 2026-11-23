@@ -417,3 +417,26 @@ entries:
       Human reviewed the output and asked for fixes (strict as the default mode);
       fixed and re-tested. Local pytest 1574 passed, 1 skipped; ruff clean.
       GitHub Actions was NOT run.
+
+  - id: "60252993-linan-ai-use-13"
+    pr_id: "N/A"
+    date: "2026-11-23"
+    task: "Freeze stage-window settlement and guard partial windows (reply to C)"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Added StageSettlement + settle() to src/cli/stats_handler.py: track(stage)
+      now closes the window atomically at exit, so late callbacks (including from
+      copied contexts) cannot extend it, rewrite the frozen settlement, or turn an
+      unknown into a refund. Added test/offline/test_usage_window.py (19 tests).
+      After C's runtime-delivery response asked how a window with one complete
+      callback and another not collected at the exit boundary avoids a partial sum,
+      added track(stage, *, expected_calls=None) and the expected_calls /
+      count_matches fields, with 5 more tests covering C's 1550 example, a count
+      mismatch -> None, and a copied-context late start. Human reviewed the analysis
+      and explicitly authorised this commit. Local: 19 settlement, 49 targeted,
+      1593 full (1 skipped, 1 deselected, 100 subtests), ruff clean on both files.
+      GitHub Actions was NOT run.
