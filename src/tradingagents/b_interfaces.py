@@ -12,7 +12,7 @@ ROLES = {"bull", "bear", "research_manager"}
 class PromptReceipts:
     """Create one collector per run. Pass record as the nodes' on_prompt."""
     def __init__(self, run_id):
-        if not isinstance(run_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", run_id):
+        if not isinstance(run_id, str) or not re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9_.-]*", run_id):
             raise ValueError("invalid run identifier")
         self.run_id = run_id
         self._roles = {}
@@ -41,7 +41,7 @@ class PromptReceipts:
 
     def finish(self, runs_dir, *, expected_calls):
         """After all callbacks, persist evidence and return the observed manifest guard."""
-        if type(expected_calls) is not int or expected_calls < 0:
+        if expected_calls is not None and (type(expected_calls) is not int or expected_calls < 0):
             raise ValueError("invalid expected call count")
         with self._lock:
             calls = list(self._calls)

@@ -11,20 +11,15 @@ from tradingagents.agents.structured import (
 )
 
 
-def create_research_manager(llm, mode="legacy", **options):
+from tradingagents.review import legacy_prompt_observer
+
+
+def create_research_manager(llm, mode="legacy", *, on_prompt=None, **options):
     if mode == "collab":
-        return _collab_manager(llm, **options)
+        return _collab_manager(llm, on_prompt=on_prompt, **options)
     if mode != "legacy" or options:
         raise ValueError("Unsupported manager configuration")
-    structured_llm = bind_structured(llm, ResearchPlan, "Research Manager")
-
-    def research_manager_node(state) -> dict:
-        instrument_context = get_instrument_context_from_state(state)
-        history = state["investment_debate_state"].get("history", "")
-
-        investment_debate_state = state["investment_debate_state"]
-
-        prompt = f"""As the Research Manager and debate facilitator, your role is to critically evaluate this round of debate and deliver a clear, actionable investment plan for the trader.
+    template = """As the Research Manager and debate facilitator, your role is to critically evaluate this round of debate and deliver a clear, actionable investment plan for the trader.
 
 {instrument_context}
 
@@ -52,7 +47,18 @@ Write these sections, in this order, starting with the recommendation on its own
 - **Rationale**: which arguments decided it
 - **Strategic Actions**: concrete steps for the trader, sized against a standard allocation
 
-{NO_EXTERNAL_TOOLS}""" + get_language_instruction()
+""" + NO_EXTERNAL_TOOLS
+    structured_llm = bind_structured(llm, ResearchPlan, "Research Manager")
+
+    def research_manager_node(state) -> dict:
+        instrument_context = get_instrument_context_from_state(state)
+        history = state["investment_debate_state"].get("history", "")
+
+        investment_debate_state = state["investment_debate_state"]
+
+        prompt = template.format(
+            instrument_context=instrument_context, history=history
+        ) + get_language_instruction()
 
         investment_plan = invoke_structured_or_freetext(
             structured_llm,
@@ -60,6 +66,7 @@ Write these sections, in this order, starting with the recommendation on its own
             prompt,
             render_research_plan,
             "Research Manager",
+            before_send=legacy_prompt_observer(on_prompt, "research_manager", template, state),
         )
 
         new_investment_debate_state = {

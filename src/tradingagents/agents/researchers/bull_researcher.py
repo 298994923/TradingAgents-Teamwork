@@ -1,4 +1,4 @@
-from tradingagents.review import create_collab_researcher, researcher_prompt
+from tradingagents.review import create_collab_researcher, legacy_prompt_observer, researcher_prompt
 from tradingagents.agents.context import (
     get_instrument_context_from_state,
     get_language_instruction,
@@ -7,9 +7,9 @@ from tradingagents.agents.context import (
 )
 
 
-def create_bull_researcher(llm, mode="legacy", **options):
+def create_bull_researcher(llm, mode="legacy", *, on_prompt=None, **options):
     if mode == "collab":
-        return create_collab_researcher(llm, "bull", **options)
+        return create_collab_researcher(llm, "bull", on_prompt=on_prompt, **options)
     if mode != "legacy" or options:
         raise ValueError("Unsupported researcher configuration")
 
@@ -34,8 +34,12 @@ def create_bull_researcher(llm, mode="legacy", **options):
             else "Asset fundamentals report (may be unavailable for crypto)"
         )
 
-        prompt = researcher_prompt("bull_legacy").format_map(locals()) + get_language_instruction()
+        template = researcher_prompt("bull_legacy")
+        prompt = template.format_map(locals()) + get_language_instruction()
 
+        observe = legacy_prompt_observer(on_prompt, "bull", template, state)
+        if observe is not None:
+            observe(prompt)
         response = llm.invoke(prompt)
 
         argument = f"Bull Analyst: {response.content}"
