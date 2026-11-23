@@ -261,3 +261,9 @@ This ADR must be revisited if any of the following occurs:
 - Source anchors: CRS §1; CRS D2 items 3 and 6; CRS D3; CRS D4; TP-§7.
 - Planned verification: `test/offline/test_constraints.py` and
   `test/offline/test_safety_boundary.py`.
+
+## Addendum — opt-in transport channels (2026-11-23)
+
+AgentState carries `guard_enabled` and `guard_result` as optional channels, absent by
+default. Only `create_run_state()` sets `guard_enabled`, and only for an explicit True;
+only the existing Portfolio Manager hook writes `guard_result`.
