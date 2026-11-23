@@ -283,3 +283,22 @@ entries:
       have been reverted had any test disagreed. Approval backfill, the merge
       conflict adjudication and the integration merge were decided and executed
       by the human; the agent proposed code only.
+
+  - id: "61023334-LiChengzhi-ai-use-02"
+    pr_id: "pre-pr"
+    date: "2026-11-23"
+    task: "Implement and verify Guard opt-in state transport"
+    agent: "opencode"
+    model: "openai/gpt-6.2-sol"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      OpenCode session ses_e068a4c8dffe1zl0wRjxuCc0m7 applied the signed
+      scope in an isolated integration checkout and verified the original
+      and strengthened tests. Codex reproduced the red/green results on
+      main 54bb43b and prepared the local delivery bundle. Human reviewer
+      Liu Kehong (60894001) accepted the exact source patch and both tests
+      in D-to-C-guard-opt-in-acceptance.md and extended the authorization
+      to main in D-to-C-opt-in-main-target-ruling.md on 2026-11-23.
+      Main verification: 4 focused and 127 expanded tests passed.

@@ -32,3 +32,14 @@ approvals:
     approver: "61023334"
     date: "2026-11-22"
     tests: ["test/offline/test_guard_wiring.py"]
+
+  # Guard opt-in scope and main target approved by D on 2026-11-23.
+  - src: "src/tradingagents/agents/state.py"
+    approver: "60894001"
+    date: "2026-11-23"
+    tests: ["test/offline/test_graph_guard_opt_in.py", "test/offline/test_graph_guard_opt_in_reason_chain.py"]
+
+  - src: "src/tradingagents/graph/trading_graph.py"
+    approver: "60894001"
+    date: "2026-11-23"
+    tests: ["test/offline/test_graph_guard_opt_in.py", "test/offline/test_graph_guard_opt_in_reason_chain.py"]
