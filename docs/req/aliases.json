@@ -1,0 +1,248 @@
+{
+  "revision": "2026-11-24-registration-r6",
+  "owner_confirmation": "C confirms the original ten mappings, graph 004 pair and eight STOR entries",
+  "shared_branch_adoption": false,
+  "aliases": {
+    "C-P01": "REQ-C-01",
+    "C-P02": "REQ-C-02",
+    "C-P03": "REQ-C-03",
+    "C-P04": "REQ-C-04",
+    "C-P05": "REQ-C-05",
+    "C-P06": "REQ-C-06",
+    "REQ-C-FR-01": "REQ-C-FR-01",
+    "INV-C-FR-01": "INV-C-FR-01",
+    "INV-C-FR-02": "INV-C-FR-02",
+    "INV-C-FR-03": "INV-C-FR-03",
+    "REQ-C-LOCAL-V1-001": "REQ-C-FR-01",
+    "C-FR-01": "REQ-C-FR-01",
+    "INV-C-LOCAL-V1-001": "INV-C-FR-01",
+    "C-FR-02": "INV-C-FR-02",
+    "INV-C-LOCAL-V1-002": "INV-C-FR-02",
+    "INV-C-LOCAL-V1-003": "INV-C-FR-03",
+    "REQ-C-01": "REQ-C-01",
+    "REQ-C-02": "REQ-C-02",
+    "REQ-C-03": "REQ-C-03",
+    "REQ-C-04": "REQ-C-04",
+    "REQ-C-05": "REQ-C-05",
+    "REQ-C-06": "REQ-C-06",
+    "REQ-C-LOCAL-CKPT-004": "REQ-C-CKPT-01",
+    "INV-C-LOCAL-CKPT-004": "INV-C-CKPT-01",
+    "REQ-C-LOCAL-CKPT-001": "REQ-C-STOR-01",
+    "INV-C-LOCAL-CKPT-001": "INV-C-STOR-01",
+    "REQ-C-LOCAL-CKPT-003": "REQ-C-STOR-02",
+    "INV-C-LOCAL-CKPT-003": "INV-C-STOR-02",
+    "REQ-C-LOCAL-CKPT-005": "REQ-C-STOR-03",
+    "INV-C-LOCAL-CKPT-005": "INV-C-STOR-03",
+    "REQ-C-LOCAL-CKPT-008": "REQ-C-STOR-04",
+    "INV-C-LOCAL-CKPT-008": "INV-C-STOR-04"
+  },
+  "entries": [
+    {
+      "id": "REQ-C-01",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "REQ-C-02",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "REQ-C-03",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "REQ-C-04",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE",
+      "verification_status": "explicit pending marker accepted by C; not executable"
+    },
+    {
+      "id": "REQ-C-05",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "REQ-C-06",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "REQ-C-FR-01",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "INV-C-FR-01",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "INV-C-FR-02",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "INV-C-FR-03",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "REQ-C-CKPT-01",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "INV-C-CKPT-01",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE"
+    },
+    {
+      "id": "REQ-C-STOR-01",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE",
+      "software_delivery": "PR #17; de8035b; merge 9b44a7c"
+    },
+    {
+      "id": "INV-C-STOR-01",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE",
+      "software_delivery": "PR #17; de8035b; merge 9b44a7c"
+    },
+    {
+      "id": "REQ-C-STOR-02",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE",
+      "software_delivery": "PR #17; de8035b; merge 9b44a7c"
+    },
+    {
+      "id": "INV-C-STOR-02",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE",
+      "software_delivery": "PR #17; de8035b; merge 9b44a7c"
+    },
+    {
+      "id": "REQ-C-STOR-03",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE",
+      "software_delivery": "PR #17; de8035b; merge 9b44a7c"
+    },
+    {
+      "id": "INV-C-STOR-03",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE",
+      "software_delivery": "PR #17; de8035b; merge 9b44a7c"
+    },
+    {
+      "id": "REQ-C-STOR-04",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE",
+      "software_delivery": "PR #17; de8035b; merge 9b44a7c"
+    },
+    {
+      "id": "INV-C-STOR-04",
+      "owner_confirmed": true,
+      "registry_inclusion": "proposed",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "STILL CANDIDATE",
+      "software_delivery": "PR #17; de8035b; merge 9b44a7c"
+    }
+  ],
+  "prepared_against_main": "e16bf40209bca7179c161561189670c93187b8a1",
+  "publication_target": "main",
+  "storage_groups": [
+    {
+      "source_group": "LOCAL-CKPT-001",
+      "requirement": "REQ-C-STOR-01",
+      "invariant": "INV-C-STOR-01",
+      "owner_confirmation": "C confirmed",
+      "registry_adoption": false
+    },
+    {
+      "source_group": "LOCAL-CKPT-003",
+      "requirement": "REQ-C-STOR-02",
+      "invariant": "INV-C-STOR-02",
+      "owner_confirmation": "C confirmed",
+      "registry_adoption": false
+    },
+    {
+      "source_group": "LOCAL-CKPT-005",
+      "requirement": "REQ-C-STOR-03",
+      "invariant": "INV-C-STOR-03",
+      "owner_confirmation": "C confirmed",
+      "registry_adoption": false
+    },
+    {
+      "source_group": "LOCAL-CKPT-008",
+      "requirement": "REQ-C-STOR-04",
+      "invariant": "INV-C-STOR-04",
+      "owner_confirmation": "C confirmed",
+      "registry_adoption": false
+    }
+  ],
+  "main_refresh_verified": true,
+  "Evidence_PR16_merge": "61402afa740f0345fc5e36c8e338a1cc88d268b9",
+  "Evidence_approval": "C completed; E is not the reviewer",
+  "publication_note": "Preparation snapshot for this PR; shared-branch adoption is established by the registry merge, separately from runtime acceptance.",
+  "test_count_clarification": "Resolved: 23 storage + 13 legacy = 36; interim adds 4 graph cases = 40; final expected 41 requires real B receipt wiring.",
+  "graph_delivery": "PR #18; 0760c5800912d1b570dd130d0d94c2c619cbf45a"
+}
