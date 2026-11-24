@@ -4,9 +4,10 @@ from tradingagents.agents.context import (
     opponent_argument_or_opening,
     report_or_absent,
 )
+from tradingagents.agents.prompt_receipts import legacy_prompt_observer
 
 
-def create_bear_researcher(llm):
+def create_bear_researcher(llm, *, on_prompt=None):
     def bear_node(state) -> dict:
         investment_debate_state = state["investment_debate_state"]
         history = investment_debate_state.get("history", "")
@@ -28,7 +29,7 @@ def create_bear_researcher(llm):
             else "Asset fundamentals report (may be unavailable for crypto)"
         )
 
-        prompt = f"""You are a Bear Analyst making the case against investing in the {target_label}. Your goal is to present a well-reasoned argument emphasizing risks, challenges, and negative indicators. Leverage the provided research and data to highlight potential downsides and counter bullish arguments effectively.
+        template = """You are a Bear Analyst making the case against investing in the {target_label}. Your goal is to present a well-reasoned argument emphasizing risks, challenges, and negative indicators. Leverage the provided research and data to highlight potential downsides and counter bullish arguments effectively.
 
 Key points to focus on:
 
@@ -48,7 +49,11 @@ Latest world affairs news: {news_report}
 Conversation history of the debate: {history}
 Last bull argument: {current_response}
 Use this information to deliver a compelling bear argument, refute the bull's claims, and engage in a dynamic debate that demonstrates the risks and weaknesses of investing in the {target_label}.
-""" + get_language_instruction()
+"""
+        prompt = template.format_map(locals()) + get_language_instruction()
+        observe = legacy_prompt_observer(on_prompt, "bear", template, state)
+        if observe is not None:
+            observe(prompt)
 
         response = llm.invoke(prompt)
 
