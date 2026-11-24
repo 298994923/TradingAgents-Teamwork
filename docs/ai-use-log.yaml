@@ -550,7 +550,7 @@ entries:
       permission["*"]. Not fixed yet, waiting for D to say which config is the real
       one. Local: 1637 passed, 1 skipped, 1 deselected, 100 subtests; ruff clean.
       GitHub Actions was NOT run.
-      
+
   - id: "B-PR22-prompt-receipts-20261124"
     pr_id: "22"
     date: "2026-11-24"
@@ -566,7 +566,7 @@ entries:
   - id: "60252993-linan-ai-use-18"
     pr_id: "pre-pr"
     date: "2026-11-24"
-    task: "Fix the CLI --variant bug so the flag no longer overrides configured debate depth"
+    task: "Fix the CLI --variant bug and record the effective variant in the manifest"
     agent: "opencode"
     model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
     prompt_version: "N/A"
@@ -580,12 +580,33 @@ entries:
       Asked opencode to fix it, then checked the diff myself. Now no flag means the
       old legacy run, v0 runs two rounds and writes two in the manifest, v1 reaches
       the graph (and still fails closed before any model call if the graph cannot
-      take it), and v2 behaves as before. Local: 66 focused tests passed, 1904
-      passed / 1 skipped / 1 deselected / 100 subtests in the full suite, ruff clean.
-      The handoff note is in bugfix/C-to-E-v1-cli-post-receipts-validation-follow-up.md.
-      Still open: git add the new test file; v1 end-to-end needs C's selector patch;
-      the test stub also changes risk rounds, which differs from ADR-006 (production
-      code is unaffected, but that assertion is misleading). GitHub Actions was NOT run.
+      take it), and v2 behaves as before. C then pointed out that E had promised a
+      workflow_variant field in config_snapshot; that is now written too, using the
+      same effective variant as the first segment of run_id (v0 when the flag is
+      omitted). The test stub was corrected to change only the debate rounds, as
+      ADR-006 says. Local: 104 focused tests passed, 1911 passed / 1 skipped /
+      1 deselected / 100 subtests in the full suite, ruff clean. The handoff note is
+      in bugfix/C-to-E-v1-cli-post-receipts-validation-follow-up.md. Still open: a
+      real v1 run needs C's selector patch merged. GitHub Actions was NOT run.
+
+  - id: "60252993-linan-ai-use-19"
+    pr_id: "pre-pr"
+    date: "2026-11-25"
+    task: "Record the effective variant in config_snapshot and fix the variant test stub"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Follow-up to entry 18. C asked whether the run_id plus effective depths were
+      enough, but E had already promised a separate workflow_variant field in
+      config_snapshot, so opencode added it. It takes the value from the same effective
+      variant used in the run_id first segment (v0 when the flag is omitted), so the
+      two always agree. The test stub was also corrected to change only max_debate_rounds,
+      as ADR-006 says. Local: 104 focused tests passed, 1911 passed / 1 skipped /
+      1 deselected / 100 subtests in the full suite, ruff clean. Human reviewed the
+      diff. GitHub Actions was NOT run.
 
   - id: "61023334-LiChengzhi-ai-use-05"
     pr_id: "21"
@@ -651,3 +672,25 @@ entries:
       verification and local preparation only; no fresh acceptance of the
       combined candidate, permission-sync disposition, published CI, or
       approval to publish, promote from Draft, or merge is recorded here.
+      On 2026-11-25, OpenCode (openai/gpt-6.2-sol, session
+      ses_e068a4c8dffe1zl0wRjxuCc0m7) verified the next six-file refresh on
+      main a708d7df853153b5a4b87ec50347ed5076218e3c after E's merged PR #30.
+      Draft head 236a951f310e0212b1f51e89c1972464231f83d7 matched the previous
+      verified overlay tree. The graph and both pinned tests remain byte-identical.
+      Main's ledgers, including E's manifest follow-up, were preserved outside
+      the scoped C additions. Before restoring the graph, the two pinned suites
+      had 3 passing controls and 11 expected missing-selector failures. With
+      the real public CLI, graph, and manifest writer, all 4 offline cases
+      passed: omission retained the legacy signature and three Bull/Bear
+      pairs while publishing the v0 manifest label; explicit v0 and v1 ran
+      two and one pairs and wrote matching config_snapshot.workflow_variant
+      values, run IDs, and effective depths. Risk stayed unchanged and v2
+      made zero model calls. All 14 V1 and 41 checkpoint cases passed. Full
+      offline: 1925 passed, 1 skipped (langchain_aws), 1 deselected, 24
+      warnings and 100 passing subtests. Ruff and diff checks passed.
+      Permission-sync output was byte-identical to the prior run, with
+      10 existing findings. See C-v1-pr21-post-manifest-refresh-evidence.md.
+      The prior human acceptance and flags still apply only to the unchanged
+      C implementation; no new acceptance of the combined candidate,
+      permission-sync disposition, published CI, or publication or merge
+      approval is recorded here.
