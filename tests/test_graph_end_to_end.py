@@ -428,3 +428,62 @@ def test_graph_prompt_receipts(tmp_path, monkeypatch, offline, manager_retries):
         (role, hashlib.sha256(prompt.encode()).hexdigest()) for role, prompt in sent]
     for receipt in receipts:
         assert set(receipt["prompt_hashes"]) == {"b." + receipt["role"]}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("manager_retries", [False, True])
+def test_cli_records_actual_debate_sends(tmp_path, monkeypatch, offline, manager_retries):
+    import hashlib
+    import json
+    from contextlib import nullcontext
+
+    import cli.run as cli_run
+    from cli.models import AnalystType
+
+    sent = []
+
+    class RecordingModel(ScriptedModel):
+        def invoke(self, prompt, *args, **kwargs):
+            if isinstance(prompt, str):
+                for role, prefix in (("bull", "You are a Bull Analyst"),
+                                     ("bear", "You are a Bear Analyst"),
+                                     ("research_manager", "As the Research Manager")):
+                    if prompt.startswith(prefix):
+                        sent.append((role, prompt))
+            return super().invoke(prompt, *args, **kwargs)
+
+        def with_structured_output(self, schema, **kwargs):
+            if schema is schemas.ResearchPlan:
+                def send(prompt):
+                    sent.append(("research_manager", prompt))
+                    return None if manager_retries else STRUCTURED[schema]
+                return RunnableLambda(send)
+            return super().with_structured_output(schema, **kwargs)
+
+    model = RecordingModel()
+    cfg = dict(DEFAULT_CONFIG, results_dir=str(tmp_path), data_cache_dir=str(tmp_path / "cache"),
+               memory_log_path=str(tmp_path / "memory"), checkpoint_enabled=False)
+    monkeypatch.setattr(trading_graph, "create_tier_client", lambda *a, **kw: _Client(model))
+    monkeypatch.setattr(cli_run, "unattended_gaps", lambda _: [])
+    monkeypatch.setattr(cli_run, "get_user_selections", lambda _: {
+        "ticker": "NVDA", "analysis_date": TRADE_DATE, "analysts": [AnalystType.MARKET], "asset_type": "stock"})
+    monkeypatch.setattr(cli_run, "_build_run_config", lambda *args: cfg)
+    monkeypatch.setattr(cli_run, "Live", lambda *a, **kw: nullcontext())
+    monkeypatch.setattr(cli_run, "update_display", lambda *a, **kw: None)
+    monkeypatch.setattr(cli_run, "_offer_reports", lambda *a, **kw: None)
+    monkeypatch.setattr(cli_run, "message_buffer", copy.deepcopy(cli_run.message_buffer))
+    cli_run.run_analysis()
+
+    path, = (tmp_path / "runs").glob("*/manifest.json")
+    manifest = json.loads(path.read_text())
+    sidecar = json.loads(path.with_name("prompt_receipts.json").read_text())
+    def sha(text):
+        return hashlib.sha256(text.encode()).hexdigest()
+    assert manifest["failure"] is None
+    assert manifest["run_id"] == sidecar["run_id"] == path.parent.name
+    assert set(manifest["prompt_hashes"]) == {"bull", "bear", "research_manager"}
+    assert all(len(value) == 64 for value in manifest["prompt_hashes"].values())
+    assert [role for role, _ in sent].count("research_manager") == 1 + int(manager_retries)
+    assert [(c["role"], c["input_sha256"]) for c in sidecar["calls"]] == [
+        (role, sha(prompt)) for role, prompt in sent]
+    assert all(c["run_id"] == manifest["run_id"] for c in sidecar["calls"])

@@ -31,13 +31,14 @@ from cli.selections import depth_from_env, get_user_selections, unattended_gaps
 from cli.stats_handler import StatsCallbackHandler
 from tradingagents import __version__
 from tradingagents.agents.rating import is_review, run_rating
+from tradingagents.b_interfaces import PromptReceipts
 from tradingagents.dataflows.symbols import safe_ticker_component
 from tradingagents.default_config import DEFAULT_CONFIG
 from tradingagents.graph.analyst_execution import (
     build_analyst_execution_plan,
 )
 from tradingagents.graph.trading_graph import TradingAgentsGraph
-from tradingagents.run_recorder import RunEvent, build_run_id, write_manifest
+from tradingagents.run_recorder import RUN_ID_PATTERN, RunEvent, build_run_id, write_manifest
 
 _VALID_VARIANTS = ("v0", "v1", "v2")
 
@@ -100,13 +101,13 @@ def write_run_manifest(
     clock=None,
     stop_reason: str | None = None,
     evidence_mode: str = "strict",
+    prompt_receipts=(),
 ) -> Path:
     """Write this run's manifest to ``<results_dir>/runs/<run_id>/manifest.json``.
 
     ``stop_reason`` is read from the run's final state by the caller (C owns the
     value domain); it is ``None`` when the graph did not reach a terminal state.
-    ``prompt_hashes`` (B) is ``{}`` and ``evidence_snapshot`` (A) is ``None`` until
-    those members' contracts land. ``duration_seconds`` is measured from
+    Role template hashes come from observed model sends. ``duration_seconds`` is measured from
     ``started_at`` and ``clock`` (``time.time`` by default) when not supplied;
     passing both keeps it testable.
 
@@ -136,10 +137,22 @@ def write_run_manifest(
         stop_reason=stop_reason,
     )
     runs_dir = Path(config["results_dir"]) / "runs"
-    run_id = _unique_run_id(runs_dir, run_id)
-    event = replace(event, run_id=run_id)
-    manifest_dir = runs_dir / run_id
-    manifest_dir.mkdir(parents=True, exist_ok=True)
+    if not RUN_ID_PATTERN.fullmatch(run_id):
+        raise ValueError(f"invalid run_id {run_id!r}")
+    while True:
+        candidate = _unique_run_id(runs_dir, run_id)
+        manifest_dir = runs_dir / candidate
+        try:
+            manifest_dir.mkdir(parents=True)
+            break
+        except FileExistsError:
+            continue
+    run_id = candidate
+    collector = PromptReceipts(run_id)
+    for receipt in prompt_receipts:
+        collector.record(receipt)
+    hashes = collector.finish(runs_dir, expected_calls=None)
+    event = replace(event, run_id=run_id, prompt_hashes=hashes)
     path = write_manifest(event, manifest_dir / "manifest.json")
     write_evidence_mode(manifest_dir / "evidence-mode.json", run_id, evidence_mode)
     return path
@@ -194,7 +207,7 @@ def _unique_run_id(runs_dir: Path, run_id: str) -> str:
     return candidate
 
 
-def _make_manifest_writer(config: dict, selections: dict, stats_handler, started_at=None, variant="v0"):
+def _make_manifest_writer(config: dict, selections: dict, stats_handler, started_at=None, variant="v0", prompt_receipts=()):
     """Return a ``write(failure=..., outcome=...)`` bound to this run's inputs.
 
     ``variant`` selects the architecture under test and becomes the first segment
@@ -217,6 +230,7 @@ def _make_manifest_writer(config: dict, selections: dict, stats_handler, started
             repeat=1,
             at=datetime.now(UTC),
             version=__version__,
+            prompt_receipts=prompt_receipts,
             started_at=started_at,
             stop_reason=stop_reason,
             evidence_mode=config.get("evidence_mode", "strict"),
@@ -348,9 +362,11 @@ def _reject_unavailable_variant(variant: str, graph_cls=None) -> None:
         raise typer.Exit(code=1)
 
 
-def _build_graph(graph_cls, selected_analyst_keys, config, callbacks, *, workflow_variant):
+def _build_graph(graph_cls, selected_analyst_keys, config, callbacks, *, workflow_variant, on_prompt=None):
     """Construct the graph, forwarding ``workflow_variant`` only when accepted."""
     kwargs = {"config": config, "debug": True, "callbacks": callbacks}
+    if on_prompt is not None and "on_prompt" in inspect.signature(graph_cls).parameters:
+        kwargs["on_prompt"] = on_prompt
     if _graph_accepts_workflow_variant(graph_cls):
         kwargs["workflow_variant"] = workflow_variant
     return graph_cls(selected_analyst_keys, **kwargs)
@@ -398,12 +414,14 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
     analyst_execution_plan = build_analyst_execution_plan(selected_analyst_keys)
     analyst_wall_time_tracker = AnalystWallTimeTracker(analyst_execution_plan)
 
+    prompt_receipts = []
     graph = _build_graph(
         TradingAgentsGraph,
         selected_analyst_keys,
         config,
         [stats_handler],
         workflow_variant=variant,
+        on_prompt=prompt_receipts.append,
     )
     # The variant the graph actually enabled drives the manifest identity.
     manifest_variant = _effective_manifest_variant(graph, variant)
@@ -631,7 +649,7 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
             # Clean run: write the manifest, log the decision, then drop this run's
             # checkpoint so a later run starts fresh. The manifest is written first,
             # inside _finalize_run_manifest, so teardown can never lose the record.
-            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=manifest_variant)
+            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=manifest_variant, prompt_receipts=prompt_receipts)
             _finalize_run_manifest(
                 write=manifest_write,
                 graph=graph,
@@ -645,7 +663,7 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
         except BaseException as failure:
             # A failure mid-run still leaves a manifest; the checkpoint is kept for
             # resume and the failure is re-raised after the finally below.
-            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=manifest_variant)
+            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=manifest_variant, prompt_receipts=prompt_receipts)
             _finalize_run_manifest(
                 write=manifest_write,
                 graph=graph,
