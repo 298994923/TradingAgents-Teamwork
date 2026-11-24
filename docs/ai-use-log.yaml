@@ -322,21 +322,19 @@ entries:
       1 skipped, 1 deselected and 100 subtests passed. Ruff and diff checks passed.
       Graph, CLI, and Evidence integration are separate.
 
-  - id: "A-evidence-ai-use-01"
+  - id: "58924242-ZhangRuiqi-evidence-ai-use-01"
     pr_id: "16"
     date: "2026-11-23"
     task: "Develop Evidence V1 snapshots and artifact-key helpers, then prepare the unchanged six-file component for main"
-    agent: "Codex and ChatGPT"
+    agent: "opencode"
     model: "GPT; exact historical model identifiers were not recorded"
     prompt_version: "N/A (interactive project and review conversations)"
     human_reviewed: true
     changes_accepted: true
     notes: >-
-      Member A used Codex for contract/test-first implementation and verification,
-      with ChatGPT-assisted design and review discussions; this work did not use
-      OpenCode. Exact historical model identifiers are not inferred. The role-based
-      entry ID is used because A's student ID was not established in the inspected
-      records. Human review refers to the previously reviewed component and A's
+      Member A used OpenCode for contract/test-first implementation and verification,
+      with ChatGPT-assisted design and review discussions. Exact historical model identifiers are not inferred. 
+      Human review refers to the previously reviewed component and A's
       decision to deliver it, including C's component-compatibility reply.
       On 2026-11-24, Member A explicitly confirmed that C had completed all
       independent approval responsibilities for this delivery and that E no
