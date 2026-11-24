@@ -69,8 +69,9 @@ def analyze(
         help="Save the report as one HTML page too, complete_report.html, without asking (default: yes)",
     ),
     variant: str = typer.Option(
-        "v0", "--variant",
-        help="Architecture variant for the run manifest: v0 (original), v1 (trimmed), v2 (adaptive).",
+        None, "--variant",
+        help="Architecture variant: v0 (original), v1 (trimmed), v2 (adaptive). "
+        "Omit to keep the configured legacy run.",
     ),
 ):
     """Run an analysis. This is what a bare `tradingagents` does.
@@ -84,14 +85,18 @@ def analyze(
         from tradingagents.graph.checkpointer import clear_all_checkpoints
         n = clear_all_checkpoints(DEFAULT_CONFIG["data_cache_dir"])
         console.print(f"[yellow]Cleared {n} checkpoint(s).[/yellow]")
-    try:
-        variant = _validate_variant(variant)
-    except ValueError as exc:
-        console.print(f"[red]{exc}[/red]")
-        raise typer.Exit(code=1) from None
-    # Refuse v1/v2 here too, before run_analysis is even called, so an unavailable
-    # variant is rejected before any model call.
-    _reject_unavailable_variant(variant)
+    # Validate only an explicit variant; omitting the flag is the legacy run.
+    if variant is not None:
+        try:
+            variant = _validate_variant(variant)
+        except ValueError as exc:
+            console.print(f"[red]{exc}[/red]")
+            raise typer.Exit(code=1) from None
+        # v2 is not delivered: refuse it before any model call. v1 is allowed here
+        # and decided in run_analysis once the graph is known, so it can be
+        # forwarded and run as v1 rather than rejected before construction.
+        if variant == "v2":
+            _reject_unavailable_variant(variant)
     portfolio_context = None
     if portfolio:
         try:
