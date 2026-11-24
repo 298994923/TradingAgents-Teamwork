@@ -557,9 +557,9 @@ entries:
     date: "2026-11-24"
     task: "Forward prompt receipts through the main research graph."
     agent: "Codex"
-    human_reviewed: false
+    human_reviewed: true
     notes: >-
       The agent prepared the graph callback wiring and offline tests. Candidate
       6ad01b8 has the same tree as d81658d. The 41 checkpoint cases and two
       graph receipt cases passed on that tree, including manager fallback.
-      The V1 selector adaptation is outside this PR. Human review is pending.
+      The V1 selector adaptation is outside this PR. Role B reviewed and accepted this AI-use record.
