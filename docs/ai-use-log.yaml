@@ -365,3 +365,23 @@ entries:
       acceptance of the reviewed component, not completion of the GitHub merge.
       The separate integration lint cleanup is stashed and is not part of this
       entry or this candidate.
+
+  - id: "61023334-LiChengzhi-ai-use-04"
+    pr_id: "pre-pr"
+    date: "2026-11-24"
+    task: "Port and verify programmatic keyed checkpoint graph lifecycle"
+    agent: "opencode"
+    model: "openai/gpt-6.2-sol"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Role D (60894001) signed plan v0.1, the two fixed tests and the conditional
+      protected-path scope on 2026-11-23. After C recorded the existing approval,
+      OpenCode ported the five lifecycle methods in trading_graph.py on main@61402af.
+      The formal red run recorded 2 expected failures and 38 passes. The interim
+      candidate passed all 40 cases. Full offline regression recorded 1756 passed,
+      1 skipped, 1 deselected and 100 subtests passed. Ruff and diff checks passed.
+      Final same-candidate verification still requires the real B receipt case.
+      Role C (61023334) reviewed and accepted the interim candidate in chat
+      on 2026-11-24, recorded in C-keyed-checkpoint-graph-interim-acceptance.md.

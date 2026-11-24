@@ -46,10 +46,15 @@ approvals:
     date: "2026-11-23"
     tests: ["test/offline/test_graph_guard_opt_in.py", "test/offline/test_graph_guard_opt_in_reason_chain.py"]
 
+  # Guard tests retain their existing approval scope. The keyed graph test is
+  # separately covered by gate1-C-keyed-checkpoint-graph.md and D’s signed ruling.
   - src: "src/tradingagents/graph/trading_graph.py"
     approver: "60894001"
     date: "2026-11-23"
-    tests: ["test/offline/test_graph_guard_opt_in.py", "test/offline/test_graph_guard_opt_in_reason_chain.py"]
+    tests:
+      - "test/offline/test_graph_guard_opt_in.py"
+      - "test/offline/test_graph_guard_opt_in_reason_chain.py"
+      - "test/offline/test_checkpoint_graph_run_key.py"
 
   # D-to-C-checkpoint-storage-ruling.md, v0.1 plan/test/scope approval.
   - src: "src/tradingagents/graph/checkpointer.py"
