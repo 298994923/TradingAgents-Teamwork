@@ -35,9 +35,9 @@ class PresetGraph:
         self.selected_analysts = analysts or []
         self.workflow_variant = workflow_variant
         if workflow_variant in _PRESETS:
-            rounds = _PRESETS[workflow_variant]
-            self.config["max_debate_rounds"] = rounds
-            self.config["max_risk_discuss_rounds"] = rounds
+            # ADR-006: a preset changes only max_debate_rounds; risk rounds keep the
+            # configured value.
+            self.config["max_debate_rounds"] = _PRESETS[workflow_variant]
         self.model_calls = 0
 
     def run_settings(self):
@@ -59,7 +59,7 @@ def test_effective_config_overlays_run_settings_rounds():
                         workflow_variant="v0")
     effective = cli_run._effective_config({"max_debate_rounds": 3, "max_risk_discuss_rounds": 3}, graph)
     assert effective["max_debate_rounds"] == 2
-    assert effective["max_risk_discuss_rounds"] == 2
+    assert effective["max_risk_discuss_rounds"] == 3
 
 
 def test_effective_config_keeps_config_when_omitted():
@@ -86,8 +86,10 @@ def test_explicit_v0_manifest_records_effective_two_rounds(tmp_path, monkeypatch
             return {"llm_calls": 0, "tool_calls": 0, "tokens_in": None, "tokens_out": None}
 
     graph = PresetGraph(config={"max_debate_rounds": 3}, workflow_variant="v0")
-    effective = cli_run._effective_config({"results_dir": str(tmp_path), "max_debate_rounds": 3}, graph)
     variant = cli_run._effective_manifest_variant(graph, "v0")
+    effective = cli_run._effective_config(
+        {"results_dir": str(tmp_path), "max_debate_rounds": 3}, graph, variant
+    )
     write = cli_run._make_manifest_writer(
         effective,
         {"ticker": "NVDA", "analysis_date": "2026-11-20", "asset_type": "stock"},
@@ -97,6 +99,55 @@ def test_explicit_v0_manifest_records_effective_two_rounds(tmp_path, monkeypatch
     write(failure=None, outcome="Buy")
     assert captured["variant"] == "v0"
     assert captured["config"]["max_debate_rounds"] == 2
+
+
+# --- config_snapshot records workflow_variant (data-contract promise) -------
+
+
+def _write_real_manifest(tmp_path, requested):
+    """Run the real recorder path and return (manifest, run_id_first_segment)."""
+    from tradingagents.run_recorder import read_manifest
+
+    graph = PresetGraph(config={"max_debate_rounds": 3}, workflow_variant=requested)
+    variant = cli_run._effective_manifest_variant(graph, requested or "v0")
+    effective = cli_run._effective_config(
+        {"results_dir": str(tmp_path), "max_debate_rounds": 3}, graph, variant
+    )
+
+    class _Stats:
+        def get_stats(self):
+            return {"llm_calls": 0, "tool_calls": 0, "tokens_in": None, "tokens_out": None}
+
+    write = cli_run._make_manifest_writer(
+        effective,
+        {"ticker": "NVDA", "analysis_date": "2026-11-20", "asset_type": "stock"},
+        _Stats(),
+        variant=variant,
+    )
+    path = write(failure=None, outcome="Buy")
+    manifest = read_manifest(path)
+    return manifest, manifest["run_id"].split("-", 1)[0]
+
+
+def test_snapshot_workflow_variant_v0(tmp_path):
+    manifest, _ = _write_real_manifest(tmp_path, "v0")
+    assert manifest["config_snapshot"]["workflow_variant"] == "v0"
+
+
+def test_snapshot_workflow_variant_v1(tmp_path):
+    manifest, _ = _write_real_manifest(tmp_path, "v1")
+    assert manifest["config_snapshot"]["workflow_variant"] == "v1"
+
+
+def test_snapshot_workflow_variant_omitted_is_v0(tmp_path):
+    manifest, _ = _write_real_manifest(tmp_path, None)
+    assert manifest["config_snapshot"]["workflow_variant"] == "v0"
+
+
+def test_snapshot_variant_matches_run_id_first_segment(tmp_path):
+    for requested in ("v0", "v1", None):
+        manifest, segment = _write_real_manifest(tmp_path, requested)
+        assert manifest["config_snapshot"]["workflow_variant"] == segment
 
 
 # --- main.py: omitted vs explicit, v1 passes through, v2 rejected -----------
