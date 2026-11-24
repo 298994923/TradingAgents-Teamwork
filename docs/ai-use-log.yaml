@@ -552,3 +552,33 @@ entries:
       permission["*"]. Not fixed yet, waiting for D to say which config is the real
       one. Local: 1637 passed, 1 skipped, 1 deselected, 100 subtests; ruff clean.
       GitHub Actions was NOT run.
+
+  - id: "61023334-LiChengzhi-ai-use-05"
+    pr_id: "pre-pr"
+    date: "2026-11-24"
+    task: "Implement and verify the interim programmatic V1 workflow selector"
+    agent: "opencode"
+    model: "openai/gpt-6.2-sol"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      OpenCode session ses_e068a4c8dffe1zl0wRjxuCc0m7. Role D (Liu Kehong,
+      60894001) signed the main delivery ruling on 2026-11-23 and confirmed
+      ADR-006 adoption on 2026-11-24. Role C staged the Gate 1 record and
+      exact-path ledger before the formal source edit. Approved source scope:
+      only src/tradingagents/graph/trading_graph.py, adding the keyword-only
+      selector and early validation plus variant-aware signature and run
+      settings. The pinned fixed-pruning test was unchanged. Guard behavior,
+      keyed checkpoints, CLI, manifest, and V2 were outside the source scope.
+      On main 1930befce0e1e4520e4ffd0ef1afc841ada0d90c the test-first run had
+      2 passes and 9 expected failures for the missing constructor keyword.
+      The interim candidate passed 11 fixed-pruning tests and 17 checkpoint
+      controls; the full offline run had 1905 passes, 1 skip (langchain_aws),
+      1 deselection, 24 warnings, and 100 passing subtests. Ruff and diff
+      checks passed. On 2026-11-24, after reviewing the exact green source
+      diff and evidence, Role C (61023334) explicitly accepted this local
+      interim candidate. The human flags do not record publication or final
+      acceptance. Final verification still needs all 14 pinned cases on one
+      candidate with Role B's real prompt receipts. Role E's real CLI and
+      manifest check and formal traceability confirmation remain open.
