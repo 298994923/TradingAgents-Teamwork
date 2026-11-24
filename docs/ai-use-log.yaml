@@ -464,3 +464,91 @@ entries:
       still fails by design because it characterizes the old behaviour; the
       corrected-contract assertion is the new regression test.
       GitHub Actions was NOT run.
+
+  - id: "60252993-linan-ai-use-15"
+    pr_id: "N/A"
+    date: "2026-11-23"
+    task: "Atomic manifest publication and valid terminal-state check (reply to C)"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      C's resume-manifest probe reproduced two defects. (1) write_manifest used
+      open(path, "x"), which reserves the destination but not the content, so an
+      interrupted write left a truncated manifest at the final path; it now stages
+      the payload in the destination directory and publishes with one os.link,
+      keeping the no-overwrite rule and never exposing a partial file. (2)
+      resolve_run treated the mere existence of manifest.json as a terminal record,
+      so a fragment, another run's file or a failed terminal manifest returned
+      already_recorded and blocked the retry; it now reads and validates the
+      manifest (schema version, required fields, run_id match, failure is null) and
+      only then reports already_recorded. The resume module keeps its E3
+      no-cross-module-dependency rule by mirroring the RunEvent field list locally,
+      with a test pinning the mirror to the recorder. Added six regression tests
+      across test_run_recorder.py and test_resume.py. Human reviewed the result and
+      authorised this record. Local: 71 targeted, 1603 full (1 skipped,
+      1 deselected, 100 subtests), ruff clean; C's fixed-boundary usage probe passes
+      2/2 on this worktree. GitHub Actions was NOT run.
+
+  - id: "60252993-linan-ai-use-16"
+    pr_id: "N/A"
+    date: "2026-11-23"
+    task: "Report masking, manifest atomicity, V1 CLI forwarding, evidence and permission checks"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Delivered the four items C asked to receive with test results. (1) Report
+      masking: reporting._guard_disposition/_report_parts drop the Trader and
+      Portfolio actionable sections and the header rating when
+      guard_result.executable is false, replacing the decision with the guard
+      disposition; report_html.py shares the same parts and uses the same helper,
+      so Markdown and HTML cannot diverge. Nine tests cover BLOCK, REVIEW, PASS,
+      a legacy run without guard_result, PASS->BLOCK and BLOCK->PASS rewrites of
+      one directory, and that the source state stays unmutated. (2) Manifest
+      atomic publication and valid terminal-state check, as recorded in entry 15.
+      (3) V1 CLI: capability is detected from the TradingAgentsGraph constructor
+      signature instead of a default_config key (the selector is a keyword
+      argument), the variant is forwarded only when accepted, v2 is refused before
+      any model call, and the manifest records run_settings()' active variant;
+      twelve stub-graph tests cover omitted/v0/v1 forwarding and v2 refusal. (4)
+      Evidence and permissions: resume._verify_snapshot_artifact now prefers A's
+      parse_artifact_key/load_snapshot with typed error mapping and mirrors the
+      canonical key grammar when that module is not on the branch; the new
+      scripts/check_permission_sync.py reports drift between opencode.jsonc and the
+      policy source, with twelve tests. Two stale assertions in
+      test_c_integration_seams.py were corrected for the new variant mechanism.
+      Human reviewed the results and authorised this record. Local: 1641 passed,
+      1 skipped, 1 deselected, 100 subtests; ruff clean across src, tests, test,
+      scripts; C's fixed-boundary usage probe passes 2/2. GitHub Actions was NOT
+      run. C's report-masking probe still needs the guard wiring that lives only on
+      integration, so it was validated through the equivalent offline tests here.
+
+  - id: "60252993-linan-ai-use-17"
+    pr_id: "N/A"
+    date: "2026-11-24"
+    task: "Report masking, atomic manifest, resume check, variant flag, permission script"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Five things C asked for. Reports now hide the trader and portfolio proposals
+      when the guard says non-executable, and the HTML page follows the same rule.
+      write_manifest writes to a temp file and publishes it in one step, so a crash
+      can't leave half a file. resolve_run only says already_recorded when the
+      manifest is complete and has no failure. The --variant flag now checks whether
+      the graph actually takes workflow_variant instead of looking for a config key.
+      New scripts/check_permission_sync.py compares opencode.jsonc with the policy
+      file. Reviewed the results: the first four work. The permission script still
+      flags the real 157-line config while passing the current stub, because it
+      requires human_only paths to be denied for read as well as edit; real configs
+      allow humans to read them. Also it misses the default when it sits in
+      permission["*"]. Not fixed yet, waiting for D to say which config is the real
+      one. Local: 1637 passed, 1 skipped, 1 deselected, 100 subtests; ruff clean.
+      GitHub Actions was NOT run.

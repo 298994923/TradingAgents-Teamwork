@@ -13,7 +13,7 @@ from importlib.resources import files
 from markdown_it import MarkdownIt
 
 from tradingagents.agents.rating import run_rating
-from tradingagents.reporting import analyst_names
+from tradingagents.reporting import _blocked_guard, analyst_names, guard_disposition
 
 # Ratings by direction, so the page can show which way the call leans.
 _TONE = {"Buy": "up", "Overweight": "up", "Hold": "level", "Underweight": "down", "Sell": "down"}
@@ -248,8 +248,14 @@ def _run_details(final_state: dict, settings: dict | None) -> list[tuple[str, st
 def render_report(ticker: str, final_state: dict, settings: dict | None, parts) -> str:
     """The report page: title and rating, what produced the run, contents, sections."""
     md = _markdown()
-    rating = run_rating(final_state) if final_state.get("final_trade_decision") else ""
-    tone = _TONE.get(rating, "review")
+    guard = _blocked_guard(final_state)
+    if guard is not None:
+        # No tradeable rating on a non-executable run: show the guard disposition.
+        rating = ""
+        tone = "review"
+    else:
+        rating = run_rating(final_state) if final_state.get("final_trade_decision") else ""
+        tone = _TONE.get(rating, "review")
     date = final_state.get("trade_date", "")
 
     title = f'<span class="ticker">{escape(ticker)}</span>'
@@ -260,6 +266,11 @@ def render_report(ticker: str, final_state: dict, settings: dict | None, parts) 
         f"<dt>{escape(label)}</dt><dd>{value}</dd></div>"
         for label, value in _run_details(final_state, settings)
     )
+    if guard is not None:
+        details += (
+            '<div class="note"><dt>Guard</dt>'
+            f"<dd>{escape(guard_disposition(guard))}</dd></div>"
+        )
 
     contents, body = [], []
     for n, (heading, _folder, written) in enumerate(parts, 1):

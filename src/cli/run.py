@@ -1,5 +1,6 @@
 """Running one analysis from the CLI: build the graph, stream it into the live view, save the report."""
 
+import inspect
 import json
 import os
 import re
@@ -309,31 +310,72 @@ def _build_run_config(selections: dict, checkpoint: bool | None) -> dict:
     return config
 
 
-def _reject_unavailable_variant(variant: str, config: dict | None = None) -> None:
-    """Refuse v1/v2 until C's ``workflow_variant`` key is wired into the graph.
+def _graph_accepts_workflow_variant(graph_cls) -> bool:
+    """Whether ``graph_cls.__init__`` has an explicit ``workflow_variant`` parameter.
 
-    v0 is always allowed. A non-v0 variant is allowed only when ``config`` actually
-    carries ``workflow_variant`` (C's enable switch); otherwise this raises
-    ``typer.Exit`` before any model call, so a v0-compatible run is never labelled
-    v1/v2.
+    Only an explicit, named parameter counts. A bare ``**kwargs`` catch-all is *not*
+    treated as support: a legacy graph that swallows unknown kwargs would otherwise be
+    handed v1 and silently ignore it, mislabelling a v0-compatible run. A graph class
+    that cannot introspect returns ``False`` rather than guessing.
+    """
+    try:
+        params = inspect.signature(graph_cls.__init__).parameters
+    except (TypeError, ValueError):
+        return False
+    return "workflow_variant" in params
+
+
+def _reject_unavailable_variant(variant: str, graph_cls=None) -> None:
+    """Refuse a variant that the workflow cannot run, before any model call.
+
+    v0 is always allowed. v2 is not delivered yet and is refused regardless of the
+    graph. v1 is allowed only when ``graph_cls`` accepts ``workflow_variant``;
+    otherwise a v0-compatible run must not be mislabelled v1.
     """
     if variant == "v0":
         return
-    if (config if config is not None else DEFAULT_CONFIG).get("workflow_variant"):
-        return
-    console.print(
-        f"[red]Variant {variant!r} is not available yet: the workflow only "
-        f"implements v0. Run with --variant v0.[/red]"
-    )
-    raise typer.Exit(code=1)
+    if variant == "v2":
+        console.print(
+            "[red]Variant 'v2' is not available yet: the adaptive workflow is not "
+            "delivered. Use --variant v0 (or v1 if the graph supports it).[/red]"
+        )
+        raise typer.Exit(code=1)
+    if graph_cls is None or not _graph_accepts_workflow_variant(graph_cls):
+        console.print(
+            f"[red]Variant {variant!r} is not available: this graph does not accept "
+            "workflow_variant. Run with --variant v0.[/red]"
+        )
+        raise typer.Exit(code=1)
+
+
+def _build_graph(graph_cls, selected_analyst_keys, config, callbacks, *, workflow_variant):
+    """Construct the graph, forwarding ``workflow_variant`` only when accepted."""
+    kwargs = {"config": config, "debug": True, "callbacks": callbacks}
+    if _graph_accepts_workflow_variant(graph_cls):
+        kwargs["workflow_variant"] = workflow_variant
+    return graph_cls(selected_analyst_keys, **kwargs)
+
+
+def _effective_manifest_variant(graph, requested: str) -> str:
+    """The variant the graph actually enabled, from ``run_settings()``, else requested."""
+    run_settings = getattr(graph, "run_settings", None)
+    if not callable(run_settings):
+        return requested
+    try:
+        settings = run_settings()
+    except (TypeError, ValueError):
+        return requested
+    if not isinstance(settings, dict):
+        return requested
+    return settings.get("workflow_variant") or requested
 
 
 def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, variant="v0"):
     flags = flags or {}
     variant = _validate_variant(variant)
-    # v1/v2 are not implemented in the workflow yet (C's `workflow_variant` key is
-    # not wired into the graph). Refuse them before any setup or model call.
-    _reject_unavailable_variant(variant)
+    # Refuse a variant the graph cannot run before any setup or model call: v2 is
+    # not delivered, and v1 needs a graph that accepts workflow_variant.
+    _reject_unavailable_variant(variant, TradingAgentsGraph)
     # With no terminal nothing can answer a prompt: name every question still
     # open before any model is called, rather than stopping at the first one.
     if not (sys.stdin and sys.stdin.isatty()):
@@ -356,12 +398,15 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
     analyst_execution_plan = build_analyst_execution_plan(selected_analyst_keys)
     analyst_wall_time_tracker = AnalystWallTimeTracker(analyst_execution_plan)
 
-    graph = TradingAgentsGraph(
+    graph = _build_graph(
+        TradingAgentsGraph,
         selected_analyst_keys,
-        config=config,
-        debug=True,
-        callbacks=[stats_handler],
+        config,
+        [stats_handler],
+        workflow_variant=variant,
     )
+    # The variant the graph actually enabled drives the manifest identity.
+    manifest_variant = _effective_manifest_variant(graph, variant)
 
     message_buffer.init_for_analysis(selected_analyst_keys)
 
@@ -586,7 +631,7 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
             # Clean run: write the manifest, log the decision, then drop this run's
             # checkpoint so a later run starts fresh. The manifest is written first,
             # inside _finalize_run_manifest, so teardown can never lose the record.
-            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=variant)
+            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=manifest_variant)
             _finalize_run_manifest(
                 write=manifest_write,
                 graph=graph,
@@ -600,7 +645,7 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
         except BaseException as failure:
             # A failure mid-run still leaves a manifest; the checkpoint is kept for
             # resume and the failure is re-raised after the finally below.
-            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=variant)
+            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=manifest_variant)
             _finalize_run_manifest(
                 write=manifest_write,
                 graph=graph,

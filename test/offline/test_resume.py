@@ -195,14 +195,75 @@ def test_resolve_run_snapshot_id_mismatch(tmp_path):
     assert exc.value.code == "snapshot_id_mismatch"
 
 
+def _valid_manifest_dict():
+    """A complete, valid v1 manifest with ``failure`` null (as run_recorder writes)."""
+    return {
+        "schema_version": 1,
+        "run_id": RUN_ID,
+        "created_at": AT,
+        "version": "0.7.1",
+        "ticker": "NVDA",
+        "trade_date": "2026-11-20",
+        "asset_type": "stock",
+        "outcome": "Buy",
+        "config_snapshot": {},
+        "prompt_hashes": {},
+        "evidence_snapshot": None,
+        "usage": {"llm_calls": 0, "tool_calls": 0, "tokens_in": None, "tokens_out": None},
+        "duration_seconds": 1.0,
+        "failure": None,
+        "stop_reason": None,
+    }
+
+
 def test_resolve_run_already_recorded(tmp_path):
     _write_checkpoint(tmp_path)
-    # A completed manifest for this run already exists.
+    # A complete, valid manifest with failure null for this run already exists.
     manifest = checkpoint_path(_config(tmp_path), RUN_ID).parent / "manifest.json"
-    manifest.write_text(json.dumps({"schema_version": 1, "run_id": RUN_ID}), encoding="utf-8")
+    manifest.write_text(json.dumps(_valid_manifest_dict()), encoding="utf-8")
     with pytest.raises(ResumeError) as exc:
         resolve_run(RUN_ID, _config(tmp_path))
     assert exc.value.code == "already_recorded"
+
+
+def test_truncated_manifest_does_not_count_as_recorded(tmp_path):
+    _write_checkpoint(tmp_path)
+    manifest = checkpoint_path(_config(tmp_path), RUN_ID).parent / "manifest.json"
+    manifest.write_text('{"schema_version": 1, "run_id": ', encoding="utf-8")  # truncated
+    # A truncated manifest must not block the retry: resolve falls through to the
+    # checkpoint and returns a usable ref.
+    ref = resolve_run(RUN_ID, _config(tmp_path))
+    assert isinstance(ref, ResumeRef)
+
+
+def test_failed_manifest_does_not_count_as_recorded(tmp_path):
+    _write_checkpoint(tmp_path)
+    manifest = checkpoint_path(_config(tmp_path), RUN_ID).parent / "manifest.json"
+    payload = _valid_manifest_dict()
+    payload["failure"] = "boom"
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    # A manifest that recorded a failure is not a completed run.
+    ref = resolve_run(RUN_ID, _config(tmp_path))
+    assert isinstance(ref, ResumeRef)
+
+
+def test_incomplete_manifest_does_not_count_as_recorded(tmp_path):
+    _write_checkpoint(tmp_path)
+    manifest = checkpoint_path(_config(tmp_path), RUN_ID).parent / "manifest.json"
+    manifest.write_text(json.dumps({"schema_version": 1, "run_id": RUN_ID}), encoding="utf-8")
+    # Missing required fields / no ``failure`` key: not a valid completion.
+    ref = resolve_run(RUN_ID, _config(tmp_path))
+    assert isinstance(ref, ResumeRef)
+
+
+def test_wrong_schema_manifest_does_not_count_as_recorded(tmp_path):
+    _write_checkpoint(tmp_path)
+    manifest = checkpoint_path(_config(tmp_path), RUN_ID).parent / "manifest.json"
+    payload = _valid_manifest_dict()
+    payload["schema_version"] = 999
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    ref = resolve_run(RUN_ID, _config(tmp_path))
+    assert isinstance(ref, ResumeRef)
 
 
 # --- three-step: resume success clears checkpoint ----------------------------

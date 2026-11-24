@@ -17,12 +17,37 @@ def analyst_names(keys) -> list[str]:
     return ["sentiment" if key == "social" else key for key in keys or []]
 
 
+def _blocked_guard(final_state: dict) -> dict | None:
+    """The trusted ``guard_result`` when it makes the run non-executable, else ``None``.
+
+    A non-executable verdict (``executable is False``, i.e. BLOCK / REVIEW) means the
+    trader and portfolio proposals must not reach the report. Runs with no
+    ``guard_result`` (absence is not PASS, but is also not a block) and PASS runs
+    return ``None`` and are reported unchanged.
+    """
+    guard = final_state.get("guard_result")
+    if isinstance(guard, dict) and guard.get("executable") is False:
+        return guard
+    return None
+
+
+def guard_disposition(guard: dict) -> str:
+    """The non-executable disposition line shown in place of the decision."""
+    verdict = guard.get("verdict", "REVIEW")
+    reason = guard.get("reason_code") or "UNKNOWN"
+    return f"GUARD {verdict} ({reason}): non-executable disposition"
+
+
 def _header(ticker: str, final_state: dict, settings: dict | None) -> str:
     """The report's title and what produced it: analysis date, version, models, analysts, vendors."""
     lines = [f"# Trading Analysis Report: {ticker}", ""]
     if final_state.get("trade_date"):
         lines.append(f"- Analysis date: {final_state['trade_date']}")
-    if final_state.get("final_trade_decision"):
+    guard = _blocked_guard(final_state)
+    if guard is not None:
+        # A blocked/review run has no tradeable rating; show the guard disposition.
+        lines.append(f"- {guard_disposition(guard)}")
+    elif final_state.get("final_trade_decision"):
         lines.append(f"- Rating: {run_rating(final_state)}")
     lines.append(f"- Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     if settings:
@@ -74,11 +99,24 @@ _SECTIONS = (
 
 
 def _report_parts(final_state: dict) -> list[tuple[str, str, list[tuple[str, str, str]]]]:
-    """The sections with something to say: (heading, folder, [(agent, file, text)])."""
+    """The sections with something to say: (heading, folder, [(agent, file, text)]).
+
+    A non-executable guard hides the trade proposals: the Trading Team plan is
+    dropped entirely, and the Portfolio Manager decision is replaced by the guard
+    verdict and reason. Analyst, research, and risk evidence are kept. Everything
+    else (PASS runs, runs without a ``guard_result``) is unchanged.
+    """
+    guard = _blocked_guard(final_state)
     parts = []
     for heading, folder, agents in _SECTIONS:
+        if guard is not None and folder == "3_trading":
+            # No trader proposal on a non-executable run.
+            continue
         written = []
         for agent, filename, path in agents:
+            if guard is not None and _matches_decision(path):
+                written.append((agent, filename, guard_disposition(guard)))
+                continue
             value = final_state
             for key in path:
                 value = (value or {}).get(key)
@@ -87,6 +125,11 @@ def _report_parts(final_state: dict) -> list[tuple[str, str, list[tuple[str, str
         if written:
             parts.append((heading, folder, written))
     return parts
+
+
+def _matches_decision(path: tuple[str, ...]) -> bool:
+    """True for the Portfolio Manager decision path (``final_trade_decision``)."""
+    return path == ("final_trade_decision",)
 
 
 def write_report_tree(final_state: dict, ticker: str, save_path, settings: dict | None = None,

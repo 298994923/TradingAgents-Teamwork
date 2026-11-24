@@ -7,13 +7,13 @@
 approvals:
   - src: "src/tradingagents/run_recorder.py"
     approver: "60252993"
-    date: "2026-11-21"
+    date: "2026-11-24"
     tests: ["test/offline/test_run_recorder.py"]
 
   - src: "src/cli/run.py"
     approver: "60252993"
-    date: "2026-11-22"
-    tests: ["test/offline/test_cli_run_manifest.py", "test/offline/test_compare_runs.py"]
+    date: "2026-11-24"
+    tests: ["test/offline/test_variant_forwarding.py"]
 
   - src: "src/cli/main.py"
     approver: "60252993"
@@ -85,6 +85,16 @@ approvals:
     tests: ["test/offline/test_stats_calls.py", "test/offline/test_token_usage.py",
             "test/offline/test_usage_window.py"]
 
+  - src: "src/tradingagents/reporting.py"
+    approver: "60252993"
+    date: "2026-11-24"
+    tests: ["test/offline/test_guard_report_masking.py"]
+
+  - src: "src/tradingagents/report_html.py"
+    approver: "60252993"
+    date: "2026-11-24"
+    tests: ["test/offline/test_guard_report_masking.py"]
+
   - src: "src/cli/display.py"
     approver: "60252993"
     date: "2026-11-22"
@@ -92,7 +102,7 @@ approvals:
 
   - src: "src/tradingagents/resume.py"
     approver: "60252993"
-    date: "2026-11-22"
+    date: "2026-11-24"
     tests: ["test/offline/test_resume.py"]
 
 # 2026-11-23: the stats_handler.py entry above was refreshed for the

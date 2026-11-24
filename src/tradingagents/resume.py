@@ -28,6 +28,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from tradingagents.run_recorder import read_manifest
+
 SCHEMA_VERSION = 1
 
 # Typed resume failure codes (docs/handoffs/E-interfaces-v1.md §E3).
@@ -170,6 +172,20 @@ def write_checkpoint(
     return path
 
 
+def _is_complete_manifest(path: Path, run_id: str) -> bool:
+    """True only for a complete, valid manifest whose ``failure`` is null.
+
+    A truncated or corrupt file, an unsupported ``schema_version``, a missing
+    required field, a different ``run_id``, or a recorded failure is *not* a
+    completed run: the caller must be allowed to retry, so none of these block it.
+    """
+    try:
+        manifest = read_manifest(path)
+    except (OSError, ValueError):
+        return False
+    return manifest.get("run_id") == run_id and manifest.get("failure") is None
+
+
 def _read_checkpoint_file(path: Path) -> dict:
     if not path.exists():
         raise ResumeError("locator_missing")
@@ -200,14 +216,16 @@ def resolve_run(
 ) -> ResumeRef:
     """Resolve a run's checkpoint and evidence snapshot, or raise ``ResumeError``.
 
-    ``already_recorded`` is checked first: a terminal manifest for this ``run_id``
-    means the run already completed and must not run again. Identity fields inside
-    the locator must match the run_id and any caller-supplied expectations, else
-    ``checkpoint_signature_mismatch``. ``thread_id`` is injected in the locator, not
-    computed here. The snapshot artifact is verified only when ``verify_snapshot`` is
-    set (a caller about to resume wants proof the snapshot is still readable).
+    ``already_recorded`` is checked first, but only for a **complete, valid**
+    manifest whose ``failure`` is null: a truncated, malformed, wrong-schema, or
+    failed manifest does not count as recorded, so a retry can still resume. Identity
+    fields inside the locator must match the run_id and any caller-supplied
+    expectations, else ``checkpoint_signature_mismatch``. ``thread_id`` is injected
+    in the locator, not computed here. The snapshot artifact is verified only when
+    ``verify_snapshot`` is set (a caller about to resume wants proof the snapshot is
+    still readable).
     """
-    if manifest_path(config, run_id).exists():
+    if _is_complete_manifest(manifest_path(config, run_id), run_id):
         raise ResumeError("already_recorded")
 
     data = _read_checkpoint_file(checkpoint_path(config, run_id))

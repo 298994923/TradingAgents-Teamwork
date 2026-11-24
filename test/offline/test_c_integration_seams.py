@@ -162,33 +162,27 @@ def test_finalize_failure_has_null_stop_reason():
 # --- 2. v1/v2 rejected before any model call ---------------------------------
 
 
-def test_reject_helper_allows_v0():
-    cli_run._reject_unavailable_variant("v0", config={})  # must not raise
-
-
-@pytest.mark.parametrize("variant", ["v1", "v2"])
-def test_reject_helper_refuses_non_v0_without_workflow_variant(variant):
-    with pytest.raises(cli_run.typer.Exit):
-        cli_run._reject_unavailable_variant(variant, config={})
-
-
-@pytest.mark.parametrize("variant", ["v1", "v2"])
-def test_reject_helper_allows_when_workflow_variant_present(variant):
-    cli_run._reject_unavailable_variant(variant, config={"workflow_variant": variant})
-
-
 def test_run_analysis_rejects_v1_before_model_call(monkeypatch):
+    # A graph that does NOT accept workflow_variant: v1 must be refused before the
+    # graph is even constructed. (Variant forwarding is covered in
+    # test_variant_forwarding.py.)
     started = []
-    monkeypatch.setattr(cli_run, "TradingAgentsGraph", lambda *a, **k: started.append(True))
+
+    class _NoVariant:
+        # Explicit signature with no workflow_variant and no **kwargs.
+        def __init__(self, selected_analysts=None, config=None, debug=False, callbacks=None):
+            started.append(True)
+
+    monkeypatch.setattr(cli_run, "TradingAgentsGraph", _NoVariant)
     with pytest.raises(cli_run.typer.Exit):
         cli_run.run_analysis(flags={}, variant="v1")
     assert started == []
 
 
-def test_cli_variant_v1_exits_nonzero(monkeypatch):
+def test_cli_variant_v2_exits_nonzero(monkeypatch):
     calls = []
     monkeypatch.setattr(m, "run_analysis", lambda **kw: calls.append(kw))
-    result = CliRunner().invoke(m.app, ["--variant", "v1"])
+    result = CliRunner().invoke(m.app, ["--variant", "v2"])
     assert result.exit_code != 0
     assert calls == []
 
