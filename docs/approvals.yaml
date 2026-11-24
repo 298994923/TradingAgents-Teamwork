@@ -149,3 +149,18 @@ approvals:
     approver: "61023334"
     date: "2026-11-24"
     tests: ["tests/test_graph_end_to_end.py"]
+
+# 2026-11-24 CLI --variant fix (from C's bug report, uncommitted worktree change).
+# These two records are PLACEHOLDERS, not signatures: a human must replace PENDING
+# with the approver id and confirm the date before these count as approvals. This is
+# a post-implementation review record, not a claim of preimplementation approval.
+  - src: "src/cli/main.py"
+    approver: "60252993"
+    date: "2026-11-24"
+    tests: ["test/offline/test_cli_variant.py", "test/offline/test_variant_preset.py"]
+
+  - src: "src/cli/run.py"
+    approver: "60252993"
+    date: "2026-11-24"
+    tests: ["test/offline/test_cli_variant.py", "test/offline/test_variant_preset.py",
+            "test/offline/test_variant_forwarding.py", "tests/test_cli_commands.py"]
