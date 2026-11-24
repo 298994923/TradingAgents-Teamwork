@@ -48,9 +48,10 @@ approvals:
 
   # Guard tests retain their existing approval scope. The keyed graph test is
   # separately covered by gate1-C-keyed-checkpoint-graph.md and D’s signed ruling.
-  # V1 only: D-to-C-v1-main-delivery-ruling.md signed 2026-11-23;
-  # D-to-C-adr-006-english-pr-adoption-confirmation.md signed 2026-11-24
-  # confirms the ADR condition. See gate1-C-v1-fixed-pruning.md for the exact scope.
+  # V1: D-to-C-v1-main-delivery-ruling.md (2026-11-23);
+  # D-to-C-adr-006-english-pr-adoption-confirmation.md and
+  # D-to-C-v1-constructor-overlap-decision.md (2026-11-24).
+  # See gate1-C-v1-fixed-pruning.md for the pinned patch, tests, and evidence.
   - src: "src/tradingagents/graph/trading_graph.py"
     approver: "60894001"
     date: "2026-11-23"
@@ -59,6 +60,7 @@ approvals:
       - "test/offline/test_graph_guard_opt_in_reason_chain.py"
       - "test/offline/test_checkpoint_graph_run_key.py"
       - "test/offline/test_v1_fixed_pruning.py"
+      - "test/offline/test_v1_prompt_receipts.py"
 
   # D-to-C-checkpoint-storage-ruling.md, v0.1 plan/test/scope approval.
   - src: "src/tradingagents/graph/checkpointer.py"
@@ -115,3 +117,41 @@ approvals:
 # commit in the session; the log entry is docs/ai-use-log.yaml#13. Per the team
 # split §9 an independent reviewer (C) should still countersign this src change;
 # that countersign is not recorded here and is not claimed.
+
+  # Registered post-implementation 2026-11-24 per team Gate-1 guidance.
+  # B reports E accepted post-implementation registration for PR 22 and the D/C split,
+  # and C confirmed the two C-owned entries. This is a team disposition;
+  # the original pre-implementation approval was missing (D review, sections 4-5).
+  # Basis: D's independent post-implementation review
+  # D-to-team-pr22-post-implementation-review.md (2026-11-24); the process
+  # deviation (no pre-implementation record) is logged there. PR #22 wiring.
+  - src: "src/tradingagents/agents/prompt_receipts.py"
+    approver: "60894001"
+    date: "2026-11-24"
+    tests: ["tests/test_graph_end_to_end.py"]
+
+  - src: "src/tradingagents/agents/managers/research_manager.py"
+    approver: "60894001"
+    date: "2026-11-24"
+    tests: ["tests/test_graph_end_to_end.py"]
+
+  - src: "src/tradingagents/agents/researchers/bull_researcher.py"
+    approver: "60894001"
+    date: "2026-11-24"
+    tests: ["tests/test_graph_end_to_end.py"]
+
+  - src: "src/tradingagents/agents/researchers/bear_researcher.py"
+    approver: "60894001"
+    date: "2026-11-24"
+    tests: ["tests/test_graph_end_to_end.py"]
+
+  # C-owned files; confirmation relayed by B.
+  - src: "src/tradingagents/agents/structured.py"
+    approver: "61023334"
+    date: "2026-11-24"
+    tests: ["tests/test_graph_end_to_end.py"]
+
+  - src: "src/tradingagents/graph/setup.py"
+    approver: "61023334"
+    date: "2026-11-24"
+    tests: ["tests/test_graph_end_to_end.py"]

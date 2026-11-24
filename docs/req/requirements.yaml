@@ -1,21 +1,408 @@
-# Requirements registry seed (D7 §6.3 / D1).
-# Validated by docs/req/req-schema.json via scripts/check_req_schema.py. This is a
-# minimal, schema-conforming seed so the schema gate runs meaningfully from day one;
-# A replaces the statement/fit_criterion with the real registry entries.
+# Requirements registration r6, prepared against main@e16bf40209bca7179c161561189670c93187b8a1.
+# This PR proposes registry adoption; implementation/verification gaps are
+# explicit in evidence-registration-trace.md. Original owner scopes are preserved.
 - id: GOV-001
   owner: E
   type: governance
-  statement: >-
-    The CI pipeline blocks a pull request that changes src/, prompts/, scripts/, or
-    .github/ without adding an AI-use log entry with a unique id and human_reviewed true.
+  statement: The CI pipeline blocks a pull request that changes src/, prompts/, scripts/, or .github/ without
+    adding an AI-use log entry with a unique id and human_reviewed true.
   priority: Must
   source: CS5351 project sheet, D7 §6.6 (AI-use log gate)
-  tradeoff: >-
-    Requires an extra log entry per code PR; accepted to keep an auditable AI-use record.
+  tradeoff: Requires an extra log entry per code PR; accepted to keep an auditable AI-use record.
   fit_criterion:
     metric: ai-use-log gate exit code
     operator: eq
     threshold: 0
     verification:
-      - scripts/check_ai_use_log.py
-      - test/offline/test_ci_gates.py
+    - scripts/check_ai_use_log.py
+    - test/offline/test_ci_gates.py
+- id: REQ-C-01
+  owner: C
+  type: functional
+  statement: Protect final-review budget before optional follow-ups. In the independent policy fixture with 3
+    versus 2 allowance units, reserve 2 before routing and invoke final review once in both cases; invoke the
+    1-unit follow-up only with 3 units. Separately, the whole-graph 2-unit scenario terminates after the Research
+    Manager requests review and makes zero Portfolio Manager calls.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-01
+  tradeoff: Independent policy and whole-graph assertions have different scopes; do not impose the fixture final-review
+    call count on the whole graph.
+  fit_criterion:
+    metric: final_review_reservation_or_invocation_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_execution_policy.py::test_same_input_scales_with_budget
+    - pending-whole-graph-test:C-P01-2-unit-review-stop
+- id: REQ-C-02
+  owner: C
+  type: functional
+  statement: Refuse unaffordable calls and emit no actionable recommendation when required review cannot run.
+    With 2 units protected, invoke zero follow-ups and expose a denial reason. With 1 unit available for a 2-unit
+    review, invoke zero final reviews and expose an insufficient-budget reason.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-02
+  tradeoff: D confirms non-executable, zero further model/PM calls and preservation of a more severe prior verdict,
+    otherwise REVIEW; graph enforcement remains pending.
+  fit_criterion:
+    metric: unaffordable_call_or_actionable_output_or_denial_signal_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_execution_policy.py::test_denied_call_preserves_reservation_and_is_not_invoked
+    - test/offline/test_execution_policy.py::test_t_p1_failed_reservation_locks_the_terminal_state
+    - pending-whole-graph-test:C-P02-public-outcome
+- id: REQ-C-03
+  owner: C
+  type: functional
+  statement: 'Record reported usage separately from reservations. Repeat the adaptive high/low fixtures without
+    usage metadata: reservation/invocation assertions still hold and usage is unknown, not zero or the reserved
+    amount. A known-usage control reports the supplied value separately.'
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-03
+  tradeoff: E has confirmed aggregate usage/null semantics. Per-call reconciliation acceptance requires current
+    C/E integration evidence.
+  fit_criterion:
+    metric: reservation_or_reported_usage_provenance_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_execution_policy.py::test_reservation_is_reported_separately_from_usage
+    - test/offline/test_execution_policy.py::test_missing_usage_is_unknown_not_zero
+    - pending-integration-test:C-P03-per-call-reconciliation
+- id: REQ-C-04
+  owner: C
+  type: functional
+  statement: Route unresolved questions only to eligible mapped responders and bound every routing loop. With
+    ample budget, separately script no progress, malformed output and continuing valid progress; expose stop reasons
+    and invoke no further research after the configured hard cap.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-04
+  tradeoff: B must confirm eligibility/progress/invalid-output signals; C must supply the configured cap and exact
+    test selectors.
+  fit_criterion:
+    metric: ineligible_routes_or_missing_stop_reasons_or_post_cap_invocations
+    operator: eq
+    threshold: 0
+    verification:
+    - pending-owner-test-reference:C-P04-whole-graph-eligibility-progress-cap
+- id: REQ-C-05
+  owner: C
+  type: functional
+  statement: 'Resume only compatible checkpoints and expose incompatibility. Use independent copies of one interrupted
+    checkpoint: unchanged control resumes without replaying completed work; independently changing policy version,
+    protocol version, prompt fingerprint or evidence snapshot identity exposes the changed-input reason, reuses
+    no saved state and preserves the old checkpoint.'
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-05
+  tradeoff: C owns the end-to-end checkpoint requirement. A-EV-02/05/07 support identity/loading/assessment; they
+    do not replace it. Automatic fresh fallback is not approved.
+  fit_criterion:
+    metric: checkpoint_compatibility_or_state_reuse_or_preservation_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - tests/test_graph_end_to_end.py::test_an_interrupted_run_resumes_from_its_checkpoint
+    - test/offline/test_v1_fixed_pruning.py::test_legacy_custom_depth_and_signature_are_preserved
+    - test/offline/test_v1_fixed_pruning.py::test_explicit_signature_distinguishes_preset_at_equal_depth
+    - pending-owner-test-reference:C-P05-compatibility-and-checkpoint-preservation
+- id: REQ-C-06
+  owner: C
+  type: functional
+  statement: Preserve baseline behavior on the candidate build when adaptive mode is off. Existing scripted free-text,
+    structured-output and interrupted-run regressions retain fixed research/risk routing, final rating/logging
+    and same-input resume.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-06
+  tradeoff: C's reported V0 baseline is reference evidence only, not candidate adaptive-off or adaptive-build
+    acceptance.
+  fit_criterion:
+    metric: adaptive_off_candidate_baseline_behavior_differences
+    operator: eq
+    threshold: 0
+    verification:
+    - tests/test_graph_end_to_end.py::test_a_full_run_reaches_a_logged_decision
+    - tests/test_graph_end_to_end.py::test_an_interrupted_run_resumes_from_its_checkpoint
+    - test/offline/test_v1_fixed_pruning.py::test_omitted_variant_keeps_default_route
+    - test/offline/test_v1_fixed_pruning.py::test_legacy_custom_depth_and_signature_are_preserved
+    - test/offline/test_v1_fixed_pruning.py::test_explicit_variants_use_fixed_depth_and_finish_reports
+- id: REQ-C-FR-01
+  owner: C
+  type: functional
+  statement: For explicit workflow_variant v0 and v1, use fixed Bull/Bear depths of two and one respectively.
+    In the supplied offline case, complete the three-role risk path, final decision, state log and Markdown/HTML
+    reports with the effective variant and depths recorded.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-fr-01
+  tradeoff: Fixed pruning only; no adaptive-routing, budget, CLI comparison or performance acceptance.
+  fit_criterion:
+    metric: fixed_preset_route_or_report_assertion_violations
+    operator: eq
+    threshold: 0
+    verification: test/offline/test_v1_fixed_pruning.py::test_explicit_variants_use_fixed_depth_and_finish_reports
+- id: INV-C-FR-01
+  owner: C
+  type: invariant
+  statement: Preserve omitted/None legacy workflow configuration and tested caller/default configuration. The
+    omitted default retains Bull/Bear depth one; omitted and None retain custom depth three. In the tested risk-depth-one
+    paths preserve Aggressive, Conservative and Neutral once each. Explicit presets must not mutate caller or
+    default configuration.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#inv-c-fr-01
+  tradeoff: Fixed-pruning compatibility supports but does not replace full adaptive-off C-P06 acceptance.
+  fit_criterion:
+    metric: legacy_configuration_or_risk_path_preservation_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_v1_fixed_pruning.py::test_omitted_variant_keeps_default_route
+    - test/offline/test_v1_fixed_pruning.py::test_legacy_custom_depth_and_signature_are_preserved
+    - test/offline/test_v1_fixed_pruning.py::test_explicit_variants_use_fixed_depth_and_finish_reports
+- id: INV-C-FR-02
+  owner: C
+  type: invariant
+  statement: Reject unavailable v2 and invalid v3, V1, empty-string and integer selectors before the tested global
+    configuration write, client construction, model calls or runtime-artifact creation; distinguish unavailable
+    from invalid reasons and do not silently fall back.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#inv-c-fr-02
+  tradeoff: Implements the C-FR-02 proposal's rejection behavior; not a safety invariant assigned by D.
+  fit_criterion:
+    metric: rejected_preset_reason_or_construction_side_effect_violations
+    operator: eq
+    threshold: 0
+    verification: test/offline/test_v1_fixed_pruning.py::test_rejected_variant_has_no_construction_side_effects
+- id: INV-C-FR-03
+  owner: C
+  type: invariant
+  statement: Preserve the tested omitted/None custom-depth legacy signature algorithm. Distinguish explicit v1
+    from a legacy path at equal depth one and keep equivalent explicit v1 signatures stable.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#inv-c-fr-03
+  tradeoff: Signature-only coverage supports C-P05; actual checkpoint rejection, resume and old-file preservation
+    remain separate end-to-end acceptance owned by C.
+  fit_criterion:
+    metric: legacy_or_explicit_preset_signature_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_v1_fixed_pruning.py::test_legacy_custom_depth_and_signature_are_preserved
+    - test/offline/test_v1_fixed_pruning.py::test_explicit_signature_distinguishes_preset_at_equal_depth
+- id: A-EV-08
+  owner: A
+  type: functional
+  statement: Convert canonical complete snapshot IDs and version-1 artifact keys exactly in both directions, rejecting
+    non-string and noncanonical values with stable error code/path findings without I/O.
+  priority: Must
+  source: docs/contracts/evidence.md
+  tradeoff: Pure syntax only; existence, content identity, root containment, symlinks and runtime reference-envelope
+    construction remain outside these helpers.
+  fit_criterion:
+    metric: incorrect_artifact_key_conversion_or_rejection_results_in_fixed_cases
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_evidence_artifact_keys.py::test_valid_conversion_and_both_round_trips
+    - test/offline/test_evidence_artifact_keys.py::test_non_string_inputs_have_stable_errors
+    - test/offline/test_evidence_artifact_keys.py::test_noncanonical_snapshot_ids_are_rejected
+    - test/offline/test_evidence_artifact_keys.py::test_noncanonical_artifact_keys_are_rejected
+    - test/offline/test_evidence_artifact_keys.py::test_helpers_do_not_delegate_to_storage_or_identity_generation
+    - test/offline/test_evidence_artifact_keys.py::test_existing_fixture_and_apis_remain_compatible
+- id: REQ-D-007
+  owner: D
+  type: functional
+  statement: 'Every run must pass the deterministic guard after the Trader proposal and again after the final
+    Portfolio Manager output. The final check may raise but never lower the verdict. A missing gate is a BLOCK.
+
+    '
+  priority: Must
+  source: docs/plans/D/requirements-pack.yaml#REQ-D-007
+  tradeoff: D retains guard authority and INV-D6; this compact adaptation preserves the source statement and combines
+    its two zero-violation criteria without claiming new policy adoption.
+  fit_criterion:
+    metric: missing_dual_gates_or_lowered_final_verdict_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_constraints.py::test_inv_d6_dual_gate
+    - test/offline/test_safety_boundary.py::test_dual_gate_trader_pass_then_pm_rating_block
+    - test/offline/test_safety_boundary.py::test_dual_gate_trader_pass_then_pm_cap_block
+    - test/offline/test_safety_boundary.py::test_missing_gate_is_block
+    - test/offline/test_safety_boundary.py::test_verdict_lattice_is_monotonic
+    - test/offline/test_safety_boundary.py::test_review_is_non_executable_at_both_gates
+- id: REQ-C-CKPT-01
+  owner: C
+  type: functional
+  statement: For keyword-only run_key defaulting to an empty string, resume the selected compatible thread using
+    saved inputs and invoke only pending work; clear that thread after success. With checkpointing disabled, do
+    not open SQLite. Preserve the omitted-key legacy route and its prompt receipts.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-ckpt-01
+  tradeoff: Explicit None is outside the signed promise. Omitted-key graph evidence and explicit-empty-key storage
+    evidence are distinct. No locator, Evidence compatibility or budget graph acceptance is implied.
+  fit_criterion:
+    metric: keyed_lifecycle_saved_input_resume_cleanup_or_disabled_storage_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_checkpoint_graph_run_key.py::test_keyed_propagate_resumes_and_cleans_up_only_its_thread
+    - test/offline/test_checkpoint_graph_run_key.py::test_omitted_key_resumes_and_cleans_up_legacy_thread
+    - test/offline/test_checkpoint_graph_run_key.py::test_disabled_checkpointing_does_not_open_sqlite[omitted]
+    - test/offline/test_checkpoint_graph_run_key.py::test_disabled_checkpointing_does_not_open_sqlite[keyed]
+    - test/offline/test_checkpoint_graph_prompt_receipts.py::test_unkeyed_checkpoint_route_preserves_real_prompt_receipts
+- id: INV-C-CKPT-01
+  owner: C
+  type: invariant
+  statement: Keyed lifecycle operations use the selected thread consistently. Successful cleanup preserves sibling-keyed
+    threads and legacy rows; different nonempty keys remain isolated within the same compatibility namespace.
+    run_key must not change the run compatibility signature.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#inv-c-ckpt-01
+  tradeoff: C-confirmed LOCAL-CKPT-004 mapping. Storage identity/lookup/atomic-cleanup contracts remain separate
+    lower-layer obligations. Signed selectors/hashes are C supplied, not independently executed here.
+  fit_criterion:
+    metric: sibling_or_legacy_thread_isolation_or_compatibility_namespace_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_checkpoint_graph_run_key.py::test_keyed_propagate_resumes_and_cleans_up_only_its_thread
+- id: REQ-C-STOR-01
+  owner: C
+  type: functional
+  statement: Produce deterministic structured run-keyed thread identity, normalize ticker case, isolate distinct
+    nonempty keys and avoid aliasing a legacy signature suffix; require run_key as a keyword.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-stor-01
+  tradeoff: SQLite storage only; related coverage for graph LOCAL-CKPT-004, not graph lifecycle acceptance. Terminal
+    manifest publication is a caller precondition, never inferred from Evidence snapshot publication.
+  fit_criterion:
+    metric: req_c_stor_01_fixed_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_checkpoint_thread_identity.py::test_run_scoped_thread_id_is_repeatable_and_normalizes_ticker_case
+    - test/offline/test_checkpoint_thread_identity.py::test_distinct_run_keys_have_distinct_thread_ids
+    - test/offline/test_checkpoint_thread_identity.py::test_run_key_cannot_alias_a_legacy_signature_suffix
+    - test/offline/test_checkpoint_thread_identity.py::test_run_key_requires_keyword
+- id: INV-C-STOR-01
+  owner: C
+  type: invariant
+  statement: Preserve the exact tested legacy thread IDs when run_key is omitted or empty; keyed identities remain
+    separate from legacy identities.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#inv-c-stor-01
+  tradeoff: SQLite storage only; related coverage for graph LOCAL-CKPT-004, not graph lifecycle acceptance. Terminal
+    manifest publication is a caller precondition, never inferred from Evidence snapshot publication.
+  fit_criterion:
+    metric: inv_c_stor_01_fixed_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_checkpoint_thread_identity.py::test_legacy_thread_ids_with_omitted_run_key
+    - test/offline/test_checkpoint_thread_identity.py::test_legacy_thread_ids_with_empty_run_key
+    - test/offline/test_checkpoint_thread_identity.py::test_distinct_run_keys_have_distinct_thread_ids
+    - test/offline/test_checkpoint_thread_identity.py::test_run_key_cannot_alias_a_legacy_signature_suffix
+- id: REQ-C-STOR-02
+  owner: C
+  type: functional
+  statement: Lookup checkpoint steps only for the requested run key; an unknown key returns no step without fallback
+    or deletion.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-stor-02
+  tradeoff: SQLite storage only; related coverage for graph LOCAL-CKPT-004, not graph lifecycle acceptance. Terminal
+    manifest publication is a caller precondition, never inferred from Evidence snapshot publication.
+  fit_criterion:
+    metric: req_c_stor_02_fixed_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_checkpoint_run_key_storage.py::test_keyed_lookup_returns_only_the_requested_step
+    - test/offline/test_checkpoint_run_key_storage.py::test_unknown_key_does_not_fall_back_or_delete_existing_threads
+- id: INV-C-STOR-02
+  owner: C
+  type: invariant
+  statement: Key-scoped cleanup removes only the selected checkpoint/write rows, preserving sibling-keyed and
+    legacy rows; unkeyed operations continue to target legacy.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#inv-c-stor-02
+  tradeoff: SQLite storage only; related coverage for graph LOCAL-CKPT-004, not graph lifecycle acceptance. Terminal
+    manifest publication is a caller precondition, never inferred from Evidence snapshot publication.
+  fit_criterion:
+    metric: inv_c_stor_02_fixed_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_checkpoint_run_key_storage.py::test_unknown_key_does_not_fall_back_or_delete_existing_threads
+    - test/offline/test_checkpoint_run_key_storage.py::test_keyed_cleanup_removes_only_target_checkpoint_and_writes
+    - test/offline/test_checkpoint_run_key_storage.py::test_unkeyed_lookup_and_cleanup_still_target_legacy_thread
+- id: REQ-C-STOR-03
+  owner: C
+  type: functional
+  statement: Read only the original database and exact thread for existence, including absent step metadata and
+    paths containing spaces or hash characters; report missing thread/database as absence.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-stor-03
+  tradeoff: SQLite storage only; related coverage for graph LOCAL-CKPT-004, not graph lifecycle acceptance. Terminal
+    manifest publication is a caller precondition, never inferred from Evidence snapshot publication.
+  fit_criterion:
+    metric: req_c_stor_03_fixed_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_checkpoint_exact_thread_lookup.py::test_exact_original_threads_exist_without_step_metadata
+    - test/offline/test_checkpoint_exact_thread_lookup.py::test_missing_thread_does_not_use_nearby_threads
+    - test/offline/test_checkpoint_exact_thread_lookup.py::test_database_path_with_spaces_and_hash
+- id: INV-C-STOR-03
+  owner: C
+  type: invariant
+  statement: Exact lookup does not create a missing database/parent, fall back to nearby threads, or change rows;
+    corrupt/schema/access failures remain errors distinct from absence.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#inv-c-stor-03
+  tradeoff: SQLite storage only; related coverage for graph LOCAL-CKPT-004, not graph lifecycle acceptance. Terminal
+    manifest publication is a caller precondition, never inferred from Evidence snapshot publication.
+  fit_criterion:
+    metric: inv_c_stor_03_fixed_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_checkpoint_exact_thread_lookup.py::test_exact_original_threads_exist_without_step_metadata
+    - test/offline/test_checkpoint_exact_thread_lookup.py::test_missing_thread_does_not_use_nearby_threads
+    - test/offline/test_checkpoint_exact_thread_lookup.py::test_missing_database_does_not_create_parent
+    - test/offline/test_checkpoint_exact_thread_lookup.py::test_storage_errors_are_not_reported_as_absence
+- id: REQ-C-STOR-04
+  owner: C
+  type: functional
+  statement: Delete only the supplied original thread from writes and checkpoints; report whether either table
+    contained rows and make successful retry safe.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-stor-04
+  tradeoff: SQLite storage only; related coverage for graph LOCAL-CKPT-004, not graph lifecycle acceptance. Terminal
+    manifest publication is a caller precondition, never inferred from Evidence snapshot publication.
+  fit_criterion:
+    metric: req_c_stor_04_fixed_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_checkpoint_exact_thread_cleanup.py::test_clears_only_original_thread_and_repeats_safely
+    - test/offline/test_checkpoint_exact_thread_cleanup.py::test_returns_true_when_only_one_table_has_target_rows
+- id: INV-C-STOR-04
+  owner: C
+  type: invariant
+  statement: 'Exact-thread cleanup is atomic across writes and checkpoints: failure of the second delete rolls
+    back the first; missing storage creates nothing and schema errors surface without creating tables or deleting
+    surviving rows.'
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#inv-c-stor-04
+  tradeoff: SQLite storage only; related coverage for graph LOCAL-CKPT-004, not graph lifecycle acceptance. Terminal
+    manifest publication is a caller precondition, never inferred from Evidence snapshot publication.
+  fit_criterion:
+    metric: inv_c_stor_04_fixed_assertion_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/test_checkpoint_exact_thread_cleanup.py::test_clears_only_original_thread_and_repeats_safely
+    - test/offline/test_checkpoint_exact_thread_cleanup.py::test_returns_true_when_only_one_table_has_target_rows
+    - test/offline/test_checkpoint_exact_thread_cleanup.py::test_second_delete_failure_rolls_back_first_delete
+    - test/offline/test_checkpoint_exact_thread_cleanup.py::test_missing_database_does_not_touch_filesystem
+    - test/offline/test_checkpoint_exact_thread_cleanup.py::test_schema_error_surfaces_without_creating_tables

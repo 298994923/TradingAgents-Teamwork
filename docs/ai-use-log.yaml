@@ -322,21 +322,19 @@ entries:
       1 skipped, 1 deselected and 100 subtests passed. Ruff and diff checks passed.
       Graph, CLI, and Evidence integration are separate.
 
-  - id: "A-evidence-ai-use-01"
+  - id: "58924242-ZhangRuiqi-evidence-ai-use-01"
     pr_id: "16"
     date: "2026-11-23"
     task: "Develop Evidence V1 snapshots and artifact-key helpers, then prepare the unchanged six-file component for main"
-    agent: "Codex and ChatGPT"
+    agent: "opencode"
     model: "GPT; exact historical model identifiers were not recorded"
     prompt_version: "N/A (interactive project and review conversations)"
     human_reviewed: true
     changes_accepted: true
     notes: >-
-      Member A used Codex for contract/test-first implementation and verification,
-      with ChatGPT-assisted design and review discussions; this work did not use
-      OpenCode. Exact historical model identifiers are not inferred. The role-based
-      entry ID is used because A's student ID was not established in the inspected
-      records. Human review refers to the previously reviewed component and A's
+      Member A used OpenCode for contract/test-first implementation and verification,
+      with ChatGPT-assisted design and review discussions. Exact historical model identifiers are not inferred. 
+      Human review refers to the previously reviewed component and A's
       decision to deliver it, including C's component-compatibility reply.
       On 2026-11-24, Member A explicitly confirmed that C had completed all
       independent approval responsibilities for this delivery and that E no
@@ -552,16 +550,27 @@ entries:
       permission["*"]. Not fixed yet, waiting for D to say which config is the real
       one. Local: 1637 passed, 1 skipped, 1 deselected, 100 subtests; ruff clean.
       GitHub Actions was NOT run.
+  - id: "B-PR22-prompt-receipts-20261124"
+    pr_id: "22"
+    date: "2026-11-24"
+    task: "Forward prompt receipts through the main research graph."
+    agent: "Codex"
+    human_reviewed: true
+    notes: >-
+      The agent prepared the graph callback wiring and offline tests. Candidate
+      6ad01b8 has the same tree as d81658d. The 41 checkpoint cases and two
+      graph receipt cases passed on that tree, including manager fallback.
+      The V1 selector adaptation is outside this PR. Role B reviewed and accepted this AI-use record.
 
   - id: "61023334-LiChengzhi-ai-use-05"
-    pr_id: "pre-pr"
+    pr_id: "21"
     date: "2026-11-24"
-    task: "Implement and verify the interim programmatic V1 workflow selector"
+    task: "Implement and verify the programmatic V1 workflow selector"
     agent: "opencode"
     model: "openai/gpt-6.2-sol"
     prompt_version: "N/A"
-    human_reviewed: true
-    changes_accepted: true
+    human_reviewed: false
+    changes_accepted: false
     notes: >-
       OpenCode session ses_e068a4c8dffe1zl0wRjxuCc0m7. Role D (Liu Kehong,
       60894001) signed the main delivery ruling on 2026-11-23 and confirmed
@@ -578,7 +587,20 @@ entries:
       1 deselection, 24 warnings, and 100 passing subtests. Ruff and diff
       checks passed. On 2026-11-24, after reviewing the exact green source
       diff and evidence, Role C (61023334) explicitly accepted this local
-      interim candidate. The human flags do not record publication or final
-      acceptance. Final verification still needs all 14 pinned cases on one
-      candidate with Role B's real prompt receipts. Role E's real CLI and
-      manifest check and formal traceability confirmation remain open.
+      interim candidate. That acceptance is historical and applies only to
+      the old candidate, not the updated entry's human flags. In OpenCode
+      session ses_e068a4c8dffe1zl0wRjxuCc0m7, C's operator
+      authorized preparation only, not publication or final acceptance. The
+      2026-11-24 signed D-to-C-v1-constructor-overlap-decision.md authorizes
+      the exact context patch (SHA-256
+      62a1fffdc71828fa8188f264ecbd024a5f4da3b6b3eff9063d848277f2517a01).
+      On main 1f9e7cc8267b81645cb8f13ca287f0995e523b24 after PR #22, both
+      pinned V1 tests were preserved and B wiring matched the reviewed bytes.
+      Before edits, checkpoint 41 passed and V1 had 3 passes and 11 expected
+      failures. The refreshed candidate passed all 14 V1 and 41 checkpoint
+      cases, full offline (1911 passed, 1 skip, 1 deselected, 24 warnings,
+      100 passing subtests), Ruff and diff checks. See
+      C-v1-landed-b-main-gate-evidence.md for hashes and commands. The CLI
+      rejects public v1 and records stale depth for v0; E's follow-up remains
+      open, as do permission-sync disposition and final human review. The
+      updated candidate is not accepted or published by this session.
