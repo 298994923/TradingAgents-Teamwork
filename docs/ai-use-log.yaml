@@ -385,3 +385,17 @@ entries:
       Final same-candidate verification still requires the real B receipt case.
       Role C (61023334) reviewed and accepted the interim candidate in chat
       on 2026-11-24, recorded in C-keyed-checkpoint-graph-interim-acceptance.md.
+
+  - id: "60894001-LiuKehong-ai-use-04"
+    pr_id: "re-opened-from-#10"
+    date: "2026-11-23"
+    task: "stop_result guard-envelope helper, re-targeted to main after integration was retired"
+    agent: "opencode"
+    model: "deepseek-v4.1-flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Tests-first on the original branch (3 red before implementation); green package
+      recorded there (offline suite, zero regressions). Re-targeted to main per team
+      move; helper is the single envelope producer required by the V2 slice ruling.

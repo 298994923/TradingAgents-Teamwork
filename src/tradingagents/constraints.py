@@ -549,3 +549,36 @@ def validate(
             stage,
             failure.details,
         )
+
+
+def stop_result(recorded_entries):
+    """Build the machine-readable result for a budget stop.
+
+    INV-D4, INV-D5, INV-D7. Recorded BLOCK evidence is retained monotonically
+    and its ``verdict`` field is stripped from ``rules_hit``; REVIEW evidence is
+    preserved verbatim. With no recorded entries the stop is an explicit REVIEW.
+    """
+    entries = list(recorded_entries)
+    verdicts = [entry.get("verdict") for entry in entries]
+
+    if "BLOCK" in verdicts:
+        return {
+            "contract": "validation-decision/1.1",
+            "verdict": "BLOCK",
+            "reason_code": "PRIOR_VERDICT_RETAINED",
+            "checkpoint": "budget-stop",
+            "executable": False,
+            "rules_hit": [
+                {key: value for key, value in entry.items() if key != "verdict"}
+                for entry in entries
+            ],
+        }
+
+    return {
+        "contract": "validation-decision/1.1",
+        "verdict": "REVIEW",
+        "reason_code": "KNOWN_UNKNOWN",
+        "checkpoint": "budget-stop",
+        "executable": False,
+        "rules_hit": entries,
+    }
