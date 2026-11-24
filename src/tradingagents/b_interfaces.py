@@ -46,7 +46,8 @@ class PromptReceipts:
         with self._lock:
             calls = list(self._calls)
             hashes = self._roles.copy()
-        complete = bool(calls) and len(calls) == expected_calls and all(c["input_sha256"] for c in calls)
+        count_ok = expected_calls is None or len(calls) == expected_calls
+        complete = bool(calls) and count_ok and all(c["input_sha256"] for c in calls)
         payload = {"run_id": self.run_id, "expected_calls": expected_calls, "calls": calls,
                        "input_evidence": "完整" if complete else "输入取证不完整"}
         directory = Path(runs_dir) / self.run_id

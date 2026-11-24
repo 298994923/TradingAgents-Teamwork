@@ -437,7 +437,10 @@ def test_cli_records_actual_debate_sends(tmp_path, monkeypatch, offline, manager
     import json
     from contextlib import nullcontext
 
+    from typer.testing import CliRunner
+
     import cli.run as cli_run
+    from cli.main import app
     from cli.models import AnalystType
 
     sent = []
@@ -472,11 +475,14 @@ def test_cli_records_actual_debate_sends(tmp_path, monkeypatch, offline, manager
     monkeypatch.setattr(cli_run, "update_display", lambda *a, **kw: None)
     monkeypatch.setattr(cli_run, "_offer_reports", lambda *a, **kw: None)
     monkeypatch.setattr(cli_run, "message_buffer", copy.deepcopy(cli_run.message_buffer))
-    cli_run.run_analysis()
+    result = CliRunner().invoke(app, ["--variant", "v0"], catch_exceptions=False)
+    assert result.exit_code == 0, result.output
 
     path, = (tmp_path / "runs").glob("*/manifest.json")
     manifest = json.loads(path.read_text())
     sidecar = json.loads(path.with_name("prompt_receipts.json").read_text())
+    assert sidecar["expected_calls"] is None
+    assert sidecar["input_evidence"] == "完整"
     def sha(text):
         return hashlib.sha256(text.encode()).hexdigest()
     assert manifest["failure"] is None
