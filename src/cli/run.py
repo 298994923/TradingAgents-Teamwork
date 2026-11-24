@@ -377,23 +377,28 @@ def _effective_manifest_variant(graph, requested: str) -> str:
 _EFFECTIVE_SETTING_KEYS = ("max_debate_rounds", "max_risk_discuss_rounds")
 
 
-def _effective_config(config: dict, graph) -> dict:
+def _effective_config(config: dict, graph, workflow_variant: str = "v0") -> dict:
     """Overlay the graph's effective settings onto ``config`` for the manifest.
 
     A variant preset (or any graph-side adjustment) changes the rounds actually run.
     The manifest's ``config_snapshot`` must reflect that, not the requested config.
     Keys the graph does not report are left as configured.
+
+    ``workflow_variant`` is the effective variant already computed for the run_id's
+    first segment (``manifest_variant``), recorded here too so the snapshot and the
+    run_id always agree. It is set even when the graph reports nothing.
     """
+    effective = dict(config)
+    effective["workflow_variant"] = workflow_variant
     run_settings = getattr(graph, "run_settings", None)
     if not callable(run_settings):
-        return config
+        return effective
     try:
         settings = run_settings()
     except (TypeError, ValueError):
-        return config
+        return effective
     if not isinstance(settings, dict):
-        return config
-    effective = dict(config)
+        return effective
     for key in _EFFECTIVE_SETTING_KEYS:
         if settings.get(key) is not None:
             effective[key] = settings[key]
@@ -440,7 +445,7 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
     # The variant the graph actually enabled drives the manifest identity, and the
     # graph's effective rounds drive the manifest config snapshot for the writers.
     manifest_variant = _effective_manifest_variant(graph, variant or "v0")
-    effective_config = _effective_config(config, graph)
+    effective_config = _effective_config(config, graph, manifest_variant)
 
     message_buffer.init_for_analysis(selected_analyst_keys)
 
