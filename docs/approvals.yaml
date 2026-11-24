@@ -111,3 +111,18 @@ approvals:
 # commit in the session; the log entry is docs/ai-use-log.yaml#13. Per the team
 # split §9 an independent reviewer (C) should still countersign this src change;
 # that countersign is not recorded here and is not claimed.
+
+# 2026-11-24 CLI --variant fix (from C's bug report, uncommitted worktree change).
+# These two records are PLACEHOLDERS, not signatures: a human must replace PENDING
+# with the approver id and confirm the date before these count as approvals. This is
+# a post-implementation review record, not a claim of preimplementation approval.
+  - src: "src/cli/main.py"
+    approver: "PENDING — human approver to fill"
+    date: "2026-11-24"
+    tests: ["test/offline/test_cli_variant.py", "test/offline/test_variant_preset.py"]
+
+  - src: "src/cli/run.py"
+    approver: "PENDING — human approver to fill"
+    date: "2026-11-24"
+    tests: ["test/offline/test_cli_variant.py", "test/offline/test_variant_preset.py",
+            "test/offline/test_variant_forwarding.py", "tests/test_cli_commands.py"]
