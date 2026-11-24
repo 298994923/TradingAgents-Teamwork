@@ -339,14 +339,16 @@ def _graph_accepts_workflow_variant(graph_cls) -> bool:
     return "workflow_variant" in params
 
 
-def _reject_unavailable_variant(variant: str, graph_cls=None) -> None:
+def _reject_unavailable_variant(variant: str | None, graph_cls=None) -> None:
     """Refuse a variant that the workflow cannot run, before any model call.
 
-    v0 is always allowed. v2 is not delivered yet and is refused regardless of the
-    graph. v1 is allowed only when ``graph_cls`` accepts ``workflow_variant``;
-    otherwise a v0-compatible run must not be mislabelled v1.
+    ``None`` means the flag was omitted: that is the legacy run and is always
+    allowed. v0 is always allowed. v2 is not delivered yet and is refused
+    regardless of the graph. v1 is allowed only when ``graph_cls`` accepts
+    ``workflow_variant``; otherwise it is refused (a v0-compatible run must not be
+    mislabelled v1).
     """
-    if variant == "v0":
+    if variant is None or variant == "v0":
         return
     if variant == "v2":
         console.print(
@@ -386,9 +388,44 @@ def _effective_manifest_variant(graph, requested: str) -> str:
     return settings.get("workflow_variant") or requested
 
 
-def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, variant="v0"):
+# Settings the graph reports that describe what actually ran. The CLI config is the
+# requested configuration; the manifest must record these effective values instead.
+_EFFECTIVE_SETTING_KEYS = ("max_debate_rounds", "max_risk_discuss_rounds")
+
+
+def _effective_config(config: dict, graph, workflow_variant: str = "v0") -> dict:
+    """Overlay the graph's effective settings onto ``config`` for the manifest.
+
+    A variant preset (or any graph-side adjustment) changes the rounds actually run.
+    The manifest's ``config_snapshot`` must reflect that, not the requested config.
+    Keys the graph does not report are left as configured.
+
+    ``workflow_variant`` is the effective variant already computed for the run_id's
+    first segment (``manifest_variant``), recorded here too so the snapshot and the
+    run_id always agree. It is set even when the graph reports nothing.
+    """
+    effective = dict(config)
+    effective["workflow_variant"] = workflow_variant
+    run_settings = getattr(graph, "run_settings", None)
+    if not callable(run_settings):
+        return effective
+    try:
+        settings = run_settings()
+    except (TypeError, ValueError):
+        return effective
+    if not isinstance(settings, dict):
+        return effective
+    for key in _EFFECTIVE_SETTING_KEYS:
+        if settings.get(key) is not None:
+            effective[key] = settings[key]
+    return effective
+
+
+def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, variant=None):
     flags = flags or {}
-    variant = _validate_variant(variant)
+    # ``None`` = the flag was omitted: the legacy run (configured rounds, no preset).
+    if variant is not None:
+        variant = _validate_variant(variant)
     # Refuse a variant the graph cannot run before any setup or model call: v2 is
     # not delivered, and v1 needs a graph that accepts workflow_variant.
     _reject_unavailable_variant(variant, TradingAgentsGraph)
@@ -423,8 +460,10 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
         workflow_variant=variant,
         on_prompt=prompt_receipts.append,
     )
-    # The variant the graph actually enabled drives the manifest identity.
-    manifest_variant = _effective_manifest_variant(graph, variant)
+    # The variant the graph actually enabled drives the manifest identity, and the
+    # graph's effective rounds drive the manifest config snapshot for the writers.
+    manifest_variant = _effective_manifest_variant(graph, variant or "v0")
+    effective_config = _effective_config(config, graph, manifest_variant)
 
     message_buffer.init_for_analysis(selected_analyst_keys)
 
@@ -649,7 +688,7 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
             # Clean run: write the manifest, log the decision, then drop this run's
             # checkpoint so a later run starts fresh. The manifest is written first,
             # inside _finalize_run_manifest, so teardown can never lose the record.
-            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=manifest_variant, prompt_receipts=prompt_receipts)
+            manifest_write = _make_manifest_writer(effective_config, selections, stats_handler, started_at=start_time, variant=manifest_variant, prompt_receipts=prompt_receipts)
             _finalize_run_manifest(
                 write=manifest_write,
                 graph=graph,
@@ -663,7 +702,7 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
         except BaseException as failure:
             # A failure mid-run still leaves a manifest; the checkpoint is kept for
             # resume and the failure is re-raised after the finally below.
-            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=manifest_variant, prompt_receipts=prompt_receipts)
+            manifest_write = _make_manifest_writer(effective_config, selections, stats_handler, started_at=start_time, variant=manifest_variant, prompt_receipts=prompt_receipts)
             _finalize_run_manifest(
                 write=manifest_write,
                 graph=graph,

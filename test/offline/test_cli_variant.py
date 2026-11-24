@@ -45,11 +45,12 @@ def _runner(monkeypatch, calls):
     return CliRunner()
 
 
-def test_variant_default_is_v0(monkeypatch):
+def test_omitted_variant_is_none_legacy(monkeypatch):
     calls = []
     runner = _runner(monkeypatch, calls)
     assert runner.invoke(m.app, []).exit_code == 0
-    assert calls[0]["variant"] == "v0"
+    # Omitted flag = legacy run; None distinguishes it from an explicit v0.
+    assert calls[0]["variant"] is None
 
 
 def test_variant_option_v0_passed_through(monkeypatch):

@@ -550,6 +550,7 @@ entries:
       permission["*"]. Not fixed yet, waiting for D to say which config is the real
       one. Local: 1637 passed, 1 skipped, 1 deselected, 100 subtests; ruff clean.
       GitHub Actions was NOT run.
+
   - id: "B-PR22-prompt-receipts-20261124"
     pr_id: "22"
     date: "2026-11-24"
@@ -561,6 +562,52 @@ entries:
       6ad01b8 has the same tree as d81658d. The 41 checkpoint cases and two
       graph receipt cases passed on that tree, including manager fallback.
       The V1 selector adaptation is outside this PR. Role B reviewed and accepted this AI-use record.
+
+  - id: "60252993-linan-ai-use-18"
+    pr_id: "pre-pr"
+    date: "2026-11-24"
+    task: "Fix the CLI --variant bug and record the effective variant in the manifest"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      C reported that leaving out --variant still ran the v0 preset, so a configured
+      three-round run quietly became two rounds and the manifest still said three.
+      Also, explicit v1 was refused at the CLI before the graph was built, and the
+      manifest wrote the requested depth instead of the depth actually run.
+      Asked opencode to fix it, then checked the diff myself. Now no flag means the
+      old legacy run, v0 runs two rounds and writes two in the manifest, v1 reaches
+      the graph (and still fails closed before any model call if the graph cannot
+      take it), and v2 behaves as before. C then pointed out that E had promised a
+      workflow_variant field in config_snapshot; that is now written too, using the
+      same effective variant as the first segment of run_id (v0 when the flag is
+      omitted). The test stub was corrected to change only the debate rounds, as
+      ADR-006 says. Local: 104 focused tests passed, 1911 passed / 1 skipped /
+      1 deselected / 100 subtests in the full suite, ruff clean. The handoff note is
+      in bugfix/C-to-E-v1-cli-post-receipts-validation-follow-up.md. Still open: a
+      real v1 run needs C's selector patch merged. GitHub Actions was NOT run.
+
+  - id: "60252993-linan-ai-use-19"
+    pr_id: "pre-pr"
+    date: "2026-11-25"
+    task: "Record the effective variant in config_snapshot and fix the variant test stub"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Follow-up to entry 18. C asked whether the run_id plus effective depths were
+      enough, but E had already promised a separate workflow_variant field in
+      config_snapshot, so opencode added it. It takes the value from the same effective
+      variant used in the run_id first segment (v0 when the flag is omitted), so the
+      two always agree. The test stub was also corrected to change only max_debate_rounds,
+      as ADR-006 says. Local: 104 focused tests passed, 1911 passed / 1 skipped /
+      1 deselected / 100 subtests in the full suite, ruff clean. Human reviewed the
+      diff. GitHub Actions was NOT run.
+
   - id: "B-PR26-cli-manifest-receipts"
     pr_id: "26"
     date: "2026-11-24"
