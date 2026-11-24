@@ -230,6 +230,49 @@ def test_cli_usage_error_exits_two(capsys):
     assert code == 2
 
 
+# --- Missing token counts are null, shown as -- ------------------------------
+
+
+def _usage_missing_tokens(**overrides):
+    event = _event(**overrides)
+    usage = {"llm_calls": 10, "tool_calls": 5}  # token counts absent
+    return RunEvent(**{**event.__dict__, "usage": usage})
+
+
+def test_missing_token_metric_is_null_not_zero():
+    event = _usage_missing_tokens(run_id="v0-nvda-2026-11-20-r1-20261121t1200")
+    row = compare_runs.compare_manifests([event.__dict__]).variants[0]
+    # The reporter must not invent 0 for an unreported token count.
+    assert row["tokens_in"] is None
+    assert row["tokens_out"] is None
+
+
+def test_format_metric_shows_dash_for_null():
+    assert compare_runs._format_metric(None) == "--"
+    assert compare_runs._format_metric(0) == "0"
+    assert compare_runs._format_metric(1234) == "1234"
+
+
+def test_cli_shows_dash_for_missing_tokens(tmp_path, capsys):
+    event = _usage_missing_tokens(run_id="v0-nvda-2026-11-20-r1-20261121t1200")
+    path = tmp_path / "m.json"
+    write_manifest(event, path)
+    code = compare_runs.main(["compare_runs.py", str(path)])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "--" in out
+
+
+# --- Empty prompt hashes are refused -----------------------------------------
+
+
+def test_refuse_empty_prompt_hashes():
+    event = _event(prompt_hashes={}, run_id="v0-nvda-2026-11-20-r1-20261121t1200")
+    with pytest.raises(IncomparableRunsError) as exc:
+        compare_runs.compare_manifests([event.__dict__])
+    assert "prompt_hashes" in str(exc.value)
+
+
 # --- Outcome / stop_reason counts per variant --------------------------------
 
 

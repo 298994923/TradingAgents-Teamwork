@@ -1,5 +1,6 @@
 """Running one analysis from the CLI: build the graph, stream it into the live view, save the report."""
 
+import json
 import os
 import re
 import sys
@@ -69,11 +70,14 @@ def _manifest_config_snapshot(config: dict) -> dict:
 
     The recorder already drops secret-pattern keys; keeping only scalar values
     here also excludes nested objects and lists that are not comparable settings.
+    ``results_dir`` is a machine-local output path, not a comparable setting, so it
+    is left out of the manifest.
     """
     return {
         key: value
         for key, value in config.items()
-        if isinstance(value, (str, int, float, bool)) or value is None
+        if key != "results_dir"
+        and (isinstance(value, (str, int, float, bool)) or value is None)
     }
 
 
@@ -93,13 +97,21 @@ def write_run_manifest(
     duration_seconds: float | None = None,
     started_at: float | None = None,
     clock=None,
+    stop_reason: str | None = None,
+    evidence_mode: str = "strict",
 ) -> Path:
     """Write this run's manifest to ``<results_dir>/runs/<run_id>/manifest.json``.
 
-    Fields owned by other members are placeholders until they land: ``stop_reason``
-    (C) is ``None``, ``prompt_hashes`` (B) is ``{}``, ``evidence_snapshot`` (A) is
-    ``None``. ``duration_seconds`` is measured from ``started_at`` and ``clock``
-    (``time.time`` by default) when not supplied; passing both keeps it testable.
+    ``stop_reason`` is read from the run's final state by the caller (C owns the
+    value domain); it is ``None`` when the graph did not reach a terminal state.
+    ``prompt_hashes`` (B) is ``{}`` and ``evidence_snapshot`` (A) is ``None`` until
+    those members' contracts land. ``duration_seconds`` is measured from
+    ``started_at`` and ``clock`` (``time.time`` by default) when not supplied;
+    passing both keeps it testable.
+
+    A per-run ``evidence-mode.json`` sidecar (E4) is written next to the manifest
+    recording the evidence mode and the facts the run observed. It does not change
+    the RunEvent v1 15 fields.
     """
     run_id = build_run_id(variant, ticker, trade_date, repeat, at)
     if duration_seconds is None and started_at is not None:
@@ -120,14 +132,47 @@ def write_run_manifest(
         usage=usage,
         duration_seconds=duration_seconds,
         failure=failure,
-        stop_reason=None,
+        stop_reason=stop_reason,
     )
     runs_dir = Path(config["results_dir"]) / "runs"
     run_id = _unique_run_id(runs_dir, run_id)
     event = replace(event, run_id=run_id)
     manifest_dir = runs_dir / run_id
     manifest_dir.mkdir(parents=True, exist_ok=True)
-    return write_manifest(event, manifest_dir / "manifest.json")
+    path = write_manifest(event, manifest_dir / "manifest.json")
+    write_evidence_mode(manifest_dir / "evidence-mode.json", run_id, evidence_mode)
+    return path
+
+
+_EVIDENCE_MODES = ("strict", "report_reference")
+
+
+def write_evidence_mode(path, run_id: str, evidence_mode: str) -> Path:
+    """Write the E4 ``evidence-mode.json`` sidecar recording this run's mode.
+
+    E records facts only; the authoritative action and the mode approval belong to
+    D/C, so those fields are ``None`` here unless a caller later fills them in.
+    """
+    if evidence_mode not in _EVIDENCE_MODES:
+        raise ValueError(
+            f"invalid evidence_mode {evidence_mode!r}; expected one of {', '.join(_EVIDENCE_MODES)}"
+        )
+    sidecar = {
+        "schema_version": 1,
+        "run_id": run_id,
+        "evidence_mode": evidence_mode,
+        "scenario": None,
+        "policy_version": None,
+        "unknown_time_fields": [],
+        "limitations": [],
+        "authoritative_action": None,
+        "authoritative_reason": None,
+        "decided_by": None,
+        "snapshot_ref": {"snapshot_id": None, "artifact_key": None},
+    }
+    path = Path(path)
+    path.write_text(json.dumps(sidecar, sort_keys=True, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
 
 
 def _unique_run_id(runs_dir: Path, run_id: str) -> str:
@@ -158,7 +203,7 @@ def _make_manifest_writer(config: dict, selections: dict, stats_handler, started
     real duration.
     """
 
-    def write(*, failure, outcome):
+    def write(*, failure, outcome, stop_reason=None):
         return write_run_manifest(
             config=config,
             ticker=selections["ticker"],
@@ -172,6 +217,8 @@ def _make_manifest_writer(config: dict, selections: dict, stats_handler, started
             at=datetime.now(UTC),
             version=__version__,
             started_at=started_at,
+            stop_reason=stop_reason,
+            evidence_mode=config.get("evidence_mode", "strict"),
         )
 
     return write
@@ -193,9 +240,12 @@ def _finalize_run_manifest(
     The manifest is written **before** the checkpoint is cleared, so a crash in
     teardown never loses the record. A failed run still writes a manifest with
     ``failure`` set and keeps its checkpoint for resume; the failure is re-raised.
+    ``stop_reason`` is read from ``final_state`` (C's field) with a ``None``
+    fallback when the run did not reach a terminal state.
     """
     outcome = None if final_state is None else run_rating(final_state)
-    write(failure=None if failure is None else str(failure), outcome=outcome)
+    stop_reason = (final_state or {}).get("stop_reason") if failure is None else None
+    write(failure=None if failure is None else str(failure), outcome=outcome, stop_reason=stop_reason)
 
     if failure is not None:
         raise failure
@@ -259,9 +309,31 @@ def _build_run_config(selections: dict, checkpoint: bool | None) -> dict:
     return config
 
 
+def _reject_unavailable_variant(variant: str, config: dict | None = None) -> None:
+    """Refuse v1/v2 until C's ``workflow_variant`` key is wired into the graph.
+
+    v0 is always allowed. A non-v0 variant is allowed only when ``config`` actually
+    carries ``workflow_variant`` (C's enable switch); otherwise this raises
+    ``typer.Exit`` before any model call, so a v0-compatible run is never labelled
+    v1/v2.
+    """
+    if variant == "v0":
+        return
+    if (config if config is not None else DEFAULT_CONFIG).get("workflow_variant"):
+        return
+    console.print(
+        f"[red]Variant {variant!r} is not available yet: the workflow only "
+        f"implements v0. Run with --variant v0.[/red]"
+    )
+    raise typer.Exit(code=1)
+
+
 def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, variant="v0"):
     flags = flags or {}
     variant = _validate_variant(variant)
+    # v1/v2 are not implemented in the workflow yet (C's `workflow_variant` key is
+    # not wired into the graph). Refuse them before any setup or model call.
+    _reject_unavailable_variant(variant)
     # With no terminal nothing can answer a prompt: name every question still
     # open before any model is called, rather than stopping at the first one.
     if not (sys.stdin and sys.stdin.isatty()):

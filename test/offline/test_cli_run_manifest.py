@@ -65,6 +65,14 @@ def test_config_snapshot_keeps_only_scalars():
     assert "some_list" not in snapshot
 
 
+def test_config_snapshot_drops_results_dir():
+    # A machine-local output path is not a comparable setting; it must not be
+    # recorded in the manifest.
+    snapshot = cli_run._manifest_config_snapshot(_config())
+    assert "results_dir" not in snapshot
+    assert snapshot["llm_provider"] == "openai"
+
+
 # --- write_run_manifest ------------------------------------------------------
 
 

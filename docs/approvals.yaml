@@ -78,3 +78,18 @@ approvals:
     approver: "61023334"
     date: "2026-11-24"
     tests: ["test/offline/test_evidence.py", "test/offline/test_evidence_artifact_keys.py"]
+
+  - src: "src/cli/stats_handler.py"
+    approver: "60252993"
+    date: "2026-11-22"
+    tests: ["test/offline/test_stats_calls.py", "test/offline/test_token_usage.py"]
+
+  - src: "src/cli/display.py"
+    approver: "60252993"
+    date: "2026-11-22"
+    tests: ["test/offline/test_token_usage.py"]
+
+  - src: "src/tradingagents/resume.py"
+    approver: "60252993"
+    date: "2026-11-22"
+    tests: ["test/offline/test_resume.py"]

@@ -52,11 +52,19 @@ def test_variant_default_is_v0(monkeypatch):
     assert calls[0]["variant"] == "v0"
 
 
-def test_variant_option_passed_through(monkeypatch):
+def test_variant_option_v0_passed_through(monkeypatch):
     calls = []
     runner = _runner(monkeypatch, calls)
-    assert runner.invoke(m.app, ["--variant", "v2"]).exit_code == 0
-    assert calls[0]["variant"] == "v2"
+    assert runner.invoke(m.app, ["--variant", "v0"]).exit_code == 0
+    assert calls[0]["variant"] == "v0"
+
+
+def test_variant_option_v2_refused_until_workflow_variant(monkeypatch):
+    # v2 is valid input but not implemented yet; it is refused before run_analysis.
+    calls = []
+    runner = _runner(monkeypatch, calls)
+    assert runner.invoke(m.app, ["--variant", "v2"]).exit_code != 0
+    assert calls == []
 
 
 def test_invalid_variant_exits_before_running(monkeypatch):
