@@ -552,3 +552,14 @@ entries:
       permission["*"]. Not fixed yet, waiting for D to say which config is the real
       one. Local: 1637 passed, 1 skipped, 1 deselected, 100 subtests; ruff clean.
       GitHub Actions was NOT run.
+  - id: "B-PR22-prompt-receipts-20261124"
+    pr_id: "22"
+    date: "2026-11-24"
+    task: "Forward prompt receipts through the main research graph."
+    agent: "Codex"
+    human_reviewed: false
+    notes: >-
+      The agent prepared the graph callback wiring and offline tests. Candidate
+      6ad01b8 has the same tree as d81658d. The 41 checkpoint cases and two
+      graph receipt cases passed on that tree, including manager fallback.
+      The V1 selector adaptation is outside this PR. Human review is pending.
