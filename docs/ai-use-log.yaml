@@ -550,6 +550,7 @@ entries:
       permission["*"]. Not fixed yet, waiting for D to say which config is the real
       one. Local: 1637 passed, 1 skipped, 1 deselected, 100 subtests; ruff clean.
       GitHub Actions was NOT run.
+      
   - id: "B-PR22-prompt-receipts-20261124"
     pr_id: "22"
     date: "2026-11-24"
@@ -561,6 +562,30 @@ entries:
       6ad01b8 has the same tree as d81658d. The 41 checkpoint cases and two
       graph receipt cases passed on that tree, including manager fallback.
       The V1 selector adaptation is outside this PR. Role B reviewed and accepted this AI-use record.
+
+  - id: "60252993-linan-ai-use-18"
+    pr_id: "pre-pr"
+    date: "2026-11-24"
+    task: "Fix the CLI --variant bug so the flag no longer overrides configured debate depth"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      C reported that leaving out --variant still ran the v0 preset, so a configured
+      three-round run quietly became two rounds and the manifest still said three.
+      Also, explicit v1 was refused at the CLI before the graph was built, and the
+      manifest wrote the requested depth instead of the depth actually run.
+      Asked opencode to fix it, then checked the diff myself. Now no flag means the
+      old legacy run, v0 runs two rounds and writes two in the manifest, v1 reaches
+      the graph (and still fails closed before any model call if the graph cannot
+      take it), and v2 behaves as before. Local: 66 focused tests passed, 1904
+      passed / 1 skipped / 1 deselected / 100 subtests in the full suite, ruff clean.
+      The handoff note is in bugfix/C-to-E-v1-cli-post-receipts-validation-follow-up.md.
+      Still open: git add the new test file; v1 end-to-end needs C's selector patch;
+      the test stub also changes risk rounds, which differs from ADR-006 (production
+      code is unaffected, but that assertion is misleading). GitHub Actions was NOT run.
 
   - id: "61023334-LiChengzhi-ai-use-05"
     pr_id: "21"
@@ -607,3 +632,22 @@ entries:
       confirmed that they reviewed and accepted the exact local Draft #21
       candidate 7da74c491b64d9a7db8392dd372de7a6b538bf8b. Both flags record
       that local acceptance only, not publication, readiness, or merge approval.
+      On 2026-11-25, OpenCode (openai/gpt-6.2-sol, session
+      ses_e068a4c8dffe1zl0wRjxuCc0m7) verified a six-file Draft #21 refresh
+      on main fe8ad1ece6eddec20466b4c9129f18d908edcdd2 after E's PR #28.
+      The graph and both pinned tests are byte-identical to the accepted C
+      implementation. No E code or existing main ledger content was edited.
+      The test-only baseline had 3 passes and 11 expected missing-selector
+      failures. The real public CLI, graph and manifest writer passed all
+      4 scripted offline cases: omission retained configured depth three and
+      the legacy signature; explicit v0 and v1 used depths two and one with
+      effective manifest settings; v2 was rejected before any model call.
+      All 14 V1 and 41 checkpoint cases passed. Full offline: 1921 passed,
+      1 skipped (langchain_aws), 1 deselected, 24 warnings and 100 passing
+      subtests. Ruff and diff checks passed. See
+      C-v1-pr21-post-e-cli-refresh-evidence.md for the exact candidate and
+      checks. The prior human flags remain scoped to the unchanged C
+      implementation they accepted on 2026-11-24. The operator requested
+      verification and local preparation only; no fresh acceptance of the
+      combined candidate, permission-sync disposition, published CI, or
+      approval to publish, promote from Draft, or merge is recorded here.
