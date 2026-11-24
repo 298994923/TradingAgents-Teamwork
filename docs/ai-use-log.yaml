@@ -569,8 +569,8 @@ entries:
     agent: "opencode"
     model: "openai/gpt-6.2-sol"
     prompt_version: "N/A"
-    human_reviewed: false
-    changes_accepted: false
+    human_reviewed: true
+    changes_accepted: true
     notes: >-
       OpenCode session ses_e068a4c8dffe1zl0wRjxuCc0m7. Role D (Liu Kehong,
       60894001) signed the main delivery ruling on 2026-11-23 and confirmed
@@ -602,5 +602,8 @@ entries:
       100 passing subtests), Ruff and diff checks. See
       C-v1-landed-b-main-gate-evidence.md for hashes and commands. The CLI
       rejects public v1 and records stale depth for v0; E's follow-up remains
-      open, as do permission-sync disposition and final human review. The
-      updated candidate is not accepted or published by this session.
+      open, as do permission-sync disposition and verification on the
+      published PR, including CI. On 2026-11-24, the human explicitly
+      confirmed that they reviewed and accepted the exact local Draft #21
+      candidate 7da74c491b64d9a7db8392dd372de7a6b538bf8b. Both flags record
+      that local acceptance only, not publication, readiness, or merge approval.
