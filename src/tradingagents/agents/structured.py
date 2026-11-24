@@ -87,9 +87,14 @@ def invoke_structured_or_freetext(
     prompt: Any,
     render: Callable[[T], str],
     agent_name: str,
+    *, before_send=None,
 ) -> str:
     """Run the structured call and render to markdown; fall back to free-text on any failure."""
+    if structured_llm is not None and before_send is not None:
+        before_send(prompt)
     result = invoke_structured(structured_llm, prompt, agent_name)
     if result is not None:
         return render(result)
+    if before_send is not None:
+        before_send(prompt)
     return plain_llm.invoke(prompt).content

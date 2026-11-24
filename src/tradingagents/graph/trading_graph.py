@@ -57,6 +57,7 @@ class TradingAgentsGraph:
         debug=False,
         config: dict[str, Any] = None,
         callbacks: list | None = None,
+        on_prompt=None,
     ):
         """Initialize the trading agents graph and components.
 
@@ -98,6 +99,7 @@ class TradingAgentsGraph:
             self.deep_thinking_llm,
             self.conditional_logic,
             max_tool_rounds,
+            on_prompt=on_prompt,
         )
 
         self.propagator = Propagator(

@@ -99,11 +99,13 @@ class GraphSetup:
         deep_thinking_llm: Any,
         conditional_logic: ConditionalLogic,
         max_tool_rounds: int,
+        on_prompt=None,
     ):
         """Initialize with required components."""
         self.quick_thinking_llm = quick_thinking_llm
         self.deep_thinking_llm = deep_thinking_llm
         self.conditional_logic = conditional_logic
+        self.on_prompt = on_prompt
         self.max_tool_rounds = max_tool_rounds
 
     def setup_graph(
@@ -129,9 +131,9 @@ class GraphSetup:
             "fundamentals": lambda: create_fundamentals_analyst(self.quick_thinking_llm),
         }
 
-        bull_researcher_node = create_bull_researcher(self.quick_thinking_llm)
-        bear_researcher_node = create_bear_researcher(self.quick_thinking_llm)
-        research_manager_node = create_research_manager(self.deep_thinking_llm)
+        bull_researcher_node = create_bull_researcher(self.quick_thinking_llm, on_prompt=self.on_prompt)
+        bear_researcher_node = create_bear_researcher(self.quick_thinking_llm, on_prompt=self.on_prompt)
+        research_manager_node = create_research_manager(self.deep_thinking_llm, on_prompt=self.on_prompt)
         trader_node = create_trader(self.quick_thinking_llm)
 
         aggressive_analyst = create_aggressive_debator(self.quick_thinking_llm)

@@ -387,3 +387,44 @@ def test_the_memory_step_reads_lessons_as_of_the_trade_date_and_settles_once(tmp
 
     assert asked == ["2026-01-20", "2026-01-20"]
     assert (tmp_path / "log.md").read_text() == log_after_first
+
+
+@pytest.mark.parametrize("manager_retries", [False, True])
+def test_graph_prompt_receipts(tmp_path, monkeypatch, offline, manager_retries):
+    import hashlib
+
+    sent = []
+
+    class RecordingModel(ScriptedModel):
+        def invoke(self, prompt, *args, **kwargs):
+            if isinstance(prompt, str):
+                for role, prefix in (("bull", "You are a Bull Analyst"),
+                                     ("bear", "You are a Bear Analyst"),
+                                     ("research_manager", "As the Research Manager")):
+                    if prompt.startswith(prefix):
+                        sent.append((role, prompt))
+            return super().invoke(prompt, *args, **kwargs)
+
+        def with_structured_output(self, schema, **kwargs):
+            if schema is schemas.ResearchPlan:
+                def send(prompt):
+                    sent.append(("research_manager", prompt))
+                    return None if manager_retries else STRUCTURED[schema]
+                return RunnableLambda(send)
+            return super().with_structured_output(schema, **kwargs)
+
+    model = RecordingModel()
+    cfg = dict(DEFAULT_CONFIG, results_dir=str(tmp_path), data_cache_dir=str(tmp_path / "cache"),
+               memory_log_path=str(tmp_path / "memory"), checkpoint_enabled=False)
+    monkeypatch.setattr(trading_graph, "create_tier_client", lambda *a, **kw: _Client(model))
+    receipts = []
+    graph = trading_graph.TradingAgentsGraph(config=cfg, on_prompt=receipts.append)
+    graph.propagate("NVDA", TRADE_DATE)
+    expected = ["bull", "bear", "research_manager"]
+    if manager_retries:
+        expected.append("research_manager")
+    assert [r["role"] for r in receipts] == expected
+    assert [(r["role"], r["input_sha256"]) for r in receipts] == [
+        (role, hashlib.sha256(prompt.encode()).hexdigest()) for role, prompt in sent]
+    for receipt in receipts:
+        assert set(receipt["prompt_hashes"]) == {"b." + receipt["role"]}
