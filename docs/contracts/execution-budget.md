@@ -35,3 +35,20 @@ Historical integration at `a61b7b587169bcfb20300be1b95f721e1a496caa` provided `t
 E's candidate at `nanli@b49af8dd1fcd6f8d9aeca372f43addc6642503f3` was verified with real `track(stage, expected_calls=n)` and `settle(handle)` plus the standalone policy. `C-budget-usage-settlement-evidence.md` records **58 baseline passes and 61 final combined passes**. The test-only harness `test_budget_usage_settlement_boundary.py` (SHA-256 `8b7cf8bb2823a021ef84a325b51eb973359af8bbc0297cf51505d425330121ad`) submitted one settlement per admitted window in stage order. Known usage refunded the overestimate; an in-flight callback at close produced immutable unknown with no later refund; a denial produced no call, window, or settlement. Re-reading the frozen settlement is not a second policy submission. This verifies the tested component boundary, not main runtime wiring or general concurrent graph execution.
 
 E's component delivery to main and production graph settlement acceptance remain pending for the actual target, including correct expected call counts and one settlement per admission. Missing or ambiguous usage remains unknown. These are prerequisites for budget graph wiring, not for keyed checkpoint identity. E retains the sole manifest writer: RunEvent v1 keeps run-level actual usage and `stop_reason`; fixed limits can go in `config_snapshot`, while per-admission balances and decisions stay in C state and verification evidence. Do not add another writer or a v1 schema field.
+
+## V2 research-budget reservation, admission, and settlement
+
+For the first research-only slice, meter only the possible synchronous Bear follow-up. Use the same token unit, validated input plus output tokens, for its estimate and actual usage. The initial research calls are outside this metered admission; this is not a total run budget. In the signed 2/3-unit contrast, reserve two units and estimate the eligible follow-up at one. Reservation protects capacity; it is not spend. Neither path makes a final-review commitment.
+
+| Same research inputs | Admission and settlement | Terminal behavior |
+|---|---|---|
+| 2 units | After Bull, deny Bear before node start or model send. No usage window or settlement; record `not_invoked`, not reported zero. | Scheduler writes `INSUFFICIENT_BUDGET_FOLLOW_UP`. A valid manager `REVIEW` produces `REVIEW_REQUIRED`. At the deterministic terminal, pass actual recorded entries to D's helper; with none, write the exact result below. |
+| 3 units | Admit the same Bear and settle once at one reported unit in the signed fixture. Two units remain reserved. | The question remains unresolved. The manager produces `REVIEW` / `REVIEW_REQUIRED`. No low-budget reason and no `guard_result` key; do not invoke the stop helper. This is routing, not a guard adjudication. |
+
+Exact output of `constraints.stop_result([])` for the two-unit fixture:
+
+```json
+{"contract":"validation-decision/1.1","verdict":"REVIEW","reason_code":"KNOWN_UNKNOWN","checkpoint":"budget-stop","executable":false,"rules_hit":[]}
+```
+
+Pass the ordered recorded guard entries to D's helper at an actual budget stop, including each entry's `verdict` so the helper can retain a stricter prior `BLOCK`. Do not construct a competing guard envelope in routing code. For an admitted production follow-up, open E's `track(FOLLOW_UP, expected_calls=1)` before invocation. After the window closes, submit `settle(handle).units` exactly once to `BudgetPolicy.record_usage` for that admission. Known usage replaces the estimate. Verified zero is reported; incomplete, failed, ambiguous, or unaccounted usage settles as `None`, leaving the commitment debited. Late callbacks do not change the frozen result or trigger another settlement. Denied admission opens no window and submits no usage. Do not change E's manifest writer or schema.
