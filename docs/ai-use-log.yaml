@@ -561,3 +561,13 @@ entries:
       6ad01b8 has the same tree as d81658d. The 41 checkpoint cases and two
       graph receipt cases passed on that tree, including manager fallback.
       The V1 selector adaptation is outside this PR. Role B reviewed and accepted this AI-use record.
+  - id: "B-PR26-cli-manifest-receipts"
+    pr_id: "26"
+    date: "2026-11-24"
+    task: "Persist observed research-role hashes and per-call input digests in CLI run artifacts."
+    agent: "Codex"
+    human_reviewed: false
+    notes: >-
+      Added CLI collector wiring, manifest and sidecar persistence, and offline
+      end-to-end tests for normal and fallback sends. Verified with v0; the
+      workflow v1 selector was unavailable on the tested main baseline.
