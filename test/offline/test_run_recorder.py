@@ -174,3 +174,37 @@ def test_existing_manifest_is_not_overwritten(tmp_path):
     path = _write_to(tmp_path, _make_event())
     with pytest.raises(FileExistsError):
         write_manifest(_make_event(), path)
+
+
+def test_interrupted_write_leaves_no_half_written_final_file(tmp_path, monkeypatch):
+    # If the write is interrupted before the atomic publish, nothing must appear at
+    # the final path: the bytes go to a temp file in the same directory first.
+    path = tmp_path / "manifest.json"
+
+    import tradingagents.run_recorder as rec
+
+    def explode(src, dst):
+        raise OSError("simulated crash before publish")
+
+    monkeypatch.setattr(rec.os, "link", explode)
+    with pytest.raises(OSError):
+        write_manifest(_make_event(), path)
+
+    assert not path.exists(), "no half-written file may reach the final path"
+    # The temp file was cleaned up on the failure path too.
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_successful_write_leaves_no_temp_file(tmp_path):
+    path = _write_to(tmp_path, _make_event())
+    leftovers = [p for p in tmp_path.iterdir() if p != path]
+    assert leftovers == []
+    assert read_manifest(path)["run_id"] == "run-abc-001"
+
+
+def test_atomic_write_still_refuses_overwrite(tmp_path):
+    path = _write_to(tmp_path, _make_event())
+    with pytest.raises(FileExistsError):
+        write_manifest(_make_event(), path)
+    # The existing manifest is untouched.
+    assert read_manifest(path)["run_id"] == "run-abc-001"

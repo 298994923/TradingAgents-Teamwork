@@ -12,7 +12,9 @@ not validated here.
 from __future__ import annotations
 
 import json
+import os
 import re
+import tempfile
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -118,6 +120,12 @@ def _validated_manifest(event: RunEvent) -> dict:
 def write_manifest(event: RunEvent, path) -> Path:
     """Write ``event`` as a JSON manifest to ``path``; never overwrite.
 
+    The bytes are written to a temp file in the same directory, then published to
+    ``path`` in one atomic step, so an interruption never leaves a half-written
+    manifest at the final path. Publishing uses ``os.link``, which fails with
+    ``FileExistsError`` if ``path`` already exists (no overwrite), and is removed
+    on any failure.
+
     Raises ``ValueError`` for an unsupported schema version, an invalid
     ``run_id``, or an empty required string, and ``FileExistsError`` if ``path``
     already exists.
@@ -125,9 +133,20 @@ def write_manifest(event: RunEvent, path) -> Path:
     path = Path(path)
     manifest = _validated_manifest(event)
     payload = json.dumps(manifest, sort_keys=True, ensure_ascii=False, indent=2)
-    # "x" refuses to overwrite an existing file atomically.
-    with open(path, "x", encoding="utf-8") as handle:
-        handle.write(payload)
+
+    directory = path.parent if str(path.parent) else Path(".")
+    directory.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(dir=directory, prefix=f".{path.name}.", suffix=".tmp")
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        # Single atomic publish; refuses to overwrite an existing manifest.
+        os.link(tmp_path, path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
     return path
 
 

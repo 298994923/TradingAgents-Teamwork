@@ -84,7 +84,16 @@ def _guard_of(manifest: dict) -> dict:
     for key in _PROVIDER_KEYS:
         if key in config:
             guard[key] = config[key]
-    guard["prompt_hashes"] = manifest.get("prompt_hashes")
+    prompt_hashes = manifest.get("prompt_hashes")
+    if not prompt_hashes:
+        # An empty/None prompt fingerprint leaves the comparison unfounded: two runs
+        # cannot be shown to use the same prompts without a real hash (C-to-E
+        # variant response: keep the real hashes). Refuse rather than guess.
+        raise IncomparableRunsError(
+            f"manifest {manifest.get('run_id')!r} has empty prompt_hashes; "
+            "cannot compare without prompt fingerprints"
+        )
+    guard["prompt_hashes"] = prompt_hashes
     return guard
 
 
@@ -98,7 +107,9 @@ def _provider_keys(manifests: list[dict]) -> list[str]:
 
 
 def _check_comparable(guard: dict, baseline: dict) -> None:
-    diffs = [key for key in baseline if guard.get(key) != baseline[key]]
+    # Compare the guard keys the manifest actually contributes. ``evidence_mode`` is
+    # validated once for the whole set (see compare_manifests), not per manifest.
+    diffs = [key for key in guard if key in baseline and guard.get(key) != baseline[key]]
     if diffs:
         raise IncomparableRunsError(
             "runs are not comparable; these guard keys differ from the baseline: "
@@ -111,16 +122,28 @@ def _variant_of(run_id: str) -> str:
     return run_id.split("-", 1)[0]
 
 
-def _variant_row(manifest: dict) -> dict:
-    return {
+def _variant_row(manifest: dict, evidence_mode: str | None = None) -> dict:
+    usage = manifest.get("usage")
+    row = {
         "run_id": manifest.get("run_id"),
         "variant": _variant_of(str(manifest.get("run_id", ""))),
         "outcome": manifest.get("outcome"),
-        "usage": manifest.get("usage"),
+        "usage": usage,
         "duration_seconds": manifest.get("duration_seconds"),
         "failure": manifest.get("failure"),
         "stop_reason": manifest.get("stop_reason"),
+        "evidence_mode": evidence_mode,
     }
+    # Surface each numeric metric explicitly. A missing value stays None (null),
+    # never coerced to 0: an unreported count is unknown, not zero.
+    for metric in _USAGE_METRICS:
+        row[metric] = usage.get(metric) if isinstance(usage, dict) else None
+    return row
+
+
+def _format_metric(value) -> str:
+    """Render a metric for humans: ``--`` for null/unknown, else the number."""
+    return "--" if value is None else str(value)
 
 
 def _counts(values: list) -> dict:
@@ -155,12 +178,28 @@ def _averages(rows: list[dict]) -> dict:
     return result
 
 
-def compare_manifests(manifests: list[dict]) -> Comparison:
-    """Compare already-loaded manifests; raise ``IncomparableRunsError`` if invalid."""
+def compare_manifests(manifests: list[dict], evidence_modes: list[str | None] | None = None) -> Comparison:
+    """Compare already-loaded manifests; raise ``IncomparableRunsError`` if invalid.
+
+    ``evidence_modes`` aligns with ``manifests`` (E4 ``evidence-mode.json``): the mode
+    is a control that must match across every run, so strict and report_reference
+    runs are never compared together. When omitted, every mode is ``None`` (no
+    sidecar), which is itself required to be uniform.
+    """
     if not manifests:
         raise IncomparableRunsError("no manifests supplied")
+    modes = list(evidence_modes) if evidence_modes is not None else [None] * len(manifests)
+    if len(modes) != len(manifests):
+        raise IncomparableRunsError("evidence_modes must align with manifests")
+    if len(set(modes)) > 1:
+        raise IncomparableRunsError(
+            "runs are not comparable; evidence_mode differs (strict vs report_reference "
+            "are never compared together): " + ", ".join(repr(m) for m in modes)
+        )
+    shared_mode = modes[0]
 
     baseline_guard = _guard_of(manifests[0])
+    baseline_guard["evidence_mode"] = shared_mode
     for manifest in manifests[1:]:
         _check_comparable(_guard_of(manifest), baseline_guard)
 
@@ -174,7 +213,7 @@ def compare_manifests(manifests: list[dict]) -> Comparison:
             )
         baseline_guard.setdefault(key, (manifests[0].get("config_snapshot") or {}).get(key))
 
-    rows = [_variant_row(manifest) for manifest in manifests]
+    rows = [_variant_row(manifest, modes[i]) for i, manifest in enumerate(manifests)]
     return Comparison(
         baseline_run_id=manifests[0].get("run_id"),
         guard=baseline_guard,
@@ -184,13 +223,30 @@ def compare_manifests(manifests: list[dict]) -> Comparison:
             "Reported quantities are measured from run manifests; no quality score is "
             "computed or inferred here.",
             "Runs are only compared when ticker, trade_date, asset_type, model, provider, "
-            "language, and prompt hashes all match the baseline.",
+            "language, prompt hashes, and evidence_mode all match the baseline.",
         ],
     )
 
 
+def _evidence_mode_of(manifest_path: Path) -> str | None:
+    """Read the E4 ``evidence-mode.json`` beside a manifest; ``None`` when absent.
+
+    A missing sidecar means the run predates E4 or recorded no mode; it compares
+    as ``None`` and so is only comparable with other sidecar-less runs.
+    """
+    sidecar = Path(manifest_path).parent / "evidence-mode.json"
+    if not sidecar.exists():
+        return None
+    try:
+        data = json.loads(sidecar.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise IncomparableRunsError(f"cannot read evidence-mode {str(sidecar)!r}: {exc}") from exc
+    return data.get("evidence_mode")
+
+
 def compare_manifest_files(paths: list[str | Path]) -> Comparison:
     manifests = []
+    modes = []
     for path in paths:
         try:
             manifests.append(read_manifest(path))
@@ -198,7 +254,8 @@ def compare_manifest_files(paths: list[str | Path]) -> Comparison:
             # read_manifest raises ValueError for a bad/unsupported/short manifest
             # and OSError (e.g. FileNotFoundError) for an unreadable path.
             raise IncomparableRunsError(f"cannot read manifest {str(path)!r}: {exc}") from exc
-    return compare_manifests(manifests)
+        modes.append(_evidence_mode_of(Path(path)))
+    return compare_manifests(manifests, evidence_modes=modes)
 
 
 def main(argv: list[str]) -> int:
@@ -217,8 +274,11 @@ def main(argv: list[str]) -> int:
         print(json.dumps(comparison.to_dict(), sort_keys=True, ensure_ascii=False, indent=2))
     else:
         print(f"[compare-runs] baseline={comparison.baseline_run_id} runs={len(comparison.variants)}")
+        header = ("runs",) + _USAGE_METRICS + ("duration_seconds",)
+        print("  variant        " + "  ".join(f"{name:>16}" for name in header))
         for variant, summary in sorted(comparison.averages.items()):
-            print(f"  {variant}: {json.dumps(summary, sort_keys=True)}")
+            cells = "  ".join(f"{_format_metric(summary.get(name)):>16}" for name in header)
+            print(f"  {variant:<14} {cells}")
     return 0
 
 

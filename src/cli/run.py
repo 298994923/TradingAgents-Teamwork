@@ -1,5 +1,7 @@
 """Running one analysis from the CLI: build the graph, stream it into the live view, save the report."""
 
+import inspect
+import json
 import os
 import re
 import sys
@@ -69,11 +71,14 @@ def _manifest_config_snapshot(config: dict) -> dict:
 
     The recorder already drops secret-pattern keys; keeping only scalar values
     here also excludes nested objects and lists that are not comparable settings.
+    ``results_dir`` is a machine-local output path, not a comparable setting, so it
+    is left out of the manifest.
     """
     return {
         key: value
         for key, value in config.items()
-        if isinstance(value, (str, int, float, bool)) or value is None
+        if key != "results_dir"
+        and (isinstance(value, (str, int, float, bool)) or value is None)
     }
 
 
@@ -93,13 +98,21 @@ def write_run_manifest(
     duration_seconds: float | None = None,
     started_at: float | None = None,
     clock=None,
+    stop_reason: str | None = None,
+    evidence_mode: str = "strict",
 ) -> Path:
     """Write this run's manifest to ``<results_dir>/runs/<run_id>/manifest.json``.
 
-    Fields owned by other members are placeholders until they land: ``stop_reason``
-    (C) is ``None``, ``prompt_hashes`` (B) is ``{}``, ``evidence_snapshot`` (A) is
-    ``None``. ``duration_seconds`` is measured from ``started_at`` and ``clock``
-    (``time.time`` by default) when not supplied; passing both keeps it testable.
+    ``stop_reason`` is read from the run's final state by the caller (C owns the
+    value domain); it is ``None`` when the graph did not reach a terminal state.
+    ``prompt_hashes`` (B) is ``{}`` and ``evidence_snapshot`` (A) is ``None`` until
+    those members' contracts land. ``duration_seconds`` is measured from
+    ``started_at`` and ``clock`` (``time.time`` by default) when not supplied;
+    passing both keeps it testable.
+
+    A per-run ``evidence-mode.json`` sidecar (E4) is written next to the manifest
+    recording the evidence mode and the facts the run observed. It does not change
+    the RunEvent v1 15 fields.
     """
     run_id = build_run_id(variant, ticker, trade_date, repeat, at)
     if duration_seconds is None and started_at is not None:
@@ -120,14 +133,47 @@ def write_run_manifest(
         usage=usage,
         duration_seconds=duration_seconds,
         failure=failure,
-        stop_reason=None,
+        stop_reason=stop_reason,
     )
     runs_dir = Path(config["results_dir"]) / "runs"
     run_id = _unique_run_id(runs_dir, run_id)
     event = replace(event, run_id=run_id)
     manifest_dir = runs_dir / run_id
     manifest_dir.mkdir(parents=True, exist_ok=True)
-    return write_manifest(event, manifest_dir / "manifest.json")
+    path = write_manifest(event, manifest_dir / "manifest.json")
+    write_evidence_mode(manifest_dir / "evidence-mode.json", run_id, evidence_mode)
+    return path
+
+
+_EVIDENCE_MODES = ("strict", "report_reference")
+
+
+def write_evidence_mode(path, run_id: str, evidence_mode: str) -> Path:
+    """Write the E4 ``evidence-mode.json`` sidecar recording this run's mode.
+
+    E records facts only; the authoritative action and the mode approval belong to
+    D/C, so those fields are ``None`` here unless a caller later fills them in.
+    """
+    if evidence_mode not in _EVIDENCE_MODES:
+        raise ValueError(
+            f"invalid evidence_mode {evidence_mode!r}; expected one of {', '.join(_EVIDENCE_MODES)}"
+        )
+    sidecar = {
+        "schema_version": 1,
+        "run_id": run_id,
+        "evidence_mode": evidence_mode,
+        "scenario": None,
+        "policy_version": None,
+        "unknown_time_fields": [],
+        "limitations": [],
+        "authoritative_action": None,
+        "authoritative_reason": None,
+        "decided_by": None,
+        "snapshot_ref": {"snapshot_id": None, "artifact_key": None},
+    }
+    path = Path(path)
+    path.write_text(json.dumps(sidecar, sort_keys=True, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
 
 
 def _unique_run_id(runs_dir: Path, run_id: str) -> str:
@@ -158,7 +204,7 @@ def _make_manifest_writer(config: dict, selections: dict, stats_handler, started
     real duration.
     """
 
-    def write(*, failure, outcome):
+    def write(*, failure, outcome, stop_reason=None):
         return write_run_manifest(
             config=config,
             ticker=selections["ticker"],
@@ -172,6 +218,8 @@ def _make_manifest_writer(config: dict, selections: dict, stats_handler, started
             at=datetime.now(UTC),
             version=__version__,
             started_at=started_at,
+            stop_reason=stop_reason,
+            evidence_mode=config.get("evidence_mode", "strict"),
         )
 
     return write
@@ -193,9 +241,12 @@ def _finalize_run_manifest(
     The manifest is written **before** the checkpoint is cleared, so a crash in
     teardown never loses the record. A failed run still writes a manifest with
     ``failure`` set and keeps its checkpoint for resume; the failure is re-raised.
+    ``stop_reason`` is read from ``final_state`` (C's field) with a ``None``
+    fallback when the run did not reach a terminal state.
     """
     outcome = None if final_state is None else run_rating(final_state)
-    write(failure=None if failure is None else str(failure), outcome=outcome)
+    stop_reason = (final_state or {}).get("stop_reason") if failure is None else None
+    write(failure=None if failure is None else str(failure), outcome=outcome, stop_reason=stop_reason)
 
     if failure is not None:
         raise failure
@@ -259,9 +310,72 @@ def _build_run_config(selections: dict, checkpoint: bool | None) -> dict:
     return config
 
 
+def _graph_accepts_workflow_variant(graph_cls) -> bool:
+    """Whether ``graph_cls.__init__`` has an explicit ``workflow_variant`` parameter.
+
+    Only an explicit, named parameter counts. A bare ``**kwargs`` catch-all is *not*
+    treated as support: a legacy graph that swallows unknown kwargs would otherwise be
+    handed v1 and silently ignore it, mislabelling a v0-compatible run. A graph class
+    that cannot introspect returns ``False`` rather than guessing.
+    """
+    try:
+        params = inspect.signature(graph_cls.__init__).parameters
+    except (TypeError, ValueError):
+        return False
+    return "workflow_variant" in params
+
+
+def _reject_unavailable_variant(variant: str, graph_cls=None) -> None:
+    """Refuse a variant that the workflow cannot run, before any model call.
+
+    v0 is always allowed. v2 is not delivered yet and is refused regardless of the
+    graph. v1 is allowed only when ``graph_cls`` accepts ``workflow_variant``;
+    otherwise a v0-compatible run must not be mislabelled v1.
+    """
+    if variant == "v0":
+        return
+    if variant == "v2":
+        console.print(
+            "[red]Variant 'v2' is not available yet: the adaptive workflow is not "
+            "delivered. Use --variant v0 (or v1 if the graph supports it).[/red]"
+        )
+        raise typer.Exit(code=1)
+    if graph_cls is None or not _graph_accepts_workflow_variant(graph_cls):
+        console.print(
+            f"[red]Variant {variant!r} is not available: this graph does not accept "
+            "workflow_variant. Run with --variant v0.[/red]"
+        )
+        raise typer.Exit(code=1)
+
+
+def _build_graph(graph_cls, selected_analyst_keys, config, callbacks, *, workflow_variant):
+    """Construct the graph, forwarding ``workflow_variant`` only when accepted."""
+    kwargs = {"config": config, "debug": True, "callbacks": callbacks}
+    if _graph_accepts_workflow_variant(graph_cls):
+        kwargs["workflow_variant"] = workflow_variant
+    return graph_cls(selected_analyst_keys, **kwargs)
+
+
+def _effective_manifest_variant(graph, requested: str) -> str:
+    """The variant the graph actually enabled, from ``run_settings()``, else requested."""
+    run_settings = getattr(graph, "run_settings", None)
+    if not callable(run_settings):
+        return requested
+    try:
+        settings = run_settings()
+    except (TypeError, ValueError):
+        return requested
+    if not isinstance(settings, dict):
+        return requested
+    return settings.get("workflow_variant") or requested
+
+
 def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, variant="v0"):
     flags = flags or {}
     variant = _validate_variant(variant)
+    # Refuse a variant the graph cannot run before any setup or model call: v2 is
+    # not delivered, and v1 needs a graph that accepts workflow_variant.
+    _reject_unavailable_variant(variant, TradingAgentsGraph)
     # With no terminal nothing can answer a prompt: name every question still
     # open before any model is called, rather than stopping at the first one.
     if not (sys.stdin and sys.stdin.isatty()):
@@ -284,12 +398,15 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
     analyst_execution_plan = build_analyst_execution_plan(selected_analyst_keys)
     analyst_wall_time_tracker = AnalystWallTimeTracker(analyst_execution_plan)
 
-    graph = TradingAgentsGraph(
+    graph = _build_graph(
+        TradingAgentsGraph,
         selected_analyst_keys,
-        config=config,
-        debug=True,
-        callbacks=[stats_handler],
+        config,
+        [stats_handler],
+        workflow_variant=variant,
     )
+    # The variant the graph actually enabled drives the manifest identity.
+    manifest_variant = _effective_manifest_variant(graph, variant)
 
     message_buffer.init_for_analysis(selected_analyst_keys)
 
@@ -514,7 +631,7 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
             # Clean run: write the manifest, log the decision, then drop this run's
             # checkpoint so a later run starts fresh. The manifest is written first,
             # inside _finalize_run_manifest, so teardown can never lose the record.
-            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=variant)
+            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=manifest_variant)
             _finalize_run_manifest(
                 write=manifest_write,
                 graph=graph,
@@ -528,7 +645,7 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
         except BaseException as failure:
             # A failure mid-run still leaves a manifest; the checkpoint is kept for
             # resume and the failure is re-raised after the finally below.
-            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=variant)
+            manifest_write = _make_manifest_writer(config, selections, stats_handler, started_at=start_time, variant=manifest_variant)
             _finalize_run_manifest(
                 write=manifest_write,
                 graph=graph,

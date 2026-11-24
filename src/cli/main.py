@@ -8,7 +8,7 @@ from rich.markup import escape
 from cli.display import console
 from cli.models import AnalystType, AssetType
 from cli.prompts import filter_analysts_for_asset_type, parse_analysts
-from cli.run import _validate_variant, run_analysis
+from cli.run import _reject_unavailable_variant, _validate_variant, run_analysis
 from tradingagents.backtest import iter_grid, run_backtest, summarize
 from tradingagents.default_config import DEFAULT_CONFIG
 from tradingagents.llm_clients.openai_client import SIGNED_IN_PROVIDERS
@@ -89,6 +89,9 @@ def analyze(
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from None
+    # Refuse v1/v2 here too, before run_analysis is even called, so an unavailable
+    # variant is rejected before any model call.
+    _reject_unavailable_variant(variant)
     portfolio_context = None
     if portfolio:
         try:
