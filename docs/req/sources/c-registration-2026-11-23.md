@@ -1,3 +1,43 @@
+# Registration-r7 current source record
+
+Prepared against main@e5897e87345339d1e9f7c863bbbe09d65b0b8038 on 2026-11-25.
+The prior 23 targets were adopted through PR #24. This PR proposes two new
+explicit-preflight IDs and updates availability of already registered tests;
+it changes no original 23 requirement objects, test bytes or approval records.
+
+Source: C-to-A-explicit-checkpoint-preflight-traceability-confirmation.md.
+SHA-256: `3ba1fa40c78e80e4c9117eb63afcb2b305692c2b3268a567594f29e6100f0459`.
+C supplied the two provisional scopes, six function names, seven-case red
+result and a fixed test hash. This is C-reported evidence; A did not receive
+the original test bytes or independently rerun it. No new approval is invented.
+ADR-004 is the governing recovery design reference; mapping registration does
+not itself authorize a protected source change.
+
+## REQ-C-CKPT-02
+
+A assigns REQ-C-LOCAL-CKPT-006 to this new canonical target: explicit preflight
+accepts only the expected original database/thread and returns the recorded
+thread ID before graph execution. This supports part of REQ-C-05 and uses the
+lower storage layer, without replacing either STOR-03 or CKPT-01.
+
+## INV-C-CKPT-02
+
+A assigns INV-C-LOCAL-CKPT-006 to this new canonical target: blank run IDs and
+mismatched identities are rejected before storage; absence never falls back or
+creates files; corruption remains an error; no graph execution or row mutation.
+Selectors and reported test hash are preserved in evidence-registration-trace.md.
+No test rewrite is requested, and the exact repository path remains to be supplied.
+
+## Latest-main reconciliation
+
+PR #22 delivers real prompt receipts; PR #21 delivers the V1 selector and fixed
+test files. The two previously missing files now match their signed hashes.
+The V1 approval record reports 14 V1 and 41 checkpoint passes on its candidate;
+those are recorded historical results, not a new A test run or full preflight
+acceptance. REQ-C-04 and D's compact-fit confirmation remain separate.
+
+## Preserved earlier source history (superseded availability statements)
+
 # Registration-r6 current status
 
 Revision 2026-11-24-registration-r6 supersedes historical availability statements below.
