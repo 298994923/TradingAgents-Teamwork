@@ -638,8 +638,8 @@ entries:
     date: "2026-11-25"
     task: "Address cross-review findings on financial signs and context priority."
     agent: "Codex"
-    human_reviewed: false
+    human_reviewed: true
     notes: >-
       Retain blocks whose exact text or metadata differs. Record retained IDs
       for duplicates and add regressions for opposing EPS signs and priority
-      metadata. This follow-up is pending human review.
+      metadata. Member B confirmed human review of this follow-up.
