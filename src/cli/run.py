@@ -1,5 +1,6 @@
 """Running one analysis from the CLI: build the graph, stream it into the live view, save the report."""
 
+import contextlib
 import inspect
 import json
 import os
@@ -192,6 +193,13 @@ def write_run_manifest(
     recording the evidence mode and the facts the run observed. It does not change
     the RunEvent v1 15 fields.
     """
+    # Validate the evidence mode up front: an invalid mode is a caller error and
+    # must raise before anything (manifest included) is published, not as a
+    # post-publication sidecar failure.
+    if evidence_mode not in _EVIDENCE_MODES:
+        raise ValueError(
+            f"invalid evidence_mode {evidence_mode!r}; expected one of {', '.join(_EVIDENCE_MODES)}"
+        )
     if run_id is not None:
         if not RUN_ID_PATTERN.fullmatch(run_id):
             raise ValueError(f"invalid run_id {run_id!r}; must match {RUN_ID_PATTERN.pattern}")
@@ -234,12 +242,47 @@ def write_run_manifest(
         stop_reason=stop_reason,
     )
     path = write_manifest(event, manifest_dir / "manifest.json")
-    write_evidence_mode(
-        manifest_dir / "evidence-mode.json", run_id, evidence_mode,
-        snapshot_ref=_snapshot_ref(evidence_snapshot),
-    )
-    write_prompt_receipts(manifest_dir / "prompt-receipts.jsonl", prompt_receipts, run_id)
+    # The terminal manifest is now published. Sidecars are derived artifacts: if one
+    # fails we must NOT attempt a second write_manifest (the manifest is immutable
+    # and would be a masked/overwritten double write). Record the sidecar failure
+    # explicitly instead and re-raise it with the original cause chained.
+    try:
+        write_evidence_mode(
+            manifest_dir / "evidence-mode.json", run_id, evidence_mode,
+            snapshot_ref=_snapshot_ref(evidence_snapshot),
+        )
+        write_prompt_receipts(manifest_dir / "prompt-receipts.jsonl", prompt_receipts, run_id)
+    except Exception as exc:
+        marker = manifest_dir / "sidecar-error.json"
+        with contextlib.suppress(Exception):
+            marker.write_text(
+                json.dumps(
+                    {"run_id": run_id, "error": str(exc), "error_type": type(exc).__name__},
+                    sort_keys=True, ensure_ascii=False, indent=2,
+                ),
+                encoding="utf-8",
+            )
+        raise SidecarError(run_id=run_id, manifest_path=path, cause=exc) from exc
     return path
+
+
+class SidecarError(RuntimeError):
+    """A sidecar write failed after the terminal manifest was already published.
+
+    Carries the published manifest path so a caller can see the record survived;
+    the original exception is chained (``__cause__``) and its text is included so
+    the visible cause is the real one, not this wrapper. Never triggers a second
+    ``write_manifest``.
+    """
+
+    def __init__(self, *, run_id: str, manifest_path, cause=None):
+        self.run_id = run_id
+        self.manifest_path = Path(manifest_path)
+        detail = f": {cause}" if cause is not None else ""
+        super().__init__(
+            f"sidecar write failed after manifest {self.manifest_path.name!r} was "
+            f"published for run {run_id!r}{detail}"
+        )
 
 
 def reserve_run_id(*, config: dict, variant: str, ticker: str, trade_date: str, repeat: int, at: datetime) -> str:
@@ -376,13 +419,15 @@ def _make_manifest_writer(config: dict, selections: dict, stats_handler, started
     reservation.
     """
 
+    published = {"done": False}
+
     def write(*, failure, outcome, stop_reason=None, evidence_snapshot=None):
         prompt_hashes = None
         raw_receipts = None
         if prompt_receipts is not None:
             prompt_hashes = prompt_receipts.prompt_hashes()
             raw_receipts = prompt_receipts.raw_receipts()
-        return write_run_manifest(
+        path = write_run_manifest(
             config=config,
             ticker=selections["ticker"],
             trade_date=selections["analysis_date"],
@@ -402,7 +447,15 @@ def _make_manifest_writer(config: dict, selections: dict, stats_handler, started
             run_id=run_id,
             evidence_snapshot=evidence_snapshot,
         )
+        # The terminal manifest is published; a later re-entry must not write again.
+        published["done"] = True
+        return path
 
+    # Expose the published state so the failure path can avoid a second write.
+    def _is_published() -> bool:
+        return published["done"]
+
+    write.is_published = _is_published
     return write
 
 
@@ -430,6 +483,15 @@ def _finalize_run_manifest(
     outcome = None if final_state is None else run_rating(final_state)
     stop_reason = (final_state or {}).get("stop_reason") if failure is None else None
     evidence_snapshot = (final_state or {}).get("evidence_snapshot") if failure is None else None
+    # If the terminal manifest was already published (e.g. a sidecar failure on the
+    # success path bubbled into the except), do NOT attempt a second write: preserve
+    # the original error and leave the published manifest intact. Cleanup also stays
+    # behind successful finalization, so it does not run here.
+    is_published = getattr(write, "is_published", None)
+    if callable(is_published) and is_published():
+        if failure is not None:
+            raise failure
+        return
     write(
         failure=None if failure is None else str(failure),
         outcome=outcome,
@@ -546,28 +608,48 @@ def _callable_accepts_source_run_id(fn) -> bool:
     counts; a bare ``**kwargs`` catch-all does not, so a graph that would silently
     swallow the id is treated as unsupported and called with the legacy signature.
     """
+    return _callable_accepts_param(fn, "source_run_id")
+
+
+def _callable_accepts_param(fn, name: str) -> bool:
+    """Whether ``fn`` has an explicit, named ``name`` parameter (not ``**kwargs``)."""
     try:
         params = inspect.signature(fn).parameters
     except (TypeError, ValueError):
         return False
-    param = params.get("source_run_id")
+    param = params.get(name)
     return param is not None and param.kind in (
         inspect.Parameter.POSITIONAL_OR_KEYWORD,
         inspect.Parameter.KEYWORD_ONLY,
     )
 
 
-def _create_run_state(graph, ticker, trade_date, asset_type, portfolio, source_run_id):
-    """Build the run state, forwarding ``source_run_id`` only when the graph takes it.
+def _create_run_state(
+    graph, ticker, trade_date, asset_type, portfolio, source_run_id,
+    *, capture_evidence: bool = False, capture_context=None,
+):
+    """Build the run state, forwarding ``source_run_id`` when the graph takes it.
 
-    Role C adds ``source_run_id`` to ``create_run_state`` on the protected graph;
-    until then (and for fake graphs) the legacy four-arg call is used, so nothing
-    downstream breaks.
+    ``source_run_id`` (the reserved run id) is forwarded whenever the graph's
+    ``create_run_state`` has an explicit ``source_run_id`` parameter. When
+    ``capture_evidence`` is on, a ``capture_context`` is forwarded too, but only
+    if the graph also has an explicit ``capture_context`` parameter; capture
+    requested without that support fails closed (``ValueError``) rather than
+    silently dropping the evidence. Unflagged runs call exactly as before: the
+    legacy four-arg form when the graph has neither parameter.
     """
     create = graph.create_run_state
-    if _callable_accepts_source_run_id(create):
-        return create(ticker, trade_date, asset_type, portfolio, source_run_id=source_run_id)
-    return create(ticker, trade_date, asset_type, portfolio)
+    kwargs = {}
+    if _callable_accepts_param(create, "source_run_id"):
+        kwargs["source_run_id"] = source_run_id
+    if capture_evidence:
+        if not _callable_accepts_param(create, "capture_context"):
+            raise ValueError(
+                "evidence capture was requested but this graph's create_run_state "
+                "does not accept a capture_context parameter"
+            )
+        kwargs["capture_context"] = capture_context
+    return create(ticker, trade_date, asset_type, portfolio, **kwargs)
 
 
 def _build_graph(graph_cls, selected_analyst_keys, config, callbacks, *, workflow_variant, on_prompt=None):
@@ -631,14 +713,45 @@ def _effective_config(config: dict, graph, workflow_variant: str = "v0") -> dict
     return effective
 
 
-def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, variant=None):
+def _checkpoint_would_be_enabled(checkpoint: bool | None) -> bool:
+    """Effective checkpoint state from the flag (before config build).
+
+    ``None`` means the flag was omitted, so the default/env-resolved value stands
+    (``DEFAULT_CONFIG`` has already applied ``TRADINGAGENTS_CHECKPOINT_ENABLED``).
+    """
+    if checkpoint is not None:
+        return bool(checkpoint)
+    return bool(DEFAULT_CONFIG.get("checkpoint_enabled"))
+
+
+def _refuse_capture_with_checkpoint() -> None:
+    """Refuse evidence capture when checkpointing is on (before any side effect)."""
+    console.print(
+        "[red]--capture-evidence cannot be combined with checkpointing. "
+        "Run with --no-checkpoint (or unset TRADINGAGENTS_CHECKPOINT_ENABLED) "
+        "to capture evidence.[/red]"
+    )
+    raise ValueError(
+        "evidence capture is incompatible with checkpointing; disable checkpoints"
+    )
+
+
+def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, variant=None, capture_evidence: bool = False):
     flags = flags or {}
+    # The CLI flag and the programmatic ``flags`` channel both feed the opt-in.
+    capture_evidence = bool(capture_evidence or flags.get("capture_evidence", False))
     # ``None`` = the flag was omitted: the legacy run (configured rounds, no preset).
     if variant is not None:
         variant = _validate_variant(variant)
     # Refuse a variant the graph cannot run before any setup or model call: v2 is
     # not delivered, and v1 needs a graph that accepts workflow_variant.
     _reject_unavailable_variant(variant, TradingAgentsGraph)
+    # Evidence capture is incompatible with checkpoint-resume: refuse as early as
+    # possible -- before the terminal/selection prompts, graph construction, any
+    # model call, the reservation, or destination preparation. The authoritative
+    # re-check after config build also covers env-provided checkpointing.
+    if capture_evidence and _checkpoint_would_be_enabled(checkpoint):
+        _refuse_capture_with_checkpoint()
     # With no terminal nothing can answer a prompt: name every question still
     # open before any model is called, rather than stopping at the first one.
     if not (sys.stdin and sys.stdin.isatty()):
@@ -652,6 +765,12 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
     selections = get_user_selections(flags)
 
     config = _build_run_config(selections, checkpoint)
+
+    # Evidence capture is incompatible with checkpoint-resume: refuse BEFORE graph
+    # construction, any model call, the reservation, or destination preparation.
+    # This post-config check covers the env-provided checkpointing case.
+    if capture_evidence and config.get("checkpoint_enabled"):
+        _refuse_capture_with_checkpoint()
 
     stats_handler = StatsCallbackHandler()
 
@@ -785,29 +904,37 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
         # The same initial state propagate() builds, with the resolved
         # instrument identity; the graph's Memory Log step settles past
         # decisions and loads their lessons alongside the analysts.
-        init_agent_state = _create_run_state(
-            graph, selections["ticker"], selections["analysis_date"],
-            selections["asset_type"], portfolio, reserved_run_id,
-        )
-        # Pass callbacks to graph config for tool execution tracking
-        # (LLM tracking is handled separately via LLM constructor)
-        args = graph.propagator.get_graph_args(callbacks=[stats_handler])
-
-        # Recompile with a checkpointer and inject the thread_id so --checkpoint
-        # actually saves and resumes on the CLI path (#1249); a no-op when
-        # checkpointing is disabled. Torn down in the finally below.
-        checkpoint_tid = graph.begin_checkpoint(
-            selections["ticker"], selections["analysis_date"], selections["asset_type"], portfolio
-        )
-        if checkpoint_tid is not None:
-            args.setdefault("config", {}).setdefault("configurable", {})["thread_id"] = checkpoint_tid
-            _announce_checkpoint_state(graph, selections["ticker"], selections["analysis_date"])
-
-        # Stream the analysis. On resume, feed None so LangGraph continues the
-        # interrupted run instead of re-appending the initial state (#1249); the
-        # try/finally tears the checkpointer down even if the stream raises.
+        #
+        # Initial state construction is inside the try so a genuine
+        # post-reservation failure here still writes a failure manifest on the
+        # reserved id (and re-raises the original error) instead of leaving none.
         trace = []
         try:
+            init_agent_state = _create_run_state(
+                graph, selections["ticker"], selections["analysis_date"],
+                selections["asset_type"], portfolio, reserved_run_id,
+                capture_evidence=capture_evidence,
+                capture_context={"enabled": True, "evidence_dir": str(
+                    Path(effective_config["results_dir"]) / "runs" / reserved_run_id / "evidence"
+                )},
+            )
+            # Pass callbacks to graph config for tool execution tracking
+            # (LLM tracking is handled separately via LLM constructor)
+            args = graph.propagator.get_graph_args(callbacks=[stats_handler])
+
+            # Recompile with a checkpointer and inject the thread_id so --checkpoint
+            # actually saves and resumes on the CLI path (#1249); a no-op when
+            # checkpointing is disabled. Torn down in the finally below.
+            checkpoint_tid = graph.begin_checkpoint(
+                selections["ticker"], selections["analysis_date"], selections["asset_type"], portfolio
+            )
+            if checkpoint_tid is not None:
+                args.setdefault("config", {}).setdefault("configurable", {})["thread_id"] = checkpoint_tid
+                _announce_checkpoint_state(graph, selections["ticker"], selections["analysis_date"])
+
+            # Stream the analysis. On resume, feed None so LangGraph continues the
+            # interrupted run instead of re-appending the initial state (#1249); the
+            # try/finally tears the checkpointer down even if the stream raises.
             for messages, chunk in graph.stream_run(graph.checkpoint_input(init_agent_state), **args):
                 for message in messages:
                     msg_id = getattr(message, "id", None)

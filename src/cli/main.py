@@ -73,6 +73,13 @@ def analyze(
         help="Architecture variant: v0 (original), v1 (trimmed), v2 (adaptive). "
         "Omit to keep the configured legacy run.",
     ),
+    capture_evidence: bool = typer.Option(
+        False, "--capture-evidence",
+        help="Opt in to evidence capture: pass a capture context to the graph's "
+        "initial state so reports can be published as evidence artifacts. Off by "
+        "default and independent of --variant and evidence mode. Incompatible with "
+        "checkpointing (fails before any model call).",
+    ),
 ):
     """Run an analysis. This is what a bare `tradingagents` does.
 
@@ -107,7 +114,12 @@ def analyze(
 
     try:
         flags = {"ticker": ticker, "date": date, "analysts": analysts, "save": save, "show": show, "html": html}
-        run_analysis(checkpoint=checkpoint, portfolio=portfolio_context, flags=flags, variant=variant)
+        run_kwargs = {"checkpoint": checkpoint, "portfolio": portfolio_context, "flags": flags, "variant": variant}
+        # Thread the opt-in only when set, so the default-off call is unchanged for
+        # existing callers that assert the exact argument shape.
+        if capture_evidence:
+            run_kwargs["capture_evidence"] = True
+        run_analysis(**run_kwargs)
     except _NO_CONSOLE_ERRORS:
         # A terminal with no console buffer cannot host the interactive prompts.
         # Emit one actionable line on stderr instead of a prompt_toolkit
