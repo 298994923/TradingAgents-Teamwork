@@ -203,3 +203,11 @@ separate from B's alias → {snapshot_id, evidence_id} report-reference mapping.
 Source/module hashes and this software addition's revision can change without
 changing stored snapshot IDs or schema_version. End-to-end integration acceptance
 remains separate.
+
+## Fresh V0/V1 Evidence capture
+
+Fresh Evidence capture is invocation-local, explicit, and limited to V0/V1 without checkpointing. A reserved `source_run_id` alone does not activate it. Malformed activation payloads, missing or blank capture identifiers, and effective checkpoint enablement are rejected before any node execution or Evidence storage access. With capture off, the existing graph state, route, checkpoint behavior and terminal output remain unchanged. With capture on, the graph waits for all selected analysts and the existing Memory Log dependency, if present, at the same barrier before Bull.
+
+The capture node freezes the selected report inputs and analysis context with the reserved ID and one UTC capture instant. Missing selected output and emitted blank content remain distinguishable; diagnostics do not alter the reference envelope. Use the existing Evidence registration, canonical key and save APIs and the recorder's containment-checked destination. Only successful creation or verified identical reuse may publish `evidence_snapshot`, using exactly `snapshot_id`, `artifact_key`, `store`, `source_run_id`, and `captured_at`. Save or destination failure aborts before research, emits no reference and retains the original failure and reserved identity at the caller boundary.
+
+The terminal writer copies the successful streamed reference to the existing RunEvent field; the evidence-mode sidecar projects only its snapshot ID and artifact key into `snapshot_ref`, or two nulls for absent/failed capture. This is not a change to terminal durability, cleanup ordering, Evidence or RunEvent schema, Guard, stop reasons, or prompt receipts. Checkpoint binding, replay, recovery and V2 are excluded.
