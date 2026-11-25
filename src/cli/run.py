@@ -31,7 +31,6 @@ from cli.selections import depth_from_env, get_user_selections, unattended_gaps
 from cli.stats_handler import StatsCallbackHandler
 from tradingagents import __version__
 from tradingagents.agents.rating import is_review, run_rating
-from tradingagents.b_interfaces import PromptReceipts
 from tradingagents.dataflows.symbols import safe_ticker_component
 from tradingagents.default_config import DEFAULT_CONFIG
 from tradingagents.graph.analyst_execution import (
@@ -56,6 +55,71 @@ def _validate_variant(value: str) -> str:
         )
     return value
 
+
+
+# The roles whose static-prompt digests gate a run comparison. A manifest must
+# carry all three, non-empty, for compare_runs.py to accept the run.
+REQUIRED_PROMPT_ROLES = ("bull", "bear", "research_manager")
+# B's producers tag each template digest under ``b.<role>``; the manifest wants
+# the plain role key. Same digest, relabelled.
+_PROMPT_HASH_PREFIX = "b."
+
+
+class _PromptReceiptCollector:
+    """Collect B's ``on_prompt`` receipts and aggregate the three role digests.
+
+    The sink is ``sink``: each receipt is kept verbatim in ``raw_receipts()`` for
+    the sidecar (audit trail, original ``b.<role>`` keys) while its template
+    digest is recorded under the plain ``<role>`` key. ``prompt_hashes()`` fails
+    closed: a missing required role, an empty/None digest, or one role whose
+    digests disagree across rounds raises ``ValueError`` rather than writing a
+    partial or guessed manifest.
+    """
+
+    def __init__(self):
+        self._raw: list[dict] = []
+        self._digests: dict[str, set[str]] = {}
+
+    def sink(self, receipt: dict) -> None:
+        self._raw.append(receipt)
+        for key, digest in (receipt.get("prompt_hashes") or {}).items():
+            role = key[len(_PROMPT_HASH_PREFIX):] if key.startswith(_PROMPT_HASH_PREFIX) else key
+            if role not in REQUIRED_PROMPT_ROLES:
+                continue
+            self._digests.setdefault(role, set()).add(digest)
+
+    def raw_receipts(self) -> list[dict]:
+        return list(self._raw)
+
+    def prompt_hashes(self) -> dict:
+        if not self._raw:
+            # No receipts at all: a legacy or fake-graph run never attaches the sink.
+            # Default to empty (compare_runs refuses it) rather than failing the write.
+            return {}
+        missing = [role for role in REQUIRED_PROMPT_ROLES if role not in self._digests]
+        if missing:
+            raise ValueError(
+                "cannot write prompt_hashes: no receipt for required role(s) "
+                + ", ".join(missing)
+            )
+        result: dict[str, str] = {}
+        for role in REQUIRED_PROMPT_ROLES:
+            digests = self._digests[role]
+            if any(not digest for digest in digests):
+                raise ValueError(
+                    f"cannot write prompt_hashes: role {role!r} has an empty hash"
+                )
+            if len(digests) > 1:
+                raise ValueError(
+                    f"cannot write prompt_hashes: role {role!r} has disagreeing "
+                    f"hashes across receipts ({len(digests)} distinct)"
+                )
+            result[role] = next(iter(digests))
+        return result
+
+
+def _collect_prompt_receipts() -> _PromptReceiptCollector:
+    return _PromptReceiptCollector()
 
 
 def _run_directory(config: dict, ticker: str, trade_date: str) -> Path:
@@ -101,15 +165,20 @@ def write_run_manifest(
     clock=None,
     stop_reason: str | None = None,
     evidence_mode: str = "strict",
-    prompt_receipts=(),
+    prompt_hashes: dict | None = None,
+    prompt_receipts: list | None = None,
 ) -> Path:
     """Write this run's manifest to ``<results_dir>/runs/<run_id>/manifest.json``.
 
     ``stop_reason`` is read from the run's final state by the caller (C owns the
     value domain); it is ``None`` when the graph did not reach a terminal state.
-    Role template hashes come from observed model sends. ``duration_seconds`` is measured from
-    ``started_at`` and ``clock`` (``time.time`` by default) when not supplied;
-    passing both keeps it testable.
+    ``prompt_hashes`` (B) holds the three role template digests collected from
+    ``on_prompt`` and lands in the manifest; ``prompt_receipts`` (the raw receipts)
+    are written to a ``prompt-receipts.jsonl`` sidecar beside the manifest for
+    audit. Both default to empty when no receipts were collected (e.g. legacy
+    runs). ``evidence_snapshot`` (A) is ``None`` until that contract lands.
+    ``duration_seconds`` is measured from ``started_at`` and ``clock``
+    (``time.time`` by default) when not supplied; passing both keeps it testable.
 
     A per-run ``evidence-mode.json`` sidecar (E4) is written next to the manifest
     recording the evidence mode and the facts the run observed. It does not change
@@ -129,7 +198,7 @@ def write_run_manifest(
         asset_type=asset_type,
         outcome=outcome,
         config_snapshot=_manifest_config_snapshot(config),
-        prompt_hashes={},
+        prompt_hashes=prompt_hashes or {},
         evidence_snapshot=None,
         usage=usage,
         duration_seconds=duration_seconds,
@@ -148,13 +217,41 @@ def write_run_manifest(
         except FileExistsError:
             continue
     run_id = candidate
-    collector = PromptReceipts(run_id)
-    for receipt in prompt_receipts:
-        collector.record(receipt)
-    hashes = collector.finish(runs_dir, expected_calls=None)
-    event = replace(event, run_id=run_id, prompt_hashes=hashes)
+    event = replace(event, run_id=run_id)
     path = write_manifest(event, manifest_dir / "manifest.json")
     write_evidence_mode(manifest_dir / "evidence-mode.json", run_id, evidence_mode)
+    write_prompt_receipts(manifest_dir / "prompt-receipts.jsonl", prompt_receipts, run_id)
+    return path
+
+
+def write_prompt_receipts(path, prompt_receipts: list | None, run_id: str = "") -> Path | None:
+    """Write the raw ``on_prompt`` receipts as sidecars (audit trail).
+
+    ``prompt-receipts.jsonl`` keeps every receipt verbatim (B's original
+    ``b.<role>`` keys) for E's own audit. A second sidecar,
+    ``prompt_receipts.json``, carries the completeness view consumed by the
+    shared ``b_interfaces.PromptReceipts`` contract and its tests:
+    ``run_id`` / ``expected_calls`` / ``calls`` / ``input_evidence``. Nothing is
+    written when no receipts were collected.
+    """
+    if not prompt_receipts:
+        return None
+    path = Path(path)
+    lines = [
+        json.dumps(receipt, sort_keys=True, ensure_ascii=False) for receipt in prompt_receipts
+    ]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    calls = [
+        {"role": r.get("role"), "run_id": run_id,
+         "round_index": r.get("round_index"), "input_sha256": r.get("input_sha256")}
+        for r in prompt_receipts
+    ]
+    complete = bool(calls) and all(c["input_sha256"] for c in calls)
+    payload = {"run_id": run_id, "expected_calls": None, "calls": calls,
+               "input_evidence": "完整" if complete else "输入取证不完整"}
+    path.with_name("prompt_receipts.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return path
 
 
@@ -207,17 +304,24 @@ def _unique_run_id(runs_dir: Path, run_id: str) -> str:
     return candidate
 
 
-def _make_manifest_writer(config: dict, selections: dict, stats_handler, started_at=None, variant="v0", prompt_receipts=()):
+def _make_manifest_writer(config: dict, selections: dict, stats_handler, started_at=None, variant="v0", prompt_receipts=None):
     """Return a ``write(failure=..., outcome=...)`` bound to this run's inputs.
 
     ``variant`` selects the architecture under test and becomes the first segment
     of the manifest ``run_id``; ``repeat`` is 1 and ``created_at`` is now, both
     supplied here so the recorder never reads the clock itself. ``started_at`` is
     the run's start (``time.time()``); forwarding it lets the manifest record a
-    real duration.
+    real duration. ``prompt_receipts`` is the collector (or ``None`` when no
+    receipts were gathered); its aggregated hashes and raw receipts are written
+    into the manifest and the sidecar.
     """
 
     def write(*, failure, outcome, stop_reason=None):
+        prompt_hashes = None
+        raw_receipts = None
+        if prompt_receipts is not None:
+            prompt_hashes = prompt_receipts.prompt_hashes()
+            raw_receipts = prompt_receipts.raw_receipts()
         return write_run_manifest(
             config=config,
             ticker=selections["ticker"],
@@ -230,10 +334,11 @@ def _make_manifest_writer(config: dict, selections: dict, stats_handler, started
             repeat=1,
             at=datetime.now(UTC),
             version=__version__,
-            prompt_receipts=prompt_receipts,
             started_at=started_at,
             stop_reason=stop_reason,
             evidence_mode=config.get("evidence_mode", "strict"),
+            prompt_hashes=prompt_hashes,
+            prompt_receipts=raw_receipts,
         )
 
     return write
@@ -365,12 +470,16 @@ def _reject_unavailable_variant(variant: str | None, graph_cls=None) -> None:
 
 
 def _build_graph(graph_cls, selected_analyst_keys, config, callbacks, *, workflow_variant, on_prompt=None):
-    """Construct the graph, forwarding ``workflow_variant`` only when accepted."""
+    """Construct the graph, forwarding ``workflow_variant``/``on_prompt`` when accepted.
+
+    ``on_prompt`` is B's receipt sink; it is forwarded only when supplied so a
+    legacy run keeps the inert default (``None``) and the graph stays unchanged.
+    """
     kwargs = {"config": config, "debug": True, "callbacks": callbacks}
-    if on_prompt is not None and "on_prompt" in inspect.signature(graph_cls).parameters:
-        kwargs["on_prompt"] = on_prompt
     if _graph_accepts_workflow_variant(graph_cls):
         kwargs["workflow_variant"] = workflow_variant
+    if on_prompt is not None:
+        kwargs["on_prompt"] = on_prompt
     return graph_cls(selected_analyst_keys, **kwargs)
 
 
@@ -451,14 +560,17 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
     analyst_execution_plan = build_analyst_execution_plan(selected_analyst_keys)
     analyst_wall_time_tracker = AnalystWallTimeTracker(analyst_execution_plan)
 
-    prompt_receipts = []
+    # Collect B's on_prompt receipts so the three role template digests reach the
+    # manifest and the raw receipts reach the sidecar (compare_runs guard).
+    prompt_receipts = _collect_prompt_receipts()
+
     graph = _build_graph(
         TradingAgentsGraph,
         selected_analyst_keys,
         config,
         [stats_handler],
         workflow_variant=variant,
-        on_prompt=prompt_receipts.append,
+        on_prompt=prompt_receipts.sink,
     )
     # The variant the graph actually enabled drives the manifest identity, and the
     # graph's effective rounds drive the manifest config snapshot for the writers.
