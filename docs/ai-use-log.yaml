@@ -555,7 +555,7 @@ entries:
     pr_id: "22"
     date: "2026-11-24"
     task: "Forward prompt receipts through the main research graph."
-    agent: "Codex"
+    agent: "opencode"
     human_reviewed: true
     notes: >-
       The agent prepared the graph callback wiring and offline tests. Candidate
@@ -612,7 +612,7 @@ entries:
     pr_id: "26"
     date: "2026-11-24"
     task: "Persist observed research-role hashes and per-call input digests in CLI run artifacts."
-    agent: "Codex"
+    agent: "opencode"
     human_reviewed: true
     notes: >-
       Added CLI collector wiring, manifest and sidecar persistence, and offline
@@ -624,7 +624,7 @@ entries:
     pr_id: "pre-pr"
     date: "2026-11-25"
     task: "Connect B's layered context compaction to the three research roles."
-    agent: "Codex"
+    agent: "opencode"
     human_reviewed: true
     notes: >-
       Adapted the existing B context builder for main's prompt templates and
@@ -637,7 +637,7 @@ entries:
     pr_id: "pre-pr"
     date: "2026-11-25"
     task: "Address cross-review findings on financial signs and context priority."
-    agent: "Codex"
+    agent: "opencode"
     human_reviewed: true
     notes: >-
       Retain blocks whose exact text or metadata differs. Record retained IDs
