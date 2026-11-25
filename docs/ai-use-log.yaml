@@ -834,3 +834,14 @@ entries:
       These are writer-only and path-helper tests with synthetic references;
       the real register/save producer is C/A work and is not claimed here.
       Committed locally as 364a87b; no push, no PR; GitHub Actions was NOT run.
+
+  - id: "60468706-B-restore-prompt-catalog-20261125"
+    pr_id: "pre-pr"
+    date: "2026-11-25"
+    task: "Restore B's v1.0 prompt catalog and document its provenance."
+    agent: "Codex"
+    human_reviewed: true
+    notes: >-
+      Member B reviewed the restored catalog and README. The v1.0 YAML
+      matches the original file from commit 6817a5a byte-for-byte, and
+      all three role catalog digests were verified.
