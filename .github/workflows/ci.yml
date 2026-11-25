@@ -4,8 +4,7 @@ name: CI
 #   Gate 1  Test approval ......... PARTIAL — test-approval job; checks src/ coverage only
 #   Gate 2  Static analysis ....... DONE — lint job (ruff + compileall + dependency check)
 #   Gate 3  Schema ................ PARTIAL — registry is a seed; A owns requirements.yaml
-#   Gate 4  Semantic evaluation ... TODO — no job yet; needs a real eval runner + fixed
-#                                     cases from B (see docs/plans/E-ci-gates.md)
+#   Gate 4  Semantic evaluation ... PARTIAL (advisory) — semantic-eval job (GOV-002)
 #   Gate 5  Regression ............ DONE — tests job (runs tests/ and test/offline)
 #   Gate 6  AI-use log ............ DONE — ai-use-log job (3 checks)
 
@@ -49,6 +48,28 @@ jobs:
       - run: ruff check src tests test scripts
       - run: python -m compileall -q src scripts
       - run: python scripts/check_dependencies.py
+
+  # Gate 4 (Semantic evaluation) — PARTIAL, advisory only. GOV-002: keyword-proxy
+  # scoring of the rendered bull/bear/research_manager prompts, plus a real-model
+  # LLM-as-judge case (skipped when no API key). 
+  semantic-eval:
+    name: semantic-eval
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - name: Score prompts (advisory)
+        run: |
+          set -o pipefail
+          { echo "## Semantic eval (GOV-002, advisory)"; \
+            python -m pytest -q test/offline/test_semantic_eval.py; } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
 
   # Gate 3 (Schema) — the requirements registry validates against its JSON schema.
   schema:
