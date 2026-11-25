@@ -619,3 +619,15 @@ entries:
       end-to-end tests for normal and fallback sends. Verified with v0; the
       workflow v1 selector was unavailable on the tested main baseline.
       Role B confirmed the PR 26 AI-use record, including completeness and checkout-isolation fixes.
+
+  - id: "60468706-B-main-layered-context-20261125"
+    pr_id: "pre-pr"
+    date: "2026-11-25"
+    task: "Connect B's layered context compaction to the three research roles."
+    agent: "Codex"
+    human_reviewed: false
+    notes: >-
+      Adapted the existing B context builder for main's prompt templates and
+      added offline coverage for compaction, protected arguments, receipt
+      hashes, and overflow before sending. Independent approval and human
+      review are pending.
