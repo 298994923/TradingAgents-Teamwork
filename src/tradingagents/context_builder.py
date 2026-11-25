@@ -3,7 +3,6 @@ import hashlib
 import json
 import math
 import re
-import unicodedata
 from dataclasses import asdict, dataclass, field
 from time import perf_counter
 from typing import Annotated, Literal
@@ -14,13 +13,6 @@ LAYERS = ("L0", "L1", "L2", "L3", "L4", "L5")
 DEFAULT_THRESHOLD = 0.85
 DEFAULT_BUDGET = 8192
 _TURN_START = re.compile(r"(?m)^(Bull|Bear) Analyst:")
-
-
-def fingerprint(text):
-    """Normalize text for lexical deduplication."""
-    folded = unicodedata.normalize("NFKC", text).casefold()
-    spaced = "".join(" " if unicodedata.category(c).startswith("P") else c for c in folded)
-    return hashlib.sha256(" ".join(spaced.split()).encode()).hexdigest()[:16]
 
 
 class ContextBudgetError(ValueError):
@@ -96,11 +88,14 @@ def build(parts, budget, *, estimator=None, actual_usage=None, compaction_thresh
             if not isinstance(identifier, str) or not identifier or not isinstance(text, str):
                 raise ValueError("Invalid context block")
             meta = {k: v for k, v in item.items() if k not in ("id", "text")}
-            key = (fingerprint(text), meta.get("speaker"))
-            if layer in ("L2", "L4") and key in seen:
-                dropped.append(Dropped(identifier, "duplicate", seen[key]))
-                continue
-            seen[key] = identifier
+            if layer in ("L2", "L4"):
+                # Preserve signs, source metadata, and priority distinctions.
+                # For exact copies, retain the first ID and record the alias.
+                key = text, json.dumps(meta, sort_keys=True, ensure_ascii=False)
+                if key in seen:
+                    dropped.append(Dropped(identifier, "duplicate", seen[key]))
+                    continue
+                seen[key] = identifier
             blocks.append(Block(layer, identifier, text, meta))
 
     protected = [b for b in blocks if b.layer in ("L0", "L1")]

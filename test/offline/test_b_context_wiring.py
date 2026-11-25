@@ -20,9 +20,9 @@ def test_researcher_compacts_history_and_receipts_match_sent_input(factory):
     llm.invoke.return_value = SimpleNamespace(content="New argument.")
     state = {
         "company_of_interest": "NVDA",
-        "market_report": "Market evidence: the closing price was 101.",
+        "market_report": "Forecast EPS -5",
         "sentiment_report": "",
-        "news_report": "",
+        "news_report": "Forecast EPS 5",
         "fundamentals_report": "",
         "investment_debate_state": {
             "history": history,
@@ -35,6 +35,8 @@ def test_researcher_compacts_history_and_receipts_match_sent_input(factory):
     llm.invoke.assert_called_once()
     sent = llm.invoke.call_args.args[0]
     assert target in sent
+    assert "Market research report: Forecast EPS -5" in sent
+    assert "Latest world affairs news: Forecast EPS 5" in sent
     assert sent.count(repeat) <= 1
     assert result["investment_debate_state"]["history"].startswith(history + "\n")
     assert [receipt["input_sha256"] for receipt in receipts] == [
