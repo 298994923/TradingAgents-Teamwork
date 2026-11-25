@@ -1,3 +1,73 @@
+# Registration-r9 A component requirements
+
+Prepared against `main@2f99c3adaee870a18dc85b62089667954eddcf2b`. This documentation-only update
+adds A-EV-01 through A-EV-07, retaining the IDs already cited by the source and
+fixed tests. Existing A-EV-08 and all other 26 baseline requirement objects remain
+unchanged. The candidate has 34 targets, including eight owned by A. B's material
+is deferred to a separate registration after receipt.
+
+This is retrospective requirement consolidation from the reviewed Evidence V1
+contract and existing implementation/test IDs. It does not claim that this
+registry update preceded implementation, create a new test approval, or replace
+any original approval or transcript. Registry adoption is established only by
+this update's eventual merge.
+
+Source record: `docs/req/sources/a-registration-2026-11-25.md`.
+All new requirements have owner A, Must priority and distinct fixed-case
+violation metrics with `operator: eq`, `threshold: 0`.
+
+| Requirement | Component responsibility | Enforcing symbols in evidence.py | Representative tests in test_evidence.py |
+|---|---|---|---|
+| A-EV-01 | Report registration and exact lookup | register_reports; lookup_report | test_complete_registration_matches_fixed_vector; test_invalid_report_type_is_not_missing |
+| A-EV-02 | Exact text, provenance, identity and immutability | Snapshot; _canonical; _content_hash; _snapshot_id | test_exact_text_hash_and_round_trip; test_nested_values_are_immutable |
+| A-EV-03 | Separate reference validation dimensions | validate_reference; lookup_report | test_bad_references_return_explicit_dimensions; test_unresolved_reference_is_structurally_conformant |
+| A-EV-04 | Explicit capture context; unsupported time fields remain null | _context; _timestamp; _validate_payload | test_unknown_time_metadata_remains_null; test_nonnull_unknown_times_are_rejected_in_v1 |
+| A-EV-05 | Strict save/load and atomic no-overwrite publication | save_snapshot; load_snapshot; _validate_payload | test_strict_json_parser; test_duplicate_save_and_conflicting_destination; test_failed_write_does_not_publish_partial_destination |
+| A-EV-06 | Per-slot missing/empty diagnostics | register_reports; _diagnostics | test_missing_empty_whitespace_and_unavailable_prose |
+| A-EV-07 | Technical all-or-nothing snapshot reuse assessment | assess_replay | test_complete_snapshot_is_technically_ready; test_replay_requires_complete_exact_inputs; test_incomplete_snapshot_round_trip_does_not_become_ready |
+
+The complete selector lists are in requirements.yaml; representative tests above
+are not additional selectors or a full coverage claim. Existing A-EV-08 remains
+the separate artifact-key conversion requirement, verified by
+`test/offline/test_evidence_artifact_keys.py`.
+
+Scope boundaries:
+
+- Report references resolve captured report content; they do not certify facts,
+  raw-source provenance, semantic support or historical availability.
+- V1 preserves unknown source/cutoff/generation times as null; A-EV-04 does not
+  introduce a strict historical trading policy or infer availability dates.
+- A-EV-07 assesses complete selection/context readiness. It neither runs research
+  nor implements analyst skipping, partial regeneration or an automatic fallback.
+- C owns the graph barrier and capture publication ordering under REQ-C-CAP-01 /
+  INV-C-CAP-01. E owns destination containment, run reservation and terminal
+  recording. A owns the unchanged component APIs and deterministic findings.
+- Component test results establish their recorded standalone scope. CLI/graph,
+  live-model quality, full-regression and replay acceptance remain distinct.
+
+R9 verification on 2026-11-25: the two unchanged standalone Evidence suites
+recorded 128 passes; all 41 unique A test-function references resolved statically.
+See the A source record for the command, provenance and scope limits. No full
+regression or graph/CLI acceptance was rerun for this documentation-only update.
+
+The older registration sections below retain their original preparation dates,
+source boundaries and status statements. Their historical pending notes are not
+reclassified by this A-only registration. Current C capture availability is PR
+#48, merge `1691607`; the delivered fixed test hash remains
+`6867469406558a474ebd236df4f1e81a50a445389f3c348687a5f50cebeb7396`.
+
+## R9 rebase reconciliation
+
+Rebased onto `main@63989bfd70f3aeeec35607d21bc0ac7f085a8919` after B/E registration.
+All 58 current main requirement objects are preserved exactly. The seven A
+objects remain equal to the original r9 candidate, producing 65 total entries
+and eight owned by A. The original 27-to-34 description above records the initial
+preparation baseline, not the rebased total. `GOV-001` was removed upstream before
+this rebase and is not restored by A. No B/E metric, test, source or acceptance
+claim is changed or endorsed by preserving their merged entries.
+
+## Preserved earlier registration history
+
 # Registration-r8 capture trace update
 
 Prepared against `main@303c6d1bb9b1a81b89962d13fa7fbd6b7627b1e9`.
