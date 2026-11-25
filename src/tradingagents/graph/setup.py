@@ -21,6 +21,7 @@ from tradingagents.agents import (
     create_trader,
 )
 from tradingagents.agents.analysts.turn import WRAP_UP
+from tradingagents.agents.rating import RATINGS_5_TIER
 from tradingagents.agents.state import AgentState
 
 from .analyst_execution import build_analyst_execution_plan
@@ -154,7 +155,28 @@ class GraphSetup:
         workflow.add_node("Aggressive Analyst", aggressive_analyst)
         workflow.add_node("Neutral Analyst", neutral_analyst)
         workflow.add_node("Conservative Analyst", conservative_analyst)
-        workflow.add_node("Portfolio Manager", portfolio_manager_node)
+
+        def portfolio_manager_terminal(state: AgentState) -> dict:
+            update = portfolio_manager_node(state)
+            if (
+                state.get("guard_enabled") is True
+                or "guard_result" in state
+                or "guard_result" in update
+                or "stop_reason" in state
+                or "stop_reason" in update
+            ):
+                return update
+
+            decision = update.get("final_trade_decision")
+            if (
+                isinstance(decision, str)
+                and decision.strip()
+                and update.get("final_rating") in RATINGS_5_TIER
+            ):
+                return {**update, "stop_reason": "completed"}
+            return update
+
+        workflow.add_node("Portfolio Manager", portfolio_manager_terminal)
 
         # The analysts work at the same time; the research debate starts once
         # every one of them has filed its report. The memory log settles past

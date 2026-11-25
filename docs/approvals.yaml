@@ -217,3 +217,39 @@ approvals:
       1 skipped, 1 deselected, 100 subtests; ruff clean. Verified with real
       v0 and v1 runs; compare_runs accepted the pair. AI-use entry
       60252993-linan-ai-use-20 has the details.
+
+  - src: "src/tradingagents/agents/state.py"
+    approver: "60894001"
+    date: "2026-11-25"
+    tests: ["test/offline/test_v0_v1_terminal_stop_reason.py"]
+    scope: "Declare only the optional, unseeded stop_reason channel."
+    notes: >-
+      Liu Kehong's signed docs/approvals/D-to-C-terminal-stop-reason-ruling.md
+      governs the scope. The RunEvent addendum was adopted via PR #32 at
+      973f957674d33c407afd809079be01719d96bdaa and is recorded in
+      docs/approvals/D-to-C-stop-reason-pr32-adoption-record.md. The signed
+      v0.1 test pin is SHA-256
+      7a47e4eac95f08aa6533889f8a751c59d13ea7115bb5fd358676272f63797415.
+      Separately, Role C relayed D's conditional proceed reply to
+      C-to-D-terminal-stop-reason-post-33-test-confirmation.md, subject to
+      rerunning self-checks. The tested v0.2 bytes have SHA-256
+      655d5d596e6bd079cd1277a442ab4ac1683b37684ca855e854c7737b89441655;
+      no separate D signature on that hash is recorded.
+
+  - src: "src/tradingagents/graph/setup.py"
+    approver: "60894001"
+    date: "2026-11-25"
+    tests: ["test/offline/test_v0_v1_terminal_stop_reason.py"]
+    scope: "Wrap only the existing Portfolio Manager registration to mark normal unguarded non-REVIEW final decisions completed."
+    notes: >-
+      Liu Kehong's signed docs/approvals/D-to-C-terminal-stop-reason-ruling.md
+      governs the scope. The RunEvent addendum was adopted via PR #32 at
+      973f957674d33c407afd809079be01719d96bdaa and is recorded in
+      docs/approvals/D-to-C-stop-reason-pr32-adoption-record.md. The signed
+      v0.1 test pin is SHA-256
+      7a47e4eac95f08aa6533889f8a751c59d13ea7115bb5fd358676272f63797415.
+      Separately, Role C relayed D's conditional proceed reply to
+      C-to-D-terminal-stop-reason-post-33-test-confirmation.md, subject to
+      rerunning self-checks. The tested v0.2 bytes have SHA-256
+      655d5d596e6bd079cd1277a442ab4ac1683b37684ca855e854c7737b89441655;
+      no separate D signature on that hash is recorded.
