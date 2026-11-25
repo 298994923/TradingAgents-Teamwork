@@ -1,3 +1,80 @@
+# Registration-r8 capture trace update
+
+Prepared against `main@303c6d1bb9b1a81b89962d13fa7fbd6b7627b1e9`.
+The existing 25 targets are preserved. This PR proposes the two C-owned targets
+below; adoption will be established by the actual registration merge, separately
+from producer implementation and CLI acceptance. Earlier trace records below
+retain their dated baseline and evidence scope.
+
+| Canonical ID | Owner | Independent fit observation | Threshold |
+|---|---|---|---|
+| REQ-C-CAP-01 | C | Selected analysts plus optional Memory Log join before actual registration/publication; publication precedes Bull and usable reference exposure | zero barrier/order/reference violations |
+| INV-C-CAP-01 | C | Real destination/save failure preserves original cause, starts no Bull, produces no decision/usable reference, and keeps reserved ID/null in failure manifest and sidecar | zero propagation/execution/reference/identity violations |
+
+Both use operator `eq`, threshold `0`, but have separate violation metrics and
+independent success/failure assertions. CAP-01 is not an alias of A's artifact
+oracle IDs, CKPT-01 lifecycle or CKPT-02 preflight. No provisional capture IDs
+were supplied; canonical self-mappings add no invented temporary labels.
+
+## Fixed test binding
+
+C confirmed both r8 mappings in `C-to-A-fresh-evidence-capture-test-binding.md`
+on 2026-11-25 (source SHA-256 `88ca5a599b83521806dfe63cda1e1b655aeed7922af59d08efa53eace38d2c4f`).
+A received the original test and statically verified its SHA-256:
+`6867469406558a474ebd236df4f1e81a50a445389f3c348687a5f50cebeb7396`.
+
+C's intended repository path is `test/offline/fresh_evidence_capture/test_fresh_evidence_cli_review.py`.
+This remains a planned C delivery location: the file is not on the pinned main,
+and C reports no source commit yet. These are concrete future-path bindings,
+not a claim that the test is currently available in the repository.
+
+| Canonical ID | Exact pytest selector |
+|---|---|
+| REQ-C-CAP-01 | `test/offline/fresh_evidence_capture/test_fresh_evidence_cli_review.py::test_fresh_capture_v0_v1[v0-2]` |
+| REQ-C-CAP-01 | `test/offline/fresh_evidence_capture/test_fresh_evidence_cli_review.py::test_fresh_capture_v0_v1[v1-1]` |
+| INV-C-CAP-01 | `test/offline/fresh_evidence_capture/test_fresh_evidence_cli_review.py::test_save_failure_aborts_before_bull` |
+
+The original test, `assertions.py` and `inputs.json` were supplied together;
+the two support assets are intended to sit beside the test without changing its
+imports or fixture loading. Their received SHA-256 values are:
+
+- `assertions.py`: `1ed0a6e47c492962ffe6c629b8a1002a54bb7f86546e894ccf3fa5261af0e7c6`.
+- `inputs.json`: `36380cdfb4e9ef5049edc5b3a45c62380d626d03280eb0bb3fccbaf80981bdb9`.
+
+Coverage limit: the failure selector injects an actual publication/save error.
+It does not independently exercise destination rejection, which remains within
+the invariant's required behavior. The capture-off compatibility control is
+`test_capture_off_preserves_v1`; it is not an additional capture-success case.
+C reports the prior test-first result as one passing capture-off control and
+three expected failures at the missing capture interface. This is C-reported
+historical evidence, not a new run by A. A checked the received bytes and test
+structure only. Producer delivery and runtime acceptance remain outstanding.
+
+The same fixed file may verify both targets. Record path + actual function/
+parameter selector + full hash in this trace and the reviewed integration plan;
+do not edit its provisional docstrings, assertions or bytes merely to add the
+formal IDs. A test text change would require separate review under D's process.
+
+C reports D-to-C-fresh-evidence-implementation-approval.md approves the source/
+test scope subject to Evidence contract adoption. That original approval is not
+supplied here. After preparation, PR #46 adopted the fresh V0/V1 capture contract
+in `docs/contracts/evidence.md`, commit
+`735152116e7f094b6c8890f11c1bde4633c7a4b5`, merged as
+`543aad0d745cd25584ecb765deac1904d8dea86e`. This registration was rebased onto
+that merge. Contract adoption is now recorded; this creates no approval or
+signature and does not establish producer implementation or runtime acceptance.
+
+## Source and scope
+
+Source: C-to-A-fresh-evidence-capture-traceability.md, SHA-256
+`102c5e87673fae65896eff8b833e8471184dd631f2719c86f66995cc35035cb0` (English transcription in the source record).
+The unchanged five-field envelope and existing A oracle remain applicable to
+artifact checks. C owns graph ordering/failure behavior; E owns reservation,
+manifest and sidecar forwarding. Explicit recovery, checkpoint binding, V2 and
+new governance decisions remain outside this slice.
+
+## Preserved earlier trace history
+
 # Registration-r7 trace and publication status
 
 Publication baseline: `main@e5897e87345339d1e9f7c863bbbe09d65b0b8038`.

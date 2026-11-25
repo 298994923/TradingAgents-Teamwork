@@ -1,6 +1,6 @@
-# Registration r7, prepared against main@e5897e87345339d1e9f7c863bbbe09d65b0b8038.
-# The existing 23 targets were adopted through PR #24. This PR adds two
-# explicit-preflight targets; registration is separate from acceptance.
+# Registration r8, prepared against main@303c6d1bb9b1a81b89962d13fa7fbd6b7627b1e9.
+# Existing 25 targets are preserved. Two C capture targets are proposed;
+# fixed-test availability and acceptance remain separately tracked.
 - id: GOV-001
   owner: E
   type: governance
@@ -437,3 +437,31 @@
     - pending-owner-test-reference:test_explicit_checkpoint_preflight_main.py::test_preflight_rejects_blank_run_id_before_storage
     - pending-owner-test-reference:test_explicit_checkpoint_preflight_main.py::test_preflight_reports_absent_database_without_creating_it
     - pending-owner-test-reference:test_explicit_checkpoint_preflight_main.py::test_preflight_propagates_database_errors
+
+- id: REQ-C-CAP-01
+  owner: C
+  type: functional
+  statement: For opted-in fresh V0/V1 capture, wait for every selected analyst and Memory Log when present. Actual report registration and one successful snapshot publication must precede Bull; expose the agreed five-field reference only after publication succeeds.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-cap-01
+  tradeoff: C graph barrier and ordering only. A artifact identity/load checks remain distinct. Explicit recovery, checkpoint binding and V2 are outside this slice; registration does not certify implementation acceptance.
+  fit_criterion:
+    metric: capture_barrier_publication_order_or_reference_exposure_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/fresh_evidence_capture/test_fresh_evidence_cli_review.py::test_fresh_capture_v0_v1[v0-2]
+    - test/offline/fresh_evidence_capture/test_fresh_evidence_cli_review.py::test_fresh_capture_v0_v1[v1-1]
+- id: INV-C-CAP-01
+  owner: C
+  type: invariant
+  statement: A real capture destination or save failure reaches the CLI with its original cause. No Bull execution, decision or usable reference occurs; the existing failure manifest and evidence-mode sidecar preserve the reserved run ID and null reference.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#inv-c-cap-01
+  tradeoff: Existing failure path only; do not introduce a new guard verdict, stop_reason policy or manifest schema. The approved fixed test stays byte-identical. Failure propagation and run identity are checked independently of the successful capture assertions.
+  fit_criterion:
+    metric: capture_failure_propagation_execution_reference_or_identity_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - test/offline/fresh_evidence_capture/test_fresh_evidence_cli_review.py::test_save_failure_aborts_before_bull

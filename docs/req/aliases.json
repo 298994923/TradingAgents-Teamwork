@@ -1,6 +1,6 @@
 {
-  "revision": "2026-11-25-registration-r7",
-  "owner_confirmation": "Earlier mappings are adopted in PR #24. C supplied the new preflight scope; A assigns the two CKPT-02 aliases in this proposal.",
+  "revision": "2026-11-25-registration-r8",
+  "owner_confirmation": "C requests canonical capture IDs for its supplied graph-barrier/failure scope; A assigns CAP-01 in this proposal. Existing 25 IDs are preserved.",
   "shared_branch_adoption": false,
   "aliases": {
     "C-P01": "REQ-C-01",
@@ -36,13 +36,15 @@
     "REQ-C-LOCAL-CKPT-008": "REQ-C-STOR-04",
     "INV-C-LOCAL-CKPT-008": "INV-C-STOR-04",
     "REQ-C-LOCAL-CKPT-006": "REQ-C-CKPT-02",
-    "INV-C-LOCAL-CKPT-006": "INV-C-CKPT-02"
+    "INV-C-LOCAL-CKPT-006": "INV-C-CKPT-02",
+    "REQ-C-CAP-01": "REQ-C-CAP-01",
+    "INV-C-CAP-01": "INV-C-CAP-01"
   },
   "entries": [
     {
       "id": "REQ-C-01",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately"
@@ -50,7 +52,7 @@
     {
       "id": "REQ-C-02",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately"
@@ -58,7 +60,7 @@
     {
       "id": "REQ-C-03",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately"
@@ -66,7 +68,7 @@
     {
       "id": "REQ-C-04",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately",
@@ -75,7 +77,7 @@
     {
       "id": "REQ-C-05",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately"
@@ -83,7 +85,7 @@
     {
       "id": "REQ-C-06",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately"
@@ -91,7 +93,7 @@
     {
       "id": "REQ-C-FR-01",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately"
@@ -99,7 +101,7 @@
     {
       "id": "INV-C-FR-01",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately"
@@ -107,7 +109,7 @@
     {
       "id": "INV-C-FR-02",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately"
@@ -115,7 +117,7 @@
     {
       "id": "INV-C-FR-03",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately"
@@ -123,7 +125,7 @@
     {
       "id": "REQ-C-CKPT-01",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately"
@@ -131,7 +133,7 @@
     {
       "id": "INV-C-CKPT-01",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately"
@@ -139,7 +141,7 @@
     {
       "id": "REQ-C-STOR-01",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately",
@@ -148,7 +150,7 @@
     {
       "id": "INV-C-STOR-01",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately",
@@ -157,7 +159,7 @@
     {
       "id": "REQ-C-STOR-02",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately",
@@ -166,7 +168,7 @@
     {
       "id": "INV-C-STOR-02",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately",
@@ -175,7 +177,7 @@
     {
       "id": "REQ-C-STOR-03",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately",
@@ -184,7 +186,7 @@
     {
       "id": "INV-C-STOR-03",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately",
@@ -193,7 +195,7 @@
     {
       "id": "REQ-C-STOR-04",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately",
@@ -202,7 +204,7 @@
     {
       "id": "INV-C-STOR-04",
       "owner_confirmed": true,
-      "registry_inclusion": "adopted via PR #24",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
       "shared_branch_adoption": true,
       "status": "REGISTERED TARGET; verification tracked separately",
@@ -212,9 +214,9 @@
       "id": "REQ-C-CKPT-02",
       "owner_scope_source": "C-to-A-explicit-checkpoint-preflight-traceability-confirmation.md",
       "mapping_assignment": "A proposal responding to C request",
-      "registry_inclusion": "proposed in r7",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
+      "shared_branch_adoption": true,
       "status": "C-REPORTED RED; implementation pending",
       "test_hash_status": "C supplied; original bytes not received or independently hashed"
     },
@@ -222,14 +224,32 @@
       "id": "INV-C-CKPT-02",
       "owner_scope_source": "C-to-A-explicit-checkpoint-preflight-traceability-confirmation.md",
       "mapping_assignment": "A proposal responding to C request",
-      "registry_inclusion": "proposed in r7",
+      "registry_inclusion": "adopted in baseline; runtime status separate",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
+      "shared_branch_adoption": true,
       "status": "C-REPORTED RED; implementation pending",
       "test_hash_status": "C supplied; original bytes not received or independently hashed"
+    },
+    {
+      "id": "REQ-C-CAP-01",
+      "owner": "C",
+      "mapping_assignment": "A assigns canonical ID to C-supplied behavior; no provisional capture alias was supplied",
+      "registry_inclusion": "proposed in r8",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "verification_status": "fixed filename/hash supplied by C; exact path/functions/original bytes not received; no A execution"
+    },
+    {
+      "id": "INV-C-CAP-01",
+      "owner": "C",
+      "mapping_assignment": "A assigns canonical ID to C-supplied behavior; no provisional capture alias was supplied",
+      "registry_inclusion": "proposed in r8",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "verification_status": "fixed filename/hash supplied by C; exact path/functions/original bytes not received; no A execution"
     }
   ],
-  "prepared_against_main": "e5897e87345339d1e9f7c863bbbe09d65b0b8038",
+  "prepared_against_main": "303c6d1bb9b1a81b89962d13fa7fbd6b7627b1e9",
   "publication_target": "main",
   "storage_groups": [
     {
@@ -264,10 +284,10 @@
   "main_refresh_verified": true,
   "Evidence_PR16_merge": "61402afa740f0345fc5e36c8e338a1cc88d268b9",
   "Evidence_approval": "C completed; E is not the reviewer",
-  "publication_note": "Preparation snapshot: the existing 23 targets are adopted; the two added CKPT-02 targets are proposed until this registration merges. Runtime acceptance is separate.",
+  "publication_note": "Preparation snapshot: baseline contains 25 adopted targets; the two CAP-01 targets are proposed until this registration merges. Runtime acceptance is separate.",
   "test_count_clarification": "23 storage + 13 legacy = 36; +4 graph +1 real receipt = 41. The receipt is now delivered; an existing V1 approval record reports 41 passing on its candidate, not a new run by A.",
   "graph_delivery": "PR #18; 0760c5800912d1b570dd130d0d94c2c619cbf45a",
-  "base_registry_adoption_sha": "7c9d2b2e0d7c548b103b511f6a3cdeb93a2cbc67",
+  "base_registry_adoption_sha": "b9d89a4157af76e8d76cd91cf3bd030e51ede389",
   "preflight_test": {
     "filename": "test_explicit_checkpoint_preflight_main.py",
     "repository_relative_path": null,
@@ -285,5 +305,16 @@
     "D_pinning": "reported by C, not a new A approval",
     "original_bytes_received": false,
     "executed_by_A": false
+  },
+  "capture_test": {
+    "filename": "test_fresh_evidence_cli_review.py",
+    "sha256_reported_by_C": "6867469406558a474ebd236df4f1e81a50a445389f3c348687a5f50cebeb7396",
+    "repository_relative_path": null,
+    "function_selectors": null,
+    "original_bytes_received": false,
+    "test_rewrite_requested": false,
+    "executed_by_A": false,
+    "approval_source_reported_by_C": "D-to-C-fresh-evidence-implementation-approval.md",
+    "approval_boundary": "C reports scope/tests approved subject to Evidence contract adoption; no independent approval verification or condition closure is inferred here"
   }
 }
