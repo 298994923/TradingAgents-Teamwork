@@ -59,6 +59,7 @@ cli = ["static/*"]
 tradingagents = ["assets/*.svg"]
 
 [tool.pytest.ini_options]
+pythonpath = ["src"]
 testpaths = ["tests", "test"]
 addopts = "-ra --strict-markers -m \"not integration\""
 markers = [
