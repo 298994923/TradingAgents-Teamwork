@@ -1,3 +1,53 @@
+# Registration-r8 capture source record
+
+Source: C-to-A-fresh-evidence-capture-traceability.md, received 2026-11-25.
+SHA-256: `102c5e87673fae65896eff8b833e8471184dd631f2719c86f66995cc35035cb0`.
+Prepared against main@303c6d1bb9b1a81b89962d13fa7fbd6b7627b1e9. This transcription records
+C's requested trace scopes; it is not a new test approval or runtime acceptance.
+The prior 25 requirement objects are unchanged.
+
+## REQ-C-CAP-01
+
+Owner C. Opted-in fresh V0/V1 graph waits for every selected analyst and Memory
+Log when present. Actual registration and one successful snapshot publication
+precede Bull. Only then expose the agreed five-field reference.
+Exact fit: zero capture barrier, publication-order or reference-exposure violations.
+
+## INV-C-CAP-01
+
+Owner C. Real destination/save failure reaches CLI with its original cause;
+no Bull, decision or usable reference; failure manifest and evidence-mode sidecar
+retain the reserved run ID and null reference.
+Exact fit: zero failure propagation, execution, reference or identity violations.
+
+C accepts a single requirement/invariant pair if both behaviors are explicit and
+independently verified. A assigns the new CAP-01 canonical pair, instead of
+broadening A artifact checks or existing checkpoint targets. No provisional
+capture IDs were provided, so none are invented.
+
+C subsequently confirmed the r8 mappings in
+`C-to-A-fresh-evidence-capture-test-binding.md`, received 2026-11-25,
+SHA-256 `88ca5a599b83521806dfe63cda1e1b655aeed7922af59d08efa53eace38d2c4f`. The original test bytes were supplied and A verified
+SHA-256 `6867469406558a474ebd236df4f1e81a50a445389f3c348687a5f50cebeb7396`.
+The intended path is `test/offline/fresh_evidence_capture/test_fresh_evidence_cli_review.py`;
+the two success parameter selectors and save-failure selector are recorded in
+the registry and trace. This path is planned, not delivered on the pinned main;
+C reports no source commit yet. The supplied failure test covers publication/save
+failure, not independent destination rejection. The prior one-pass/three-expected-
+failure result is reported by C and was not rerun by A.
+
+Keep test bytes identical and put formal mapping in registry/trace/plan; the
+current update changes no tests, plan approval, shared contract or source
+implementation. D's reported conditional approval is recorded separately in
+the trace. Subsequent PR #46 adopted the fresh V0/V1 capture contract in
+`docs/contracts/evidence.md` (source commit
+`735152116e7f094b6c8890f11c1bde4633c7a4b5`, merge
+`543aad0d745cd25584ecb765deac1904d8dea86e`). The registration was rebased onto
+that merge. This records contract adoption without creating a new approval or
+claiming producer implementation or runtime acceptance.
+
+## Preserved earlier source history
+
 # Registration-r7 current source record
 
 Prepared against main@e5897e87345339d1e9f7c863bbbe09d65b0b8038 on 2026-11-25.
