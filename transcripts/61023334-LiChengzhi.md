@@ -16,3 +16,7 @@ This is a sanitized summary of supervised project work and the reasons for key d
 I limited post-merge V1 verification to the delivered scope. Adaptive V2 routing, explicit locator-based recovery, and Evidence replay were not treated as accepted features. Scripted run and receipt checks establish workflow behavior, not investment quality. The failed-save capture case establishes the scoped pre-Bull failure behavior, not general manifest durability or recovery.
 
 The public timelines of [PR #21](https://github.com/298994923/TradingAgents-Teamwork/pull/21), [PR #37](https://github.com/298994923/TradingAgents-Teamwork/pull/37), and [PR #48](https://github.com/298994923/TradingAgents-Teamwork/pull/48) record independent approvals and author-performed merges as separate facts. The lesson for future work is to verify the actual approval, merge actor, and relevant test scope independently rather than infer one from another.
+
+## D5 redacted chronological record
+
+The [redacted chronological event record](61023334-LiChengzhi-redacted-events.md) covers all 2,084 native events in the selected Role C export, with 12 annotated supervision milestones. The companion preserves event order and records omissions. The original export is kept separately for controlled course submission.
