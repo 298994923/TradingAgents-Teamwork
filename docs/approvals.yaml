@@ -164,3 +164,19 @@ approvals:
     date: "2026-11-24"
     tests: ["test/offline/test_cli_variant.py", "test/offline/test_variant_preset.py",
             "test/offline/test_variant_forwarding.py", "tests/test_cli_commands.py"]
+
+  # Role E's conditional post-implementation disposition, relayed by Role B.
+  # No pre-implementation approval was evidenced. Target is the final code, not 5725be2.
+  - src: "src/tradingagents/b_interfaces.py"
+    approver: "60252993"
+    date: "2026-11-25"
+    review_stage: "post-implementation"
+    reviewed_commit: "4b658d7a7e1014cc48f46f7a2326e1f968a047a2"
+    tests:
+      - "tests/test_graph_end_to_end.py::test_cli_records_actual_debate_sends"
+      - "tests/test_prompt_receipt_completeness.py"
+    notes: >-
+      Clean detached checkout, fresh editable dev install. 23 focused cases passed;
+      CI scope 1921 passed, 1 skipped, 1 deselected, 100 subtests passed.
+      The two production merge resolutions preserve effective_config and prompt_receipts.
+      Reviewed collector, CLI wiring and necessary test changes are listed in PR 26.

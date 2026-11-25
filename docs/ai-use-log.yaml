@@ -613,8 +613,9 @@ entries:
     date: "2026-11-24"
     task: "Persist observed research-role hashes and per-call input digests in CLI run artifacts."
     agent: "Codex"
-    human_reviewed: false
+    human_reviewed: true
     notes: >-
       Added CLI collector wiring, manifest and sidecar persistence, and offline
       end-to-end tests for normal and fallback sends. Verified with v0; the
       workflow v1 selector was unavailable on the tested main baseline.
+      Role B confirmed the PR 26 AI-use record, including completeness and checkout-isolation fixes.
