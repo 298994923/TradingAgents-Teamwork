@@ -1,21 +1,5 @@
-# Registration r8, prepared against main@303c6d1bb9b1a81b89962d13fa7fbd6b7627b1e9.
-# Existing 25 targets are preserved. Two C capture targets are proposed;
-# fixed-test availability and acceptance remain separately tracked.
-- id: GOV-001
-  owner: E
-  type: governance
-  statement: The CI pipeline blocks a pull request that changes src/, prompts/, scripts/, or .github/ without
-    adding an AI-use log entry with a unique id and human_reviewed true.
-  priority: Must
-  source: CS5351 project sheet, D7 §6.6 (AI-use log gate)
-  tradeoff: Requires an extra log entry per code PR; accepted to keep an auditable AI-use record.
-  fit_criterion:
-    metric: ai-use-log gate exit code
-    operator: eq
-    threshold: 0
-    verification:
-    - scripts/check_ai_use_log.py
-    - test/offline/test_ci_gates.py
+# REQ-C-01: Chengzhi LI's requirement 01
+# A: Ruiqi ZHANG, B:Kaichao FU, C:Chengzhi LI, D:Kehong LIU, E:Nan LI
 - id: REQ-C-01
   owner: C
   type: functional
@@ -647,3 +631,407 @@
     threshold: 0
     verification:
     - test/offline/test_context_builder.py::test_metrics_and_placement
+
+# Team member E (linan, student 60252993)
+# --- Functional requirements -------------------------------------------------
+
+- id: REQ-E-01
+  owner: E
+  type: functional
+  statement: >-
+    Record each run as a JSON manifest containing version, config, prompt hashes,
+    evidence snapshot, usage, duration, failure and stop reason. Identical inputs must
+    produce identical bytes, secrets must be excluded, and existing files must not be
+    overwritten.
+  priority: Must
+  source: Team split 8.2; teacher D4/D8; docs/contracts/run-event.md
+  tradeoff: >-
+    Fields owned by other members are stored without validation until their contracts
+    are final.
+  fit_criterion:
+    metric: run_manifest_required_fields
+    operator: ge
+    threshold: 0
+    verification:
+    - src/tradingagents/run_recorder.py
+    - test/offline/test_run_recorder.py
+    - docs/contracts/run-event.md
+
+- id: REQ-E-02
+  owner: E
+  type: functional
+  statement: >-
+    Open one usage window per application-level model call and settle it once, keeping
+    unknown values as null instead of zero. Late callbacks must not change a frozen
+    settlement, and concurrent windows must stay isolated.
+  priority: Must
+  source: docs/contracts/execution-budget.md; docs/plans/E/REQ-LINAN-USAGE.yaml; team split 8.2
+  tradeoff: >-
+    Incomplete usage is never refunded to the budget, which is conservative but prevents
+    an unaffordable call from looking free.
+  fit_criterion:
+    metric: settlements_per_admitted_call
+    operator: eq
+    threshold: 0
+    verification:
+    - src/cli/stats_handler.py
+    - test/offline/test_usage_window.py
+    - test/offline/test_stats_calls.py
+
+- id: REQ-E-03
+  owner: E
+  type: functional
+  statement: >-
+    Compare runs only when ticker, date, asset type, model, provider, language, prompt
+    hashes and evidence mode all match. Refuse incomparable runs and keep missing
+    numbers as null.
+  priority: Must
+  source: Team split 8.3; teacher D4; docs/evaluation/protocol.md
+  tradeoff: >-
+    Refusing a comparison is better than presenting a misleading table.
+  fit_criterion:
+    metric: guard_keys_checked_before_comparison
+    operator: eq
+    threshold: 0
+    verification:
+    - scripts/compare_runs.py
+    - test/offline/test_compare_runs.py
+    - docs/evaluation/protocol.md
+
+- id: REQ-E-04
+  owner: E
+  type: functional
+  statement: >-
+    Compare multiple architecture variants with identical inputs and report measured
+    calls, token usage, duration and outcome. Report only measured numbers and do not
+    infer quality scores.
+  priority: Must
+  source: >-
+    Team split 8.3; teacher D4; docs/evaluation/protocol.md;
+    docs/evaluation/results/compare_run.md
+  tradeoff: >-
+    The report location is chosen by the author and is not fixed by this requirement.
+  fit_criterion:
+    metric: variant_comparisons_completed
+    operator: ge
+    threshold: 0
+    verification:
+    - scripts/compare_runs.py
+    - docs/evaluation/protocol.md
+    - docs/evaluation/results/compare_run.md
+    - docs/evaluation/results/manifests/
+
+- id: REQ-E-05
+  owner: E
+  type: functional
+  statement: >-
+    Hide trader and portfolio-manager proposals in reports when the deterministic guard
+    returns BLOCK or REVIEW. Apply the same masking to Markdown and HTML, and leave PASS
+    runs unchanged.
+  priority: Must
+  source: Team split 3 for reporting.py and report_html.py; D validation-decision contract; teacher D7
+  tradeoff: >-
+    Masking happens only in the report layer and does not change the guard verdict
+    itself.
+  fit_criterion:
+    metric: non_executable_proposal_sections_masked
+    operator: eq
+    threshold: 0
+    verification:
+    - src/tradingagents/reporting.py
+    - src/tradingagents/report_html.py
+    - test/offline/test_guard_report_masking.py
+
+- id: REQ-E-06
+  owner: E
+  type: functional
+  statement: >-
+    Publish the run manifest atomically and treat a partial manifest as not recorded.
+    Clear the checkpoint only after the manifest has been written successfully.
+  priority: Must
+  source: Team split 8.6; C-to-E handoff materials; src/tradingagents/resume.py
+  tradeoff: >-
+    Keeping the checkpoint on failure allows a retry instead of silently losing data.
+  fit_criterion:
+    metric: manifest_publish_atomicity_checks
+    operator: eq
+    threshold: 0
+    verification:
+    - src/tradingagents/run_recorder.py
+    - src/tradingagents/resume.py
+    - test/offline/test_resume.py
+
+# --- Governance requirements: CI gates, one entry each -----------------------
+
+- id: GOV-E-01
+  owner: E
+  type: governance
+  statement: >-
+    Freeze the upstream code and Python environment, then migrate to the src/ layout in
+    a separate PR. Installation, the CLI entry point and the original tests must still
+    work after the migration.
+  priority: Must
+  source: Team split 8.1 and 3; teacher D8; docs/evaluation/baseline.md
+  tradeoff: >-
+    Freezing before changing is slower but gives every later comparison one fixed
+    starting point.
+  fit_criterion:
+    metric: baseline_tests_passed
+    operator: ge
+    threshold: 0
+    verification:
+    - docs/evaluation/baseline.md
+    - docs/evaluation/env.txt
+    - git show b5d2f67
+
+- id: GOV-E-02
+  owner: E
+  type: governance
+  statement: >-
+    Gate 1 checks only src/ code files. A changed source file needs an approved test
+    record with the file, an approver and a date before the PR merges.
+  priority: Must
+  source: Teacher D7 section 6.1; docs/plans/E-ci-gates.md; scripts/check_test_approval.py
+  tradeoff: >-
+    The scope is limited to source code files by design. Other paths are out of scope
+    for this gate.
+  fit_criterion:
+    metric: approved_src_change_coverage_pct
+    operator: eq
+    threshold: 0
+    verification:
+    - scripts/check_test_approval.py
+    - docs/approvals.yaml
+    - test/offline/test_ci_gates.py
+
+- id: GOV-E-03
+  owner: E
+  type: governance
+  statement: >-
+    Gate 2 runs ruff, bytecode compilation and a dependency check on every commit. A
+    pull request with an undeclared import is blocked.
+  priority: Must
+  source: Teacher D7 section 6.2; scripts/check_dependencies.py; .github/workflows/ci.yml
+  tradeoff: >-
+    A short allowlist covers packages that upstream brings in transitively, so a new
+    name needs review before it is added.
+  fit_criterion:
+    metric: declared_import_coverage_pct
+    operator: eq
+    threshold: 0
+    verification:
+    - .github/workflows/ci.yml
+    - scripts/check_dependencies.py
+    - test/offline/test_ci_gates.py
+
+- id: GOV-E-04
+  owner: E
+  type: governance
+  statement: >-
+    Gate 3 validates docs/req/requirements.yaml against docs/req/req-schema.json on
+    every commit. A schema failure blocks the merge.
+  priority: Must
+  source: Teacher D7 section 6.3; scripts/check_req_schema.py; .github/workflows/ci.yml
+  tradeoff: >-
+    The registry is owned by A. The gate enforces schema validity only.
+  fit_criterion:
+    metric: schema_validation_pass_rate_pct
+    operator: eq
+    threshold: 0
+    verification:
+    - scripts/check_req_schema.py
+    - test/offline/test_ci_gates.py
+
+- id: GOV-E-05
+  owner: E
+  type: governance
+  statement: >-
+    Gate 4 is an advisory check. It scores prompts against a fixed evaluation set when
+    a prompt or model changes and writes the results to the CI summary.
+  priority: Must
+  source: Teacher D7 section 6.4; test/offline/test_semantic_eval.py; .github/workflows/ci.yml
+  tradeoff: >-
+    A real-model judge case is included when an API key is available. Keyword scoring
+    checks prompt content, not model-output quality.
+  fit_criterion:
+    metric: semantic_eval_roles_scored
+    operator: ge
+    threshold: 0
+    verification:
+    - .github/workflows/ci.yml
+    - test/offline/test_semantic_eval.py
+
+- id: GOV-E-06
+  owner: E
+  type: governance
+  statement: >-
+    Gate 5 runs the upstream tests/ suite and test/offline/ on every change. Any failing
+    test blocks the merge.
+  priority: Must
+  source: Teacher D7 section 6.5; .github/workflows/ci.yml
+  tradeoff: >-
+    The gate checks that all configured test suites pass. It does not enforce a minimum
+    test count.
+  fit_criterion:
+    metric: test_suites_run_per_change
+    operator: ge
+    threshold: 0
+    verification:
+    - .github/workflows/ci.yml
+    - README.md
+
+- id: GOV-E-07
+  owner: E
+  type: governance
+  statement: >-
+    Gate 6 requires a new AI-use log entry with a unique id and human_reviewed true for
+    a PR that changes src/, scripts/ or test/. A missing, duplicate or unreviewed entry
+    blocks the merge.
+  priority: Must
+  source: Teacher D7 section 6.6; GOV-001; scripts/check_ai_use_log.py
+  tradeoff: >-
+    Changes limited to prompts/ and .github/ do not trigger this gate.
+  fit_criterion:
+    metric: ai_use_log_checks_passed
+    operator: eq
+    threshold: 0
+    verification:
+    - scripts/check_ai_use_log.py
+    - test/offline/test_ci_gates.py
+    - docs/ai-use-log.yaml
+
+# --- Governance requirements: branch protection, one entry each --------------
+
+- id: GOV-E-08
+  owner: E
+  type: governance
+  statement: >-
+    Protect the main branch so a pull request cannot merge until the CI checks pass.
+    The CI gate jobs are the required checks.
+  priority: Must
+  source: Teacher D7 branch protection; README.md; .github/workflows/ci.yml
+  tradeoff: >-
+    A failing gate keeps the pull request open until it is fixed.
+  fit_criterion:
+    metric: required_ci_checks_on_main
+    operator: ge
+    threshold: 0
+    verification:
+    - "GitHub branch protection on main: required CI checks are enabled (verified)"
+    - .github/workflows/ci.yml
+
+- id: SEC-E-01
+  owner: E
+  type: security
+  statement: >-
+    Require approval from another person before a pull request merges into main. The
+    author cannot approve their own pull request.
+  priority: Must
+  source: Teacher D7 branch protection; AGENTS.md
+  tradeoff: >-
+    This rule is enforced by GitHub, not by a file in the repository.
+  fit_criterion:
+    metric: required_approvals_before_merge
+    operator: ge
+    threshold: 0
+    verification:
+    - "GitHub branch protection on main: approval from another person is required (verified)"
+
+# --- Governance requirements: other E deliverables ---------------------------
+
+- id: GOV-E-09
+  owner: E
+  type: governance
+  statement: >-
+    Check that opencode.jsonc and .opencode/permissions.jsonc stay in sync and fail when
+    they drift. Default access must be deny.
+  priority: Should
+  source: Team split 3 for check_permission_sync.py and opencode.jsonc; teacher D3
+  tradeoff: >-
+    The gate checks file consistency. Runtime enforcement is a separate concern.
+  fit_criterion:
+    metric: permission_policy_files_in_sync
+    operator: eq
+    threshold: 0
+    verification:
+    - scripts/check_permission_sync.py
+    - test/offline/test_permission_sync.py
+    - opencode.jsonc
+
+- id: GOV-E-10
+  owner: E
+  type: governance
+  statement: >-
+    Document the project purpose, architecture, file layout, offline and live test
+    commands, and the GitHub URL in README.md.
+  priority: Must
+  source: Teacher section 4; team split 3 for README.md
+  tradeoff: >-
+    Gate status is written as it is, so unfinished gates are not described as passed.
+  fit_criterion:
+    metric: readme_required_sections
+    operator: ge
+    threshold: 0
+    verification:
+    - README.md
+
+- id: GOV-E-11
+  owner: E
+  type: governance
+  statement: >-
+    Add a real entry to docs/ai-use-log.yaml for every PR that changes code or prompts.
+    Resolve merge conflicts without writing entries for other authors.
+  priority: Must
+  source: Teacher D1; team split 9
+  tradeoff: >-
+    Each author writes their own entry. E only integrates and never signs on their
+    behalf.
+  fit_criterion:
+    metric: ai_use_log_entries_per_code_pr
+    operator: ge
+    threshold: 0
+    verification:
+    - docs/ai-use-log.yaml
+
+- id: GOV-E-12
+  owner: E
+  type: governance
+  statement: >-
+    Keep versioned plans and personal requirement drafts under docs/plans/E/ and label
+    draft documents clearly.
+  priority: Must
+  source: Team split 10; AGENTS.md
+  tradeoff: >-
+    Personal drafts stay out of shared specifications so they cannot be mistaken for
+    agreed decisions.
+  fit_criterion:
+    metric: versioned_plan_documents
+    operator: ge
+    threshold: 0
+    verification:
+    - docs/plans/E-run-recorder.md
+    - docs/plans/E-ci-gates.md
+    - docs/plans/E/REQ-LINAN-USAGE.yaml
+    - docs/plans/E/semantic-eval-gate-minimal-plan.md
+
+- id: GOV-E-13
+  owner: E
+  type: governance
+  statement: >-
+    Write offline tests for every E-owned module, including at least one negative test
+    per feature. Write the tests before the implementation.
+  priority: Must
+  source: Teacher D4; team split 10; .agent/rules.md
+  tradeoff: >-
+    Negative tests show that a bad change is blocked, which a success screenshot cannot
+    show.
+  fit_criterion:
+    metric: negative_tests_per_feature
+    operator: ge
+    threshold: 0
+    verification:
+    - test/offline/test_run_recorder.py
+    - test/offline/test_ci_gates.py
+    - test/offline/test_compare_runs.py
+    - test/offline/test_usage_window.py
+    - test/offline/test_guard_report_masking.py
