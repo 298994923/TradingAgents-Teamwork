@@ -1,0 +1,16 @@
+{
+  "authoritative_action": null,
+  "authoritative_reason": null,
+  "decided_by": null,
+  "evidence_mode": "strict",
+  "limitations": [],
+  "policy_version": null,
+  "run_id": "v1-nvda-2026-11-24-r1-20261125t1129",
+  "scenario": null,
+  "schema_version": 1,
+  "snapshot_ref": {
+    "artifact_key": "v1/d5f8a02990636369285ad191c3c6461497740954577efd64a65686869725667c.json",
+    "snapshot_id": "sha256:d5f8a02990636369285ad191c3c6461497740954577efd64a65686869725667c"
+  },
+  "unknown_time_fields": []
+}

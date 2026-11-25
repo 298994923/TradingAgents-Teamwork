@@ -1,0 +1,43 @@
+{
+  "run_id": "v0-nvda-2026-11-24-r1-20261125t1121",
+  "expected_calls": null,
+  "calls": [
+    {
+      "role": "bull",
+      "run_id": "v0-nvda-2026-11-24-r1-20261125t1121",
+      "round_index": null,
+      "input_sha256": "6fe2670c95801bbfae267f42c33945bde3ec774a1fd4a140487e5a4198186a2a"
+    },
+    {
+      "role": "bear",
+      "run_id": "v0-nvda-2026-11-24-r1-20261125t1121",
+      "round_index": null,
+      "input_sha256": "33f251dd2408a8c2be154964c83bfc472e021beb522e0ccee592924245d4d85f"
+    },
+    {
+      "role": "bull",
+      "run_id": "v0-nvda-2026-11-24-r1-20261125t1121",
+      "round_index": null,
+      "input_sha256": "e8021e0121f252e9d0f3cdb8f90620c29d5cd0f90ced40c0d28936e3c2985ffb"
+    },
+    {
+      "role": "bear",
+      "run_id": "v0-nvda-2026-11-24-r1-20261125t1121",
+      "round_index": null,
+      "input_sha256": "fef1c697c61f8e9047d27283342cc2bd606d2d377ea2b749ff124efae4ad59e7"
+    },
+    {
+      "role": "research_manager",
+      "run_id": "v0-nvda-2026-11-24-r1-20261125t1121",
+      "round_index": null,
+      "input_sha256": "860014c5f6f766905c171084d1a5b1825685f39426c3e0357b71085b40ed314a"
+    },
+    {
+      "role": "research_manager",
+      "run_id": "v0-nvda-2026-11-24-r1-20261125t1121",
+      "round_index": null,
+      "input_sha256": "860014c5f6f766905c171084d1a5b1825685f39426c3e0357b71085b40ed314a"
+    }
+  ],
+  "input_evidence": "完整"
+}
