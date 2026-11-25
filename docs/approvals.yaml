@@ -253,3 +253,36 @@ approvals:
       rerunning self-checks. The tested v0.2 bytes have SHA-256
       655d5d596e6bd079cd1277a442ab4ac1683b37684ca855e854c7737b89441655;
       no separate D signature on that hash is recorded.
+
+  # 2026-11-25 evidence integration interfaces (reservation, destination, forwarding).
+  # Post-implementation review only: the human approved the plan in OpenCode
+  # session ses_def9ea581ffe9jrPzq0ouZBeRy and reviewed the diff afterwards.
+  # Not a claim of independent preimplementation approval; per team split §9 an
+  # independent countersign (Role C, 61023334) is still pending.
+  - src: "src/tradingagents/evidence_store.py"
+    approver: "60252993"
+    date: "2026-11-25"
+    review_stage: "post-implementation"
+    tests:
+      - "test/offline/test_evidence_integration.py"
+    notes: >-
+      New E-owned path helper evidence_destination(config, run_id, artifact_key)
+      with canonical key validation and containment/symlink escape rejection.
+      Offline: 21 new tests passed; full suite 1982 passed, 1 skipped,
+      1 deselected, 100 subtests; ruff clean. AI-use entry
+      60252993-linan-ai-use-21 has the details.
+
+  - src: "src/cli/run.py"
+    approver: "60252993"
+    date: "2026-11-25"
+    review_stage: "post-implementation"
+    tests:
+      - "test/offline/test_evidence_integration.py"
+      - "test/offline/test_cli_run_manifest.py"
+      - "test/offline/test_cli_prompt_hashes.py"
+    notes: >-
+      Early collision-safe reserve_run_id moved ahead of graph execution; writer
+      reuses the reserved id on success and failure; evidence_snapshot forwarded
+      from final_state to manifest and evidence-mode snapshot_ref. Legacy
+      unreserved callers unchanged; prompt receipts, Guard and stop_reason
+      behavior preserved. Same post-implementation review caveat as above.
