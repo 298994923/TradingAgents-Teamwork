@@ -1,6 +1,6 @@
-# Requirements registration r6, prepared against main@e16bf40209bca7179c161561189670c93187b8a1.
-# This PR proposes registry adoption; implementation/verification gaps are
-# explicit in evidence-registration-trace.md. Original owner scopes are preserved.
+# Registration r7, prepared against main@e5897e87345339d1e9f7c863bbbe09d65b0b8038.
+# The existing 23 targets were adopted through PR #24. This PR adds two
+# explicit-preflight targets; registration is separate from acceptance.
 - id: GOV-001
   owner: E
   type: governance
@@ -406,3 +406,34 @@
     - test/offline/test_checkpoint_exact_thread_cleanup.py::test_second_delete_failure_rolls_back_first_delete
     - test/offline/test_checkpoint_exact_thread_cleanup.py::test_missing_database_does_not_touch_filesystem
     - test/offline/test_checkpoint_exact_thread_cleanup.py::test_schema_error_surfaces_without_creating_tables
+
+- id: REQ-C-CKPT-02
+  owner: C
+  type: functional
+  statement: Before any graph execution, explicit checkpoint preflight accepts only the expected thread in the supplied original SQLite database and returns the exact recorded thread ID.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#req-c-ckpt-02
+  tradeoff: Caller-target preflight is distinct from STOR-03 exact lookup and CKPT-01 graph lifecycle. It supports part of REQ-C-05; it does not establish complete recovery compatibility or authorize checkpoint cleanup.
+  fit_criterion:
+    metric: explicit_preflight_target_or_returned_thread_identity_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - pending-owner-test-reference:test_explicit_checkpoint_preflight_main.py::test_preflight_verifies_exact_original_database_and_thread
+- id: INV-C-CKPT-02
+  owner: C
+  type: invariant
+  statement: Reject blank run IDs and mismatched thread identities before storage access. Missing targets do not fall back to neighbors or create files. SQLite corruption surfaces as a storage error. Preflight neither executes the graph nor mutates checkpoint rows.
+  priority: Must
+  source: docs/req/sources/c-registration-2026-11-23.md#inv-c-ckpt-02
+  tradeoff: Preserve C's fixed tests and provisional alias. Seven red cases are C-reported because the entry point is absent; exact test location, file bytes and independent reproduction remain pending. No new implementation or test changes are authorized by registration.
+  fit_criterion:
+    metric: explicit_preflight_early_rejection_fallback_error_or_mutation_violations
+    operator: eq
+    threshold: 0
+    verification:
+    - pending-owner-test-reference:test_explicit_checkpoint_preflight_main.py::test_preflight_rejects_neighbor_identity_before_storage
+    - pending-owner-test-reference:test_explicit_checkpoint_preflight_main.py::test_preflight_rejects_missing_thread_without_using_neighbors
+    - pending-owner-test-reference:test_explicit_checkpoint_preflight_main.py::test_preflight_rejects_blank_run_id_before_storage
+    - pending-owner-test-reference:test_explicit_checkpoint_preflight_main.py::test_preflight_reports_absent_database_without_creating_it
+    - pending-owner-test-reference:test_explicit_checkpoint_preflight_main.py::test_preflight_propagates_database_errors

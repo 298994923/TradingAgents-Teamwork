@@ -1,6 +1,6 @@
 {
-  "revision": "2026-11-24-registration-r6",
-  "owner_confirmation": "C confirms the original ten mappings, graph 004 pair and eight STOR entries",
+  "revision": "2026-11-25-registration-r7",
+  "owner_confirmation": "Earlier mappings are adopted in PR #24. C supplied the new preflight scope; A assigns the two CKPT-02 aliases in this proposal.",
   "shared_branch_adoption": false,
   "aliases": {
     "C-P01": "REQ-C-01",
@@ -34,180 +34,202 @@
     "REQ-C-LOCAL-CKPT-005": "REQ-C-STOR-03",
     "INV-C-LOCAL-CKPT-005": "INV-C-STOR-03",
     "REQ-C-LOCAL-CKPT-008": "REQ-C-STOR-04",
-    "INV-C-LOCAL-CKPT-008": "INV-C-STOR-04"
+    "INV-C-LOCAL-CKPT-008": "INV-C-STOR-04",
+    "REQ-C-LOCAL-CKPT-006": "REQ-C-CKPT-02",
+    "INV-C-LOCAL-CKPT-006": "INV-C-CKPT-02"
   },
   "entries": [
     {
       "id": "REQ-C-01",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE"
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately"
     },
     {
       "id": "REQ-C-02",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE"
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately"
     },
     {
       "id": "REQ-C-03",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE"
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately"
     },
     {
       "id": "REQ-C-04",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE",
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately",
       "verification_status": "explicit pending marker accepted by C; not executable"
     },
     {
       "id": "REQ-C-05",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE"
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately"
     },
     {
       "id": "REQ-C-06",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE"
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately"
     },
     {
       "id": "REQ-C-FR-01",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE"
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately"
     },
     {
       "id": "INV-C-FR-01",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE"
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately"
     },
     {
       "id": "INV-C-FR-02",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE"
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately"
     },
     {
       "id": "INV-C-FR-03",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE"
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately"
     },
     {
       "id": "REQ-C-CKPT-01",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE"
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately"
     },
     {
       "id": "INV-C-CKPT-01",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE"
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately"
     },
     {
       "id": "REQ-C-STOR-01",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE",
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately",
       "software_delivery": "PR #17; de8035b; merge 9b44a7c"
     },
     {
       "id": "INV-C-STOR-01",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE",
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately",
       "software_delivery": "PR #17; de8035b; merge 9b44a7c"
     },
     {
       "id": "REQ-C-STOR-02",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE",
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately",
       "software_delivery": "PR #17; de8035b; merge 9b44a7c"
     },
     {
       "id": "INV-C-STOR-02",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE",
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately",
       "software_delivery": "PR #17; de8035b; merge 9b44a7c"
     },
     {
       "id": "REQ-C-STOR-03",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE",
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately",
       "software_delivery": "PR #17; de8035b; merge 9b44a7c"
     },
     {
       "id": "INV-C-STOR-03",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE",
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately",
       "software_delivery": "PR #17; de8035b; merge 9b44a7c"
     },
     {
       "id": "REQ-C-STOR-04",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
       "included_in_local_candidate": true,
-      "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE",
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately",
       "software_delivery": "PR #17; de8035b; merge 9b44a7c"
     },
     {
       "id": "INV-C-STOR-04",
       "owner_confirmed": true,
-      "registry_inclusion": "proposed",
+      "registry_inclusion": "adopted via PR #24",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": true,
+      "status": "REGISTERED TARGET; verification tracked separately",
+      "software_delivery": "PR #17; de8035b; merge 9b44a7c"
+    },
+    {
+      "id": "REQ-C-CKPT-02",
+      "owner_scope_source": "C-to-A-explicit-checkpoint-preflight-traceability-confirmation.md",
+      "mapping_assignment": "A proposal responding to C request",
+      "registry_inclusion": "proposed in r7",
       "included_in_local_candidate": true,
       "shared_branch_adoption": false,
-      "status": "STILL CANDIDATE",
-      "software_delivery": "PR #17; de8035b; merge 9b44a7c"
+      "status": "C-REPORTED RED; implementation pending",
+      "test_hash_status": "C supplied; original bytes not received or independently hashed"
+    },
+    {
+      "id": "INV-C-CKPT-02",
+      "owner_scope_source": "C-to-A-explicit-checkpoint-preflight-traceability-confirmation.md",
+      "mapping_assignment": "A proposal responding to C request",
+      "registry_inclusion": "proposed in r7",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "status": "C-REPORTED RED; implementation pending",
+      "test_hash_status": "C supplied; original bytes not received or independently hashed"
     }
   ],
-  "prepared_against_main": "e16bf40209bca7179c161561189670c93187b8a1",
+  "prepared_against_main": "e5897e87345339d1e9f7c863bbbe09d65b0b8038",
   "publication_target": "main",
   "storage_groups": [
     {
@@ -215,34 +237,53 @@
       "requirement": "REQ-C-STOR-01",
       "invariant": "INV-C-STOR-01",
       "owner_confirmation": "C confirmed",
-      "registry_adoption": false
+      "registry_adoption": true
     },
     {
       "source_group": "LOCAL-CKPT-003",
       "requirement": "REQ-C-STOR-02",
       "invariant": "INV-C-STOR-02",
       "owner_confirmation": "C confirmed",
-      "registry_adoption": false
+      "registry_adoption": true
     },
     {
       "source_group": "LOCAL-CKPT-005",
       "requirement": "REQ-C-STOR-03",
       "invariant": "INV-C-STOR-03",
       "owner_confirmation": "C confirmed",
-      "registry_adoption": false
+      "registry_adoption": true
     },
     {
       "source_group": "LOCAL-CKPT-008",
       "requirement": "REQ-C-STOR-04",
       "invariant": "INV-C-STOR-04",
       "owner_confirmation": "C confirmed",
-      "registry_adoption": false
+      "registry_adoption": true
     }
   ],
   "main_refresh_verified": true,
   "Evidence_PR16_merge": "61402afa740f0345fc5e36c8e338a1cc88d268b9",
   "Evidence_approval": "C completed; E is not the reviewer",
-  "publication_note": "Preparation snapshot for this PR; shared-branch adoption is established by the registry merge, separately from runtime acceptance.",
-  "test_count_clarification": "Resolved: 23 storage + 13 legacy = 36; interim adds 4 graph cases = 40; final expected 41 requires real B receipt wiring.",
-  "graph_delivery": "PR #18; 0760c5800912d1b570dd130d0d94c2c619cbf45a"
+  "publication_note": "Preparation snapshot: the existing 23 targets are adopted; the two added CKPT-02 targets are proposed until this registration merges. Runtime acceptance is separate.",
+  "test_count_clarification": "23 storage + 13 legacy = 36; +4 graph +1 real receipt = 41. The receipt is now delivered; an existing V1 approval record reports 41 passing on its candidate, not a new run by A.",
+  "graph_delivery": "PR #18; 0760c5800912d1b570dd130d0d94c2c619cbf45a",
+  "base_registry_adoption_sha": "7c9d2b2e0d7c548b103b511f6a3cdeb93a2cbc67",
+  "preflight_test": {
+    "filename": "test_explicit_checkpoint_preflight_main.py",
+    "repository_relative_path": null,
+    "sha256_reported_by_C": "37a21a84170343ad1536ae9851bdefa86f9e5c07ec86a6693b1b87dc41b0c51a",
+    "functions_reported_by_C": [
+      "test_preflight_verifies_exact_original_database_and_thread",
+      "test_preflight_rejects_neighbor_identity_before_storage",
+      "test_preflight_rejects_missing_thread_without_using_neighbors",
+      "test_preflight_rejects_blank_run_id_before_storage",
+      "test_preflight_reports_absent_database_without_creating_it",
+      "test_preflight_propagates_database_errors"
+    ],
+    "cases_reported_by_C": 7,
+    "result_reported_by_C": "red because entry point is absent",
+    "D_pinning": "reported by C, not a new A approval",
+    "original_bytes_received": false,
+    "executed_by_A": false
+  }
 }
