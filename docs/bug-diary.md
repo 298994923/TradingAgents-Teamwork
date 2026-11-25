@@ -42,3 +42,9 @@ BD-10 F811 full-tree lint gap (2026-11-25). CI lint green (changed files) while 
 tree reports 2 pre-existing F811. Open with Role C. Rule: know your tool's scope.
 
 Recorder: Liu Kehong (Role D, 60894001), 2026-11-25.
+
+## Role C — Terminal reporting defect
+
+**Contributor:** LiChengzhi (61023334).
+
+**C-BD-01 — Successful-run completion marker missing** (public contract and fix recorded 2026-11-25). Normal unguarded V0/V1 runs could reach the final decision but leave the manifest's `stop_reason` null. Scripted CLI verification exposed the missing marker while preserving guarded and exception cases as controls. [PR #32](https://github.com/298994923/TradingAgents-Teamwork/pull/32) defined the narrow completion semantics before [PR #37](https://github.com/298994923/TradingAgents-Teamwork/pull/37) added the terminal state-writing boundary without changing the recorder or Guard. Rule: verify the successful outcome and the cases where the marker must remain absent; do not use `completed` as a generic interpretation of null.
