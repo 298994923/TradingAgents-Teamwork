@@ -1,0 +1,31 @@
+{
+  "run_id": "v1-nvda-2026-11-24-r1-20261125t1129",
+  "expected_calls": null,
+  "calls": [
+    {
+      "role": "bull",
+      "run_id": "v1-nvda-2026-11-24-r1-20261125t1129",
+      "round_index": null,
+      "input_sha256": "627304076d8e1251893a49f233ec63caf6cefc3c17738f0086e48e602c0cb22b"
+    },
+    {
+      "role": "bear",
+      "run_id": "v1-nvda-2026-11-24-r1-20261125t1129",
+      "round_index": null,
+      "input_sha256": "7e68bf52c12961cc693dd580f0d0fd98e7d060b4ebea7880b42ee76816acef15"
+    },
+    {
+      "role": "research_manager",
+      "run_id": "v1-nvda-2026-11-24-r1-20261125t1129",
+      "round_index": null,
+      "input_sha256": "107e66e0d43ba735d4c95038a1dd22c7cd74efcb2963a989d3ffc623c5946cf3"
+    },
+    {
+      "role": "research_manager",
+      "run_id": "v1-nvda-2026-11-24-r1-20261125t1129",
+      "round_index": null,
+      "input_sha256": "107e66e0d43ba735d4c95038a1dd22c7cd74efcb2963a989d3ffc623c5946cf3"
+    }
+  ],
+  "input_evidence": "完整"
+}

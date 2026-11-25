@@ -1,0 +1,61 @@
+{
+  "asset_type": "stock",
+  "config_snapshot": {
+    "anthropic_effort": null,
+    "benchmark_ticker": null,
+    "checkpoint_enabled": false,
+    "data_cache_dir": "/Users/erkangxue/.tradingagents/cache",
+    "deep_think_backend_url": null,
+    "deep_think_llm": "CS5351/DeepSeek-V4-Flash",
+    "deep_think_provider": null,
+    "global_news_article_limit": 10,
+    "global_news_lookback_days": 7,
+    "google_thinking_level": null,
+    "holding_period_days": 5,
+    "llm_max_retries": null,
+    "llm_provider": "openai_compatible",
+    "max_debate_rounds": 1,
+    "max_recur_limit": 100,
+    "max_risk_discuss_rounds": 1,
+    "max_tokens": null,
+    "max_tool_rounds": 20,
+    "memory_log_max_entries": null,
+    "memory_log_path": "outputs/memory/trading_memory.md",
+    "news_article_limit": 20,
+    "openai_reasoning_effort": null,
+    "output_language": "English",
+    "quick_think_backend_url": null,
+    "quick_think_llm": "CS5351/DeepSeek-V4-Flash",
+    "quick_think_provider": null,
+    "temperature": null,
+    "workflow_variant": "v1"
+  },
+  "created_at": "2026-11-25T11:31:50.167445+00:00",
+  "duration_seconds": 160.2767460346222,
+  "evidence_snapshot": {
+    "artifact_key": "v1/d5f8a02990636369285ad191c3c6461497740954577efd64a65686869725667c.json",
+    "captured_at": "2026-11-25T11:29:45.797734Z",
+    "snapshot_id": "sha256:d5f8a02990636369285ad191c3c6461497740954577efd64a65686869725667c",
+    "source_run_id": "v1-nvda-2026-11-24-r1-20261125t1129",
+    "store": "local-fs"
+  },
+  "failure": null,
+  "outcome": "Hold",
+  "prompt_hashes": {
+    "bear": "ad2c65124d62e34e650b523090f526cce22f2ec4628df3a9b0c10ca2052f5d0d",
+    "bull": "41d9ee6f9cb43c21ff510413c3f94d6798b40ccb722787bdce106b148588193f",
+    "research_manager": "cfcca21ef66a6a43a6efe3bc3655186df3873538517ba3d9d433315c45605510"
+  },
+  "run_id": "v1-nvda-2026-11-24-r1-20261125t1129",
+  "schema_version": 1,
+  "stop_reason": "completed",
+  "ticker": "NVDA",
+  "trade_date": "2026-11-24",
+  "usage": {
+    "llm_calls": 21,
+    "tokens_in": 175220,
+    "tokens_out": 30148,
+    "tool_calls": 34
+  },
+  "version": "0.7.1"
+}
