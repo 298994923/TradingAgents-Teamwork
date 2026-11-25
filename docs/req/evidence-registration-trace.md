@@ -434,3 +434,17 @@ and the five pre-existing whole-graph/integration pending markers are separate.
 | `test/offline/test_v1_fixed_pruning.py::test_rejected_variant_has_no_construction_side_effects` | delivered; function resolved where specified |
 | `tests/test_graph_end_to_end.py::test_a_full_run_reaches_a_logged_decision` | delivered; function resolved where specified |
 | `tests/test_graph_end_to_end.py::test_an_interrupted_run_resumes_from_its_checkpoint` | delivered; function resolved where specified |
+
+## Role B requirements registration
+
+The [B handoff](sources/B-trace-for-A.tsv) supplies the original identifiers,
+statements, thresholds and reported evidence limits for B-REQ-01 through
+B-REQ-12. The registry retains these identifiers directly. The verification
+selectors come from the B coursework checkout reviewed on 2026-11-22.
+They identify the historical checks and may differ from paths or test names
+on main. This registration does not establish fresh runtime acceptance.
+
+The handoff flagged follow-up evidence for strict historical citations
+(B-REQ-04), manager-to-graph handoff (B-REQ-10), and pinned legacy prompt
+and returned-state equivalence (B-REQ-11). Those observations are dated
+to the handoff; this registration does not adjudicate later evidence.
