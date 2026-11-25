@@ -187,6 +187,15 @@ approvals:
       The two production merge resolutions preserve effective_config and prompt_receipts.
       Reviewed collector, CLI wiring and necessary test changes are listed in PR 26.
 
+  # Role A confirmed the decision on 2026-11-25 after implementation.
+  - src: "src/tradingagents/context_builder.py"
+    approver: "58924242"
+    date: "2026-11-25"
+    reviewed_commit: "3106f1d1ec2eb93895a3d5e39eb12cdb6c79db9a"
+    scope: "Zhang Ruiqi (Member A) approved the post-implementation re-review of the layered context builder, Bull/Bear/Manager wiring and corresponding tests, closing P1 and P2."
+    tests:
+      - "test/offline/test_context_builder.py"
+      - "test/offline/test_b_context_wiring.py"
   # 2026-11-25 prompt_hashes wiring: on_prompt -> manifest prompt_hashes.
   # Post-implementation review only: the human approved the plan in OpenCode
   # session ses_def9ea581ffe9jrPzq0ouZBeRy and reviewed the diff afterwards. This

@@ -10,6 +10,7 @@ from tradingagents.agents.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
+from tradingagents.context_builder import render_debate_prompt
 
 
 def create_research_manager(llm, *, on_prompt=None):
@@ -50,9 +51,10 @@ Write these sections, in this order, starting with the recommendation on its own
 
         investment_debate_state = state["investment_debate_state"]
 
-        prompt = template.format(
-            instrument_context=instrument_context, history=history
-        ) + get_language_instruction()
+        prompt = render_debate_prompt(
+            template, {"instrument_context": instrument_context, "history": history},
+            get_language_instruction(),
+        )
 
         investment_plan = invoke_structured_or_freetext(
             structured_llm,

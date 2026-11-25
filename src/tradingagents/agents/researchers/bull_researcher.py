@@ -5,6 +5,7 @@ from tradingagents.agents.context import (
     report_or_absent,
 )
 from tradingagents.agents.prompt_receipts import legacy_prompt_observer
+from tradingagents.context_builder import render_debate_prompt
 
 
 def create_bull_researcher(llm, *, on_prompt=None):
@@ -48,7 +49,11 @@ Conversation history of the debate: {history}
 Last bear argument: {current_response}
 Use this information to deliver a compelling bull argument, refute the bear's concerns, and engage in a dynamic debate that demonstrates the strengths of the bull position.
 """
-        prompt = template.format_map(locals()) + get_language_instruction()
+        prompt = render_debate_prompt(
+            template, locals(), get_language_instruction(),
+            evidence_fields=("sentiment_report", "news_report", "fundamentals_report",
+                             "market_research_report"),
+        )
         observe = legacy_prompt_observer(on_prompt, "bull", template, state)
         if observe is not None:
             observe(prompt)

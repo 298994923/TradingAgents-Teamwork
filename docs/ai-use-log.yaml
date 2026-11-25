@@ -620,6 +620,29 @@ entries:
       workflow v1 selector was unavailable on the tested main baseline.
       Role B confirmed the PR 26 AI-use record, including completeness and checkout-isolation fixes.
 
+  - id: "60468706-B-main-layered-context-20261125"
+    pr_id: "pre-pr"
+    date: "2026-11-25"
+    task: "Connect B's layered context compaction to the three research roles."
+    agent: "Codex"
+    human_reviewed: true
+    notes: >-
+      Adapted the existing B context builder for main's prompt templates and
+      added offline coverage for compaction, protected arguments, receipt
+      hashes, and overflow before sending. Member B confirmed human review of this entry and the original candidate
+      76b12c0. Independent test approval remains pending.
+
+
+  - id: "60468706-B-layered-context-review-fixes-20261125"
+    pr_id: "pre-pr"
+    date: "2026-11-25"
+    task: "Address cross-review findings on financial signs and context priority."
+    agent: "Codex"
+    human_reviewed: true
+    notes: >-
+      Retain blocks whose exact text or metadata differs. Record retained IDs
+      for duplicates and add regressions for opposing EPS signs and priority
+      metadata. Member B confirmed human review of this follow-up.
   - id: "60252993-linan-ai-use-20"
     pr_id: "N/A"
     date: "2026-11-25"
