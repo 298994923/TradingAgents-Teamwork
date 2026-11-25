@@ -878,3 +878,44 @@ entries:
       BUG-E-001/002/003. Committed locally as 62585bc; no push, no PR; GitHub
       Actions was NOT run. C's independent countersign for the interface delivery
       remains open; this is not a claim of independent preimplementation approval.
+
+  - id: "60252993-linan-ai-use-23"
+    pr_id: "N/A"
+    date: "2026-11-25"
+    task: "Add a minimal semantic evaluation gate (Gate 4, GOV-002, advisory)"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      opencode implemented this through the following instructions, changing only
+      test/offline/test_semantic_eval.py (new) and .github/workflows/ci.yml, with
+      no dependency on B or D and no commits: (1) add a minimal GOV-002 gate using
+      the fixed state from tests/test_prompt_integrity.py, run bull/bear/
+      research_manager with a fake LLM, capture the rendered prompt via on_prompt,
+      and check properties rather than digests so rewording passes; (2) replace
+      the property assertions with keyword scoring: a module-level EVAL_SET dict
+      (no YAML file) of weighted required phrases, forbidden phrases and a 0.5
+      threshold, score = matched weight / total, a forbidden hit forces 0, and a
+      case fails only when score < threshold; add two negative tests that call
+      score() on broken prompts; (3) remove "RSI 61" from the bull/bear required
+      dicts (it is a fixed test input, not a quality criterion) and replace it
+      with "counterpoints"; (4) add one self-contained real-model case with a
+      module-level SEMANTIC_CASE (provider/model/backend_url from DEFAULT_CONFIG,
+      an expected answer and rubric written here, threshold 3): skip when the
+      provider API-key env var is unset, never read .env, call create_llm_client
+      (...).get_llm(), produce a Research Manager plan, ask the same model to
+      judge the output against the expected answer on a 0-5 scale, parse the last
+      integer and assert >= 3; (5) final cleanup: docstring says network only in
+      the real-model case, integer parsing takes the last match, unused state
+      field removed, DEFAULT_CONFIG import moved to top, CI comment updated to
+      mention both the keyword proxy and the real-model judge case. CI adds a
+      semantic-eval job with continue-on-error: true (advisory), pipefail plus tee
+      into GITHUB_STEP_SUMMARY, and Gate 4 marked PARTIAL. Verified: ruff clean;
+      pytest on that file 6 passed in ~13s with the real-model case executing
+      locally; full suite 2010 passed, 2 skipped (langchain_aws missing; the
+      real-model case skipped because tests/conftest.py blanks TRADINGAGENTS_*
+      so DEFAULT_CONFIG falls back to provider `openai` whose key is absent), 1
+      deselected, 24 warnings, 100 subtests; ci.yml parses as YAML with
+      continue-on-error True. No push, PR or merge; GitHub Actions was NOT run.
