@@ -2,12 +2,14 @@ import hashlib
 import json
 import logging
 import os
+from collections.abc import Mapping
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import tradingagents
+from tradingagents import evidence, evidence_store
 from tradingagents.agents.context import build_instrument_context, resolve_instrument_identity
 from tradingagents.agents.rating import run_rating
 from tradingagents.dataflows.config import run_config, run_config_context, set_config
@@ -18,6 +20,7 @@ from tradingagents.llm_clients import create_tier_client, tier_provider
 from tradingagents.memory import TradingMemoryLog, settlement
 from tradingagents.memory.reflection import Reflector
 from tradingagents.reporting import write_report_tree
+from tradingagents.run_recorder import RUN_ID_PATTERN
 
 from .checkpointer import checkpoint_step, clear_checkpoint, get_checkpointer, thread_id
 from .conditional_logic import ConditionalLogic
@@ -335,13 +338,17 @@ class TradingAgentsGraph:
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         return Path(self.config["results_dir"]) / "reports" / f"{safe_ticker_component(ticker)}_{stamp}"
 
-    def create_run_state(self, company_name, trade_date, asset_type: str = "stock", portfolio=None):
+    def create_run_state(
+        self, company_name, trade_date, asset_type: str = "stock", portfolio=None, *,
+        source_run_id: str | None = None, capture_context: dict[str, object] | None = None,
+    ):
         """Build a run's initial state; propagate() and the CLI both start here.
 
         Injects the resolved instrument identity for every agent (#814). The
         memory log's lessons are not here: the graph's Memory Log step settles
         and loads them alongside the analysts (see ``_memory_step``).
         """
+        capture = self._validate_capture_context(source_run_id, capture_context)
         trade_date = _validate_trade_date(trade_date)
         state = self.propagator.create_initial_state(
             company_name,
@@ -352,7 +359,76 @@ class TradingAgentsGraph:
         )
         if self.config.get("guard_enabled") is True:
             state["guard_enabled"] = True
+        if capture:
+            state.update(source_run_id=source_run_id, capture_context=dict(capture_context))
+            # In capture mode a missing update must not look like an emitted blank.
+            for analyst in self.selected_analysts:
+                state.pop(evidence.ANALYST_REPORT_FIELDS[analyst], None)
         return state
+
+    def _validate_capture_context(self, source_run_id, capture_context) -> bool:
+        """Validate the activation and declared path without touching storage."""
+        if capture_context is None:
+            return False
+        if (
+            not isinstance(capture_context, dict)
+            or capture_context.keys() != {"enabled", "evidence_dir"}
+            or capture_context["enabled"] is not True
+        ):
+            raise ValueError("Invalid Evidence capture activation")
+        if not isinstance(source_run_id, str) or not RUN_ID_PATTERN.fullmatch(source_run_id):
+            raise ValueError("Evidence capture requires a valid source_run_id")
+        if self.config.get("checkpoint_enabled"):
+            raise ValueError("Evidence capture is incompatible with checkpointing")
+        expected = Path(self.config["results_dir"]) / "runs" / source_run_id / "evidence"
+        declared = capture_context["evidence_dir"]
+        if (
+            not isinstance(declared, str)
+            or not declared.strip()
+            or Path(declared).absolute() != expected.absolute()
+        ):
+            raise ValueError("Evidence capture evidence_dir must match the reserved run directory")
+        return True
+
+    def _capture_evidence(self, state):
+        """Publish the selected reports once, after the complete pre-Bull join."""
+        selected = self.selected_analysts
+        fields = {key: evidence.ANALYST_REPORT_FIELDS[key] for key in selected}
+        outputs = {key: state[field] for key, field in fields.items() if field in state}
+        run_id = state["source_run_id"]
+        captured_at = datetime.now(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
+        registration = evidence.register_reports(
+            selected_analysts=selected,
+            analyst_outputs=outputs,
+            source_run_id=run_id,
+            captured_at=captured_at,
+            context={
+                "instrument": {"symbol": state["company_of_interest"], "asset_type": state["asset_type"]},
+                "instrument_context": state["instrument_context"],
+                "analysis_date": state["trade_date"],
+                "analysis_cutoff_at": None,
+            },
+        )
+        snapshot = registration.snapshot
+        key = evidence.artifact_key_for(snapshot.snapshot_id)
+        destination = evidence_store.evidence_destination(self.config, run_id, key)
+        saved = evidence.save_snapshot(snapshot, destination)
+        if saved.status not in {"created", "already_present"}:
+            raise RuntimeError(f"Unexpected Evidence save status: {saved.status!r}")
+        return {
+            **{field: "" for field in fields.values() if field not in state},
+            "evidence_snapshot": {
+                "snapshot_id": snapshot.snapshot_id,
+                "artifact_key": key,
+                "store": "local-fs",
+                "source_run_id": snapshot.source_run_id,
+                "captured_at": snapshot.captured_at,
+            },
+            "evidence_diagnostics": [
+                {"code": diagnostic.code, "path": diagnostic.path}
+                for diagnostic in registration.diagnostics
+            ],
+        }
 
     def _memory_step(self, state):
         """The graph's Memory Log step, alongside the analysts (#1428): settle every
@@ -469,7 +545,16 @@ class TradingAgentsGraph:
         # when the process-wide config has changed since. Each step runs in the
         # run's context, so the caller keeps its own between steps.
         context = run_config_context(self.config)
-        stream = context.run(self.graph.stream, graph_input, subgraphs=True, **args)
+        graph = self.graph
+        if isinstance(graph_input, Mapping) and self._validate_capture_context(
+            graph_input.get("source_run_id"), graph_input.get("capture_context"),
+        ):
+            workflow = context.run(
+                self.graph_setup.setup_graph, self.selected_analysts,
+                memory_node=self._memory_step, capture_node=self._capture_evidence,
+            )
+            graph = workflow.compile()
+        stream = context.run(graph.stream, graph_input, subgraphs=True, **args)
         try:
             while (step := context.run(next, stream, None)) is not None:
                 namespace, mode, chunk = step

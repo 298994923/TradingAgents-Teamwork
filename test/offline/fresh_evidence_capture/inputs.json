@@ -1,0 +1,31 @@
+{
+  "status": "Synthetic acceptance inputs; no live data, source availability or runtime integration claim.",
+  "ticker": "DEMO",
+  "trade_date": "2026-11-20",
+  "captured_at": "2026-11-25T08:00:00.000000Z",
+  "selected_analysts": [
+    "market",
+    "social",
+    "news",
+    "fundamentals"
+  ],
+  "analyst_outputs": {
+    "market": "  Market: synthetic trend.\r\nRSI 55.\n",
+    "social": "Sentiment: synthetic neutral discussion.",
+    "news": "News: synthetic product announcement.",
+    "fundamentals": "Fundamentals: synthetic revenue increased."
+  },
+  "context": {
+    "instrument": {
+      "symbol": "DEMO",
+      "asset_type": "stock"
+    },
+    "instrument_context": "Fictional company; synthetic fixture only.",
+    "analysis_date": "2026-11-20",
+    "analysis_cutoff_at": null
+  },
+  "runs": {
+    "v0": "v0-demo-2026-11-20-r1-20261125t0800",
+    "v1": "v1-demo-2026-11-20-r1-20261125t0800"
+  }
+}

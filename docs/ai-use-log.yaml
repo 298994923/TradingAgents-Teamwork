@@ -919,3 +919,42 @@ entries:
       so DEFAULT_CONFIG falls back to provider `openai` whose key is absent), 1
       deselected, 24 warnings, 100 subtests; ci.yml parses as YAML with
       continue-on-error True. No push, PR or merge; GitHub Actions was NOT run.
+
+  - id: "61023334-LiChengzhi-ai-use-07"
+    pr_id: "pre-pr"
+    date: "2026-11-25"
+    task: "Implement, verify, and prepare the fresh V0/V1 Evidence producer"
+    agent: "opencode"
+    model: "openai/gpt-6.2-sol"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      OpenCode session ses_e068a4c8dffe1zl0wRjxuCc0m7. C changed only
+      agents/state.py, graph/setup.py and graph/trading_graph.py in
+      src/tradingagents; the pinned CLI test and two support assets stayed
+      byte-identical. The optional, invocation-local uncheckpointed path
+      publishes Evidence after the complete analyst and Memory Log barrier,
+      before Bull, with no reference until publication succeeds. Role D
+      (Liu Kehong, 60894001) signed the plan, test and three-path scope on
+      2026-11-25 in D-to-C-fresh-evidence-implementation-approval.md, placed
+      in the delivery checkout by the human. D independently approved and
+      merged the contract adoption in PR #46 at
+      543aad0d745cd25584ecb765deac1904d8dea86e. A assigned REQ-C-CAP-01 and
+      INV-C-CAP-01; docs-only PR #47 registered the exact test bindings at
+      832de915e59f112de95ee8771c69342c3eeee691. The test-first run was one
+      pass and three expected missing-interface failures, with 99 controls
+      passing. On 2026-11-25 Role C (Li Chengzhi, 61023334) explicitly
+      reviewed and accepted source diff SHA-256
+      23cfbd9625e8400ba3908623c8b232091fb509ba1b42fc35de452093828866f0
+      with 4 pinned, 10 supplemental and 2,014 full offline passes, and
+      authorized the coordinating agent to publish. On the unchanged source
+      re-anchored to PR #47, 4 pinned, 10 supplemental, 99 focused, 14 V1,
+      41 checkpoint, 21 receipt and 4 terminal tests passed. Full offline:
+      2,014 passed, 2 skipped (missing langchain_aws and no real-model API key),
+      1 deselected, 24 warnings and 100 passing subtests; Ruff and Git diff
+      checks passed. Capture remains explicit,
+      experimental and default-off. Existing E sidecar coverage is not
+      end-to-end proof of the post-publication failure path; the E follow-up
+      remains outside this PR. No GitHub write was performed here. Published
+      CI, non-author approval and merge provenance remain outstanding.

@@ -331,3 +331,39 @@ approvals:
       lexical root anchoring before resolution, escaping-symlink rejection before
       mkdir, and resolve+recheck of the destination inside the reserved run.
       Same post-implementation review caveat as above.
+
+  - src: "src/tradingagents/agents/state.py"
+    approver: "60894001"
+    date: "2026-11-25"
+    tests:
+      - "test/offline/fresh_evidence_capture/test_fresh_evidence_cli_review.py"
+    notes: >-
+      D-to-C-fresh-evidence-implementation-approval.md, sections 2, 3 and 5:
+      four optional unseeded state channels only. This is the signed
+      pre-implementation scope after Evidence contract adoption in PR #46
+      (543aad0d745cd25584ecb765deac1904d8dea86e). REQ-C-CAP-01 and
+      INV-C-CAP-01 bindings adopted in PR #47.
+
+  - src: "src/tradingagents/graph/setup.py"
+    approver: "60894001"
+    date: "2026-11-25"
+    tests:
+      - "test/offline/fresh_evidence_capture/test_fresh_evidence_cli_review.py"
+    notes: >-
+      D-to-C-fresh-evidence-implementation-approval.md, sections 2, 3 and 5:
+      optional capture callable at the complete analyst and Memory Log
+      barrier, before Bull only when opted in. Signed pre-implementation scope
+      after PR #46 contract adoption (543aad0d745cd25584ecb765deac1904d8dea86e);
+      REQ-C-CAP-01 and INV-C-CAP-01 bindings adopted in PR #47.
+
+  - src: "src/tradingagents/graph/trading_graph.py"
+    approver: "60894001"
+    date: "2026-11-25"
+    tests:
+      - "test/offline/fresh_evidence_capture/test_fresh_evidence_cli_review.py"
+    notes: >-
+      D-to-C-fresh-evidence-implementation-approval.md, sections 2, 3 and 5:
+      explicit activation, private capture, and invocation-local uncheckpointed
+      streaming only. Signed pre-implementation scope after PR #46 contract
+      adoption (543aad0d745cd25584ecb765deac1904d8dea86e); REQ-C-CAP-01 and
+      INV-C-CAP-01 bindings adopted in PR #47.
