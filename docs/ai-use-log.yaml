@@ -798,3 +798,39 @@ entries:
       authorized commit, push and PR creation. Publication was delegated
       to the coordinating agent; this session did not publish. Published CI,
       non-author merge and E's serial-merge coordination remain outstanding.
+
+  - id: "60252993-linan-ai-use-21"
+    pr_id: "N/A"
+    date: "2026-11-25"
+    task: "Prepare E's three interfaces for the fresh V0/V1 evidence integration"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Role C's fresh-evidence handoff requested three E interfaces before C can
+      wire the capture node: an early collision-safe run-id reservation, an
+      evidence destination helper, and forwarding of the state reference into
+      the manifest and sidecar. The agent planned, stopped for APPROVED, wrote
+      test/offline/test_evidence_integration.py first (red), then implemented:
+      (1) reserve_run_id in cli/run.py moves the _unique_run_id + atomic mkdir
+      loop ahead of graph execution; write_run_manifest and _make_manifest_writer
+      accept an optional run_id and reuse it without re-reserving, and the
+      failure path reuses the same writer/reservation instead of building a
+      second one; (2) new src/tradingagents/evidence_store.py with
+      evidence_destination(config, run_id, artifact_key) -> Path, placing A's
+      canonical key under <results_dir>/runs/<run_id>/evidence/, validating the
+      key grammar, resolving symlinks and rejecting escapes, and never importing
+      cli.run; (3) evidence_snapshot forwarded from final_state into manifest
+      field 11 and its id/key projected into evidence-mode.json snapshot_ref,
+      with legitimate null preserved. source_run_id is forwarded to
+      create_run_state only when its signature accepts it; the real graph does
+      not yet, so today this is a legacy call until Role C adds the parameter.
+      Human reviewed the plan and the diff. Offline: new suite 21 passed;
+      related manifest/prompt-hash/evidence-mode/e2e 59 passed; full suite
+      1982 passed, 1 skipped (langchain_aws), 1 deselected, 24 warnings, 100
+      passing subtests; ruff clean. No model call, no .env, no real artifact.
+      These are writer-only and path-helper tests with synthetic references;
+      the real register/save producer is C/A work and is not claimed here.
+      Committed locally as 364a87b; no push, no PR; GitHub Actions was NOT run.
