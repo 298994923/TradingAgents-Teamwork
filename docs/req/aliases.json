@@ -1,6 +1,6 @@
 {
-  "revision": "2026-11-25-registration-r8",
-  "owner_confirmation": "C requests canonical capture IDs for its supplied graph-barrier/failure scope; A assigns CAP-01 in this proposal. Existing 25 IDs are preserved.",
+  "revision": "2026-11-25-registration-r9",
+  "owner_confirmation": "A requested registration of its existing seven component requirements on 2026-11-25. Prior IDs, aliases and entry metadata are preserved; this records no new independent approval.",
   "shared_branch_adoption": false,
   "aliases": {
     "C-P01": "REQ-C-01",
@@ -38,7 +38,14 @@
     "REQ-C-LOCAL-CKPT-006": "REQ-C-CKPT-02",
     "INV-C-LOCAL-CKPT-006": "INV-C-CKPT-02",
     "REQ-C-CAP-01": "REQ-C-CAP-01",
-    "INV-C-CAP-01": "INV-C-CAP-01"
+    "INV-C-CAP-01": "INV-C-CAP-01",
+    "A-EV-01": "A-EV-01",
+    "A-EV-02": "A-EV-02",
+    "A-EV-03": "A-EV-03",
+    "A-EV-04": "A-EV-04",
+    "A-EV-05": "A-EV-05",
+    "A-EV-06": "A-EV-06",
+    "A-EV-07": "A-EV-07"
   },
   "entries": [
     {
@@ -247,9 +254,72 @@
       "included_in_local_candidate": true,
       "shared_branch_adoption": false,
       "verification_status": "fixed filename/hash supplied by C; exact path/functions/original bytes not received; no A execution"
+    },
+    {
+      "id": "A-EV-01",
+      "owner": "A",
+      "mapping_assignment": "Existing source/test ID retained as canonical; no renumbering",
+      "registry_inclusion": "proposed in r9",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "verification_status": "Existing standalone tests referenced; component execution and registration adoption recorded separately"
+    },
+    {
+      "id": "A-EV-02",
+      "owner": "A",
+      "mapping_assignment": "Existing source/test ID retained as canonical; no renumbering",
+      "registry_inclusion": "proposed in r9",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "verification_status": "Existing standalone tests referenced; component execution and registration adoption recorded separately"
+    },
+    {
+      "id": "A-EV-03",
+      "owner": "A",
+      "mapping_assignment": "Existing source/test ID retained as canonical; no renumbering",
+      "registry_inclusion": "proposed in r9",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "verification_status": "Existing standalone tests referenced; component execution and registration adoption recorded separately"
+    },
+    {
+      "id": "A-EV-04",
+      "owner": "A",
+      "mapping_assignment": "Existing source/test ID retained as canonical; no renumbering",
+      "registry_inclusion": "proposed in r9",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "verification_status": "Existing standalone tests referenced; component execution and registration adoption recorded separately"
+    },
+    {
+      "id": "A-EV-05",
+      "owner": "A",
+      "mapping_assignment": "Existing source/test ID retained as canonical; no renumbering",
+      "registry_inclusion": "proposed in r9",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "verification_status": "Existing standalone tests referenced; component execution and registration adoption recorded separately"
+    },
+    {
+      "id": "A-EV-06",
+      "owner": "A",
+      "mapping_assignment": "Existing source/test ID retained as canonical; no renumbering",
+      "registry_inclusion": "proposed in r9",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "verification_status": "Existing standalone tests referenced; component execution and registration adoption recorded separately"
+    },
+    {
+      "id": "A-EV-07",
+      "owner": "A",
+      "mapping_assignment": "Existing source/test ID retained as canonical; no renumbering",
+      "registry_inclusion": "proposed in r9",
+      "included_in_local_candidate": true,
+      "shared_branch_adoption": false,
+      "verification_status": "Existing standalone tests referenced; component execution and registration adoption recorded separately"
     }
   ],
-  "prepared_against_main": "303c6d1bb9b1a81b89962d13fa7fbd6b7627b1e9",
+  "prepared_against_main": "2f99c3adaee870a18dc85b62089667954eddcf2b",
   "publication_target": "main",
   "storage_groups": [
     {
@@ -284,7 +354,7 @@
   "main_refresh_verified": true,
   "Evidence_PR16_merge": "61402afa740f0345fc5e36c8e338a1cc88d268b9",
   "Evidence_approval": "C completed; E is not the reviewer",
-  "publication_note": "Preparation snapshot: baseline contains 25 adopted targets; the two CAP-01 targets are proposed until this registration merges. Runtime acceptance is separate.",
+  "publication_note": "R9 was initially prepared against 2f99c3a with 27 baseline entries. After rebase onto 63989bfd70f3aeeec35607d21bc0ac7f085a8919, preserve all 58 current upstream entries and add seven A-EV-01..07 targets for 65 total. GOV-001 was already removed upstream and is not restored by A. Earlier nested status metadata retains its dated scope. A targets remain proposed until this registration merges.",
   "test_count_clarification": "23 storage + 13 legacy = 36; +4 graph +1 real receipt = 41. The receipt is now delivered; an existing V1 approval record reports 41 passing on its candidate, not a new run by A.",
   "graph_delivery": "PR #18; 0760c5800912d1b570dd130d0d94c2c619cbf45a",
   "base_registry_adoption_sha": "b9d89a4157af76e8d76cd91cf3bd030e51ede389",
@@ -316,5 +386,6 @@
     "executed_by_A": false,
     "approval_source_reported_by_C": "D-to-C-fresh-evidence-implementation-approval.md",
     "approval_boundary": "C reports scope/tests approved subject to Evidence contract adoption; no independent approval verification or condition closure is inferred here"
-  }
+  },
+  "rebased_onto_main": "63989bfd70f3aeeec35607d21bc0ac7f085a8919"
 }
