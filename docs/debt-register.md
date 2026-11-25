@@ -5,7 +5,7 @@ Last updated: 2026-11-25. No dates are ever backfilled.
 
 | ID | Debt / deviation | Owner | Status | Notes |
 |---|---|---|---|---|
-| OI-01 | 7 author-self-merges: #21 #32 #37 (C); #34 #35 #41 (B); #42 (E) | E | REGISTERED | deviation comments posted with actual dates; amendment proposed 2026-11-25 |
+| OI-01 | 10 author-self-merges: #21 #32 #37 #48 #51 (C); #34 #35 #41 (B); #42 (E); #49 (D, self-registered) | E | REGISTERED | deviation comments posted with actual dates; amendment proposed 2026-11-25 |
 | OI-02 | ai-use-log agent field edited Codex to opencode twice (#41 850a652, #45 05f38b3 via web UI) while git shows Codex authorship | B | OPEN | session-export evidence or restore accurate declarations |
 | OI-03 | post-manifest SidecarError double-terminal-write hazard | E | OPEN | capture-enabled stays default-off meanwhile |
 | OI-04 | ruff F811 x2 (full-tree lint debt) | C | OPEN | promote offline fixture to conftest; suite stays green |

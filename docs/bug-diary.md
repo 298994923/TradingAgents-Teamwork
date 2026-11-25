@@ -48,3 +48,9 @@ Recorder: Liu Kehong (Role D, 60894001), 2026-11-25.
 **Contributor:** LiChengzhi (61023334).
 
 **C-BD-01 — Successful-run completion marker missing** (public contract and fix recorded 2026-11-25). Normal unguarded V0/V1 runs could reach the final decision but leave the manifest's `stop_reason` null. Scripted CLI verification exposed the missing marker while preserving guarded and exception cases as controls. [PR #32](https://github.com/298994923/TradingAgents-Teamwork/pull/32) defined the narrow completion semantics before [PR #37](https://github.com/298994923/TradingAgents-Teamwork/pull/37) added the terminal state-writing boundary without changing the recorder or Guard. Rule: verify the successful outcome and the cases where the marker must remain absent; do not use `completed` as a generic interpretation of null.
+
+BD-11 The register keeper self-merged (2026-11-25). PR #49 (Role D's own records) was
+merged by its author (Lynn22-git, per commit metadata) — tenth self-merge, first by the
+register's keeper, caught by Role D's own merged_by sweep minutes later. Self-registered
+on the PR with actual date; OI-01 updated to ten. Rule closing the loop: the register
+binds the registrar first.

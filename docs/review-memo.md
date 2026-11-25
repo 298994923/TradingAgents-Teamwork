@@ -21,7 +21,7 @@ under docs/approvals/, docs/adr/, merge SHAs on main, or cited pinned hashes.
 | 11 | PR #37 acceptance on main | stop_reason 4 green + full suite | PASS 550 passed in 6.73s | main 47fdde3; merged_by checked |
 | 12 | Fresh Evidence capture scope + implementation approval + #46 adoption | contract addendum, 3-path scope, CLI test pin | APPROVE; adoption verbatim PASSED | adoption 543aad0d; test pin 68674694 |
 | 13 | Permission-sync disposition | 10 findings tracked separately | separate tracking + probe required | permission-sync disposition record |
-| 14 | Merge-discipline dispositions | 7 author-self-merges registered | four-element queue (Role E) | records on #21 #32 #34 #35 #37 #41 #42 |
+| 14 | Merge-discipline dispositions | 10 author-self-merges registered (incl. one by Role D) | four-element queue (Role E) | records on #21 #32 #34 #35 #37 #41 #42 |
 
 ## 2. Review method used throughout
 
