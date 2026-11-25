@@ -186,3 +186,25 @@ approvals:
       CI scope 1921 passed, 1 skipped, 1 deselected, 100 subtests passed.
       The two production merge resolutions preserve effective_config and prompt_receipts.
       Reviewed collector, CLI wiring and necessary test changes are listed in PR 26.
+
+  # 2026-11-25 prompt_hashes wiring: on_prompt -> manifest prompt_hashes.
+  # Post-implementation review only: the human approved the plan in OpenCode
+  # session ses_def9ea581ffe9jrPzq0ouZBeRy and reviewed the diff afterwards. This
+  # is NOT a claim of independent preimplementation approval; per team split §9
+  # an independent countersign (Role C, 61023334) is still pending.
+  - src: "src/cli/run.py"
+    approver: "60252993"
+    date: "2026-11-25"
+    review_stage: "post-implementation"
+    tests:
+      - "test/offline/test_cli_prompt_hashes.py"
+      - "test/offline/test_cli_run_manifest.py"
+      - "test/offline/test_compare_runs.py"
+    notes: >-
+      Added _PromptReceiptCollector (normalizes b.<role> to the three plain
+      roles, fails closed on missing/empty/disagreeing hashes, zero receipts
+      fall back to {}), the prompt-receipts.jsonl sidecar, and the CLI wiring
+      from on_prompt to write_run_manifest. Full offline suite 1940 passed,
+      1 skipped, 1 deselected, 100 subtests; ruff clean. Verified with real
+      v0 and v1 runs; compare_runs accepted the pair. AI-use entry
+      60252993-linan-ai-use-20 has the details.

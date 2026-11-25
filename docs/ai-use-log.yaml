@@ -619,3 +619,39 @@ entries:
       end-to-end tests for normal and fallback sends. Verified with v0; the
       workflow v1 selector was unavailable on the tested main baseline.
       Role B confirmed the PR 26 AI-use record, including completeness and checkout-isolation fixes.
+
+  - id: "60252993-linan-ai-use-20"
+    pr_id: "N/A"
+    date: "2026-11-25"
+    task: "Wire on_prompt receipts into manifest prompt_hashes so V0/V1 runs are comparable"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      B's producer emits template digests under b.<role> keys; the CLI never
+      connected on_prompt and wrote prompt_hashes={}, so compare_runs refused
+      every comparison. OpenCode session ses_def9ea581ffe9jrPzq0ouZBeRy planned,
+      stopped for APPROVED, then added _PromptReceiptCollector in cli/run.py:
+      normalize b.<role> to the three plain roles, fail closed on missing/empty/
+      disagreeing hashes, zero receipts fall back to {} (legacy/fake-graph runs
+      still write a manifest). Raw receipts go to a prompt-receipts.jsonl sidecar.
+      A follow-up fixed a regression where zero receipts were treated as missing
+      roles and broke 5 upstream CLI tests; it now returns {} when no receipt
+      arrived, restoring legacy behavior while compare_runs still refuses an
+      empty guard. Human reviewed the plan and both diffs.
+      Validation with real API keys: one v0 run
+      (outputs/runs/v0-nvda-2026-11-20-r1-20261125t0218) and one v1 run
+      (v1-nvda-2026-11-20-r1-20261125t0223) both wrote the three non-empty
+      hashes, receipts had 6 and 4 entries, and compare_runs accepted the pair
+      (v0 21 LLM/33 tool/201333+33375 tokens/185 s; v1 19 LLM/27 tool/
+      151986+28138 tokens/149 s). One comparison only, not a repeated
+      measurement; no significance claimed. Local full suite: 1940 passed,
+      1 skipped (langchain_aws), 1 deselected, 24 warnings, 100 passing
+      subtests; ruff clean. Known gaps, documented in the E-to-C and E-to-A
+      handoff cards under docs/handoffs/: stop_reason (C) and evidence_snapshot
+      (A+C+E) remain null; sidecar run_id/round_index are null because those
+      state fields do not exist yet. No commit, push or PR made; GitHub Actions
+      was NOT run. Approval is a post-implementation review only, with C
+      countersign pending; not a claim of independent preimplementation approval.
