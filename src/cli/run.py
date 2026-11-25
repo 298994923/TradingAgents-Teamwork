@@ -7,7 +7,6 @@ import re
 import sys
 import time
 import webbrowser
-from dataclasses import replace
 from datetime import UTC, datetime
 from functools import wraps
 from pathlib import Path
@@ -167,6 +166,8 @@ def write_run_manifest(
     evidence_mode: str = "strict",
     prompt_hashes: dict | None = None,
     prompt_receipts: list | None = None,
+    run_id: str | None = None,
+    evidence_snapshot: dict | None = None,
 ) -> Path:
     """Write this run's manifest to ``<results_dir>/runs/<run_id>/manifest.json``.
 
@@ -174,9 +175,16 @@ def write_run_manifest(
     value domain); it is ``None`` when the graph did not reach a terminal state.
     ``prompt_hashes`` (B) holds the three role template digests collected from
     ``on_prompt`` and lands in the manifest; ``prompt_receipts`` (the raw receipts)
-    are written to a ``prompt-receipts.jsonl`` sidecar beside the manifest for
-    audit. Both default to empty when no receipts were collected (e.g. legacy
-    runs). ``evidence_snapshot`` (A) is ``None`` until that contract lands.
+    are written to sidecars beside the manifest for audit. Both default to empty
+    when no receipts were collected (e.g. legacy runs). ``evidence_snapshot`` (A)
+    is the run's evidence reference, stored unchanged; a legitimate ``None`` stays
+    ``None``.
+
+    ``run_id`` lets the caller pass an id already reserved via ``reserve_run_id``:
+    it is validated against ``RUN_ID_PATTERN`` and reused as-is -- no second
+    reservation, and the already-created directory is not re-reserved. When it is
+    ``None`` the id is built and reserved here (legacy behavior).
+
     ``duration_seconds`` is measured from ``started_at`` and ``clock``
     (``time.time`` by default) when not supplied; passing both keeps it testable.
 
@@ -184,7 +192,27 @@ def write_run_manifest(
     recording the evidence mode and the facts the run observed. It does not change
     the RunEvent v1 15 fields.
     """
-    run_id = build_run_id(variant, ticker, trade_date, repeat, at)
+    if run_id is not None:
+        if not RUN_ID_PATTERN.fullmatch(run_id):
+            raise ValueError(f"invalid run_id {run_id!r}; must match {RUN_ID_PATTERN.pattern}")
+        runs_dir = Path(config["results_dir"]) / "runs"
+        manifest_dir = runs_dir / run_id
+        # The directory was reserved by reserve_run_id; only ensure it exists.
+        manifest_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        run_id = build_run_id(variant, ticker, trade_date, repeat, at)
+        runs_dir = Path(config["results_dir"]) / "runs"
+        if not RUN_ID_PATTERN.fullmatch(run_id):
+            raise ValueError(f"invalid run_id {run_id!r}")
+        while True:
+            candidate = _unique_run_id(runs_dir, run_id)
+            manifest_dir = runs_dir / candidate
+            try:
+                manifest_dir.mkdir(parents=True)
+                break
+            except FileExistsError:
+                continue
+        run_id = candidate
     if duration_seconds is None and started_at is not None:
         now = (clock or time.time)()
         duration_seconds = max(0.0, now - started_at)
@@ -199,29 +227,42 @@ def write_run_manifest(
         outcome=outcome,
         config_snapshot=_manifest_config_snapshot(config),
         prompt_hashes=prompt_hashes or {},
-        evidence_snapshot=None,
+        evidence_snapshot=evidence_snapshot,
         usage=usage,
         duration_seconds=duration_seconds,
         failure=failure,
         stop_reason=stop_reason,
     )
-    runs_dir = Path(config["results_dir"]) / "runs"
-    if not RUN_ID_PATTERN.fullmatch(run_id):
-        raise ValueError(f"invalid run_id {run_id!r}")
-    while True:
-        candidate = _unique_run_id(runs_dir, run_id)
-        manifest_dir = runs_dir / candidate
-        try:
-            manifest_dir.mkdir(parents=True)
-            break
-        except FileExistsError:
-            continue
-    run_id = candidate
-    event = replace(event, run_id=run_id)
     path = write_manifest(event, manifest_dir / "manifest.json")
-    write_evidence_mode(manifest_dir / "evidence-mode.json", run_id, evidence_mode)
+    write_evidence_mode(
+        manifest_dir / "evidence-mode.json", run_id, evidence_mode,
+        snapshot_ref=_snapshot_ref(evidence_snapshot),
+    )
     write_prompt_receipts(manifest_dir / "prompt-receipts.jsonl", prompt_receipts, run_id)
     return path
+
+
+def reserve_run_id(*, config: dict, variant: str, ticker: str, trade_date: str, repeat: int, at: datetime) -> str:
+    """Reserve a collision-safe run directory up front and return its ``run_id``.
+
+    ``build_run_id`` has minute resolution, so two runs started in the same minute
+    (or a retry) produce the same id. This picks the free ``-<n>`` variant with
+    ``_unique_run_id`` and atomically creates the directory (``mkdir`` without
+    ``exist_ok`` so a racing reservist loses cleanly and we retry). The caller
+    threads the returned id through the manifest writer, which then reuses it
+    as-is -- no second reservation, no overwrite.
+    """
+    run_id = build_run_id(variant, ticker, trade_date, repeat, at)
+    if not RUN_ID_PATTERN.fullmatch(run_id):
+        raise ValueError(f"invalid run_id {run_id!r}; must match {RUN_ID_PATTERN.pattern}")
+    runs_dir = Path(config["results_dir"]) / "runs"
+    while True:
+        candidate = _unique_run_id(runs_dir, run_id)
+        try:
+            (runs_dir / candidate).mkdir(parents=True)
+            return candidate
+        except FileExistsError:
+            continue
 
 
 def write_prompt_receipts(path, prompt_receipts: list | None, run_id: str = "") -> Path | None:
@@ -258,11 +299,27 @@ def write_prompt_receipts(path, prompt_receipts: list | None, run_id: str = "") 
 _EVIDENCE_MODES = ("strict", "report_reference")
 
 
-def write_evidence_mode(path, run_id: str, evidence_mode: str) -> Path:
+def _snapshot_ref(evidence_snapshot: dict | None) -> dict:
+    """Project A's evidence reference onto the sidecar's ``snapshot_ref`` shape.
+
+    Values are copied unchanged (no derivation, no normalization); a missing or
+    null reference stays ``{"snapshot_id": None, "artifact_key": None}``.
+    """
+    if not evidence_snapshot:
+        return {"snapshot_id": None, "artifact_key": None}
+    return {
+        "snapshot_id": evidence_snapshot.get("snapshot_id"),
+        "artifact_key": evidence_snapshot.get("artifact_key"),
+    }
+
+
+def write_evidence_mode(path, run_id: str, evidence_mode: str, *, snapshot_ref: dict | None = None) -> Path:
     """Write the E4 ``evidence-mode.json`` sidecar recording this run's mode.
 
     E records facts only; the authoritative action and the mode approval belong to
     D/C, so those fields are ``None`` here unless a caller later fills them in.
+    ``snapshot_ref`` projects A's evidence reference onto the sidecar; when omitted
+    it stays ``{"snapshot_id": None, "artifact_key": None}``.
     """
     if evidence_mode not in _EVIDENCE_MODES:
         raise ValueError(
@@ -279,7 +336,7 @@ def write_evidence_mode(path, run_id: str, evidence_mode: str) -> Path:
         "authoritative_action": None,
         "authoritative_reason": None,
         "decided_by": None,
-        "snapshot_ref": {"snapshot_id": None, "artifact_key": None},
+        "snapshot_ref": snapshot_ref or {"snapshot_id": None, "artifact_key": None},
     }
     path = Path(path)
     path.write_text(json.dumps(sidecar, sort_keys=True, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -304,8 +361,8 @@ def _unique_run_id(runs_dir: Path, run_id: str) -> str:
     return candidate
 
 
-def _make_manifest_writer(config: dict, selections: dict, stats_handler, started_at=None, variant="v0", prompt_receipts=None):
-    """Return a ``write(failure=..., outcome=...)`` bound to this run's inputs.
+def _make_manifest_writer(config: dict, selections: dict, stats_handler, started_at=None, variant="v0", prompt_receipts=None, run_id=None):
+    """Return a ``write(failure=..., outcome=..., stop_reason=..., evidence_snapshot=...)``.
 
     ``variant`` selects the architecture under test and becomes the first segment
     of the manifest ``run_id``; ``repeat`` is 1 and ``created_at`` is now, both
@@ -313,10 +370,13 @@ def _make_manifest_writer(config: dict, selections: dict, stats_handler, started
     the run's start (``time.time()``); forwarding it lets the manifest record a
     real duration. ``prompt_receipts`` is the collector (or ``None`` when no
     receipts were gathered); its aggregated hashes and raw receipts are written
-    into the manifest and the sidecar.
+    into the manifest and the sidecars. ``run_id`` is the id reserved by
+    ``reserve_run_id``; when supplied the writer reuses it as-is instead of
+    reserving a second directory, so the success and failure paths share one
+    reservation.
     """
 
-    def write(*, failure, outcome, stop_reason=None):
+    def write(*, failure, outcome, stop_reason=None, evidence_snapshot=None):
         prompt_hashes = None
         raw_receipts = None
         if prompt_receipts is not None:
@@ -339,6 +399,8 @@ def _make_manifest_writer(config: dict, selections: dict, stats_handler, started
             evidence_mode=config.get("evidence_mode", "strict"),
             prompt_hashes=prompt_hashes,
             prompt_receipts=raw_receipts,
+            run_id=run_id,
+            evidence_snapshot=evidence_snapshot,
         )
 
     return write
@@ -361,11 +423,19 @@ def _finalize_run_manifest(
     teardown never loses the record. A failed run still writes a manifest with
     ``failure`` set and keeps its checkpoint for resume; the failure is re-raised.
     ``stop_reason`` is read from ``final_state`` (C's field) with a ``None``
-    fallback when the run did not reach a terminal state.
+    fallback when the run did not reach a terminal state. ``evidence_snapshot``
+    (A's reference) is read from ``final_state`` unchanged; a run that produced
+    none keeps ``None``.
     """
     outcome = None if final_state is None else run_rating(final_state)
     stop_reason = (final_state or {}).get("stop_reason") if failure is None else None
-    write(failure=None if failure is None else str(failure), outcome=outcome, stop_reason=stop_reason)
+    evidence_snapshot = (final_state or {}).get("evidence_snapshot") if failure is None else None
+    write(
+        failure=None if failure is None else str(failure),
+        outcome=outcome,
+        stop_reason=stop_reason,
+        evidence_snapshot=evidence_snapshot,
+    )
 
     if failure is not None:
         raise failure
@@ -467,6 +537,37 @@ def _reject_unavailable_variant(variant: str | None, graph_cls=None) -> None:
             "workflow_variant. Run with --variant v0.[/red]"
         )
         raise typer.Exit(code=1)
+
+
+def _callable_accepts_source_run_id(fn) -> bool:
+    """Whether ``fn`` (``create_run_state``) has an explicit ``source_run_id`` param.
+
+    Only an explicit, named parameter (positional-or-keyword or keyword-only)
+    counts; a bare ``**kwargs`` catch-all does not, so a graph that would silently
+    swallow the id is treated as unsupported and called with the legacy signature.
+    """
+    try:
+        params = inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        return False
+    param = params.get("source_run_id")
+    return param is not None and param.kind in (
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        inspect.Parameter.KEYWORD_ONLY,
+    )
+
+
+def _create_run_state(graph, ticker, trade_date, asset_type, portfolio, source_run_id):
+    """Build the run state, forwarding ``source_run_id`` only when the graph takes it.
+
+    Role C adds ``source_run_id`` to ``create_run_state`` on the protected graph;
+    until then (and for fake graphs) the legacy four-arg call is used, so nothing
+    downstream breaks.
+    """
+    create = graph.create_run_state
+    if _callable_accepts_source_run_id(create):
+        return create(ticker, trade_date, asset_type, portfolio, source_run_id=source_run_id)
+    return create(ticker, trade_date, asset_type, portfolio)
 
 
 def _build_graph(graph_cls, selected_analyst_keys, config, callbacks, *, workflow_variant, on_prompt=None):
@@ -582,6 +683,24 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
     # Track start time for elapsed display
     start_time = time.time()
 
+    # Reserve this run's directory once, before any work, so the manifest writer
+    # and the graph's run state share a single id and the failure path reuses the
+    # same reservation (no second writer, no overwritten manifest).
+    reserved_run_id = reserve_run_id(
+        config=effective_config,
+        variant=manifest_variant,
+        ticker=selections["ticker"],
+        trade_date=selections["analysis_date"],
+        repeat=1,
+        at=datetime.now(UTC),
+    )
+    # One writer bound to the reserved id, used on BOTH the success and failure paths.
+    manifest_write = _make_manifest_writer(
+        effective_config, selections, stats_handler,
+        started_at=start_time, variant=manifest_variant,
+        prompt_receipts=prompt_receipts, run_id=reserved_run_id,
+    )
+
     results_dir = _run_directory(config, selections["ticker"], selections["analysis_date"])
     results_dir.mkdir(parents=True, exist_ok=True)
     report_dir = results_dir / "reports"
@@ -666,8 +785,9 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
         # The same initial state propagate() builds, with the resolved
         # instrument identity; the graph's Memory Log step settles past
         # decisions and loads their lessons alongside the analysts.
-        init_agent_state = graph.create_run_state(
-            selections["ticker"], selections["analysis_date"], selections["asset_type"], portfolio
+        init_agent_state = _create_run_state(
+            graph, selections["ticker"], selections["analysis_date"],
+            selections["asset_type"], portfolio, reserved_run_id,
         )
         # Pass callbacks to graph config for tool execution tracking
         # (LLM tracking is handled separately via LLM constructor)
@@ -800,7 +920,6 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
             # Clean run: write the manifest, log the decision, then drop this run's
             # checkpoint so a later run starts fresh. The manifest is written first,
             # inside _finalize_run_manifest, so teardown can never lose the record.
-            manifest_write = _make_manifest_writer(effective_config, selections, stats_handler, started_at=start_time, variant=manifest_variant, prompt_receipts=prompt_receipts)
             _finalize_run_manifest(
                 write=manifest_write,
                 graph=graph,
@@ -813,8 +932,8 @@ def run_analysis(checkpoint: bool | None = None, portfolio=None, flags=None, var
             )
         except BaseException as failure:
             # A failure mid-run still leaves a manifest; the checkpoint is kept for
-            # resume and the failure is re-raised after the finally below.
-            manifest_write = _make_manifest_writer(effective_config, selections, stats_handler, started_at=start_time, variant=manifest_variant, prompt_receipts=prompt_receipts)
+            # resume and the failure is re-raised after the finally below. The SAME
+            # writer/reservation is reused so nothing is overwritten.
             _finalize_run_manifest(
                 write=manifest_write,
                 graph=graph,
