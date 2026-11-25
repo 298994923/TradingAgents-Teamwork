@@ -12,21 +12,22 @@ extended under an auditable AI-coding workflow.
 
 ## Status
 
-The upstream baseline is complete and green. Team-owned governance and
-extension modules are being added in small, reviewed steps. `AGENTS.md` marks
-paths that do not exist yet with `[TBD]`; a document describing a feature does
-not mean the feature is implemented. The table in
-[CI and blocking gates](#ci-and-blocking-gates) is the authoritative summary of
-what is enforced today.
+The upstream baseline is green and the team's extension modules, governance
+documents and CI gates are in place. The table below reflects the current
+repository; the section [CI and blocking gates](#ci-and-blocking-gates) states
+exactly what each gate does and where its limits are.
 
 | Item | Current value |
 |---|---|
 | Python | 3.12 (baseline measured on 3.12.16) |
 | Upstream baseline | `TauricResearch/TradingAgents@9fa1196` |
+| Migration to `src/` | commit `b5d2f67` |
 | License | Apache License 2.0 (see `LICENSE`) |
-| Offline tests | `1441 passed, 1 skipped, 1 deselected` |
-| Lint | `ruff check src tests test` clean |
-| CI checks | `tests`, `lint`, `schema`, `test-approval`, `ai-use-log` |
+| Full offline suite | `2014 passed, 2 skipped, 1 deselected, 100 subtests passed` (2026-11-25) |
+| Lint | `ruff check src tests test scripts` clean |
+| CI jobs | `tests`, `lint`, `semantic-eval`, `schema`, `test-approval`, `ai-use-log` |
+| Requirements registry | 58 entries across all five roles (A, B, C, D, E) |
+| Branch protection on `main` | required CI checks and approval from another person (verified on GitHub) |
 
 ## What the application does
 
@@ -49,11 +50,15 @@ model tiers are supported (`quick` for analysts/researchers/trader, `deep` for
 managers). Results are written as Markdown/HTML reports under the configured
 results directory, and a longer-term memory log records decisions.
 
+A completed run also writes a versioned JSON manifest that records its inputs,
+configuration, prompt hashes, usage, duration, failure and stop reason. These
+manifests are what make runs comparable and prompt/model changes reviewable.
+
 ## Upstream baseline and team additions
 
 The repository imports the upstream project at commit `9fa1196` and moves the
 packages into a `src/` layout without rewriting their behaviour. The migration
-commit is `b5d2f67`; the frozen test baseline is documented in
+commit is `b5d2f67`; the frozen test baseline is recorded in
 [`docs/evaluation/baseline.md`](docs/evaluation/baseline.md).
 
 The team work is organised by role:
@@ -66,10 +71,8 @@ The team work is organised by role:
 | D | Deterministic safety: hard invariants, final validation, permissions |
 | E | Run records, experiments, CI blocking gates, delivery |
 
-Most of these extension modules are still being implemented; the current
-repository contains the upstream baseline, the E-owned RunEvent recorder, and the
-governance entry points. When a module lands, its contract and tests land with
-it.
+The team's additions extend the upstream project; they do not replace the
+upstream regression suite.
 
 ## Architecture
 
@@ -78,6 +81,14 @@ The main entry point is `TradingAgentsGraph` in
 It wires graph setup, propagation, conditional routing, checkpointing and the
 agents. The CLI in [`src/cli/`](src/cli) owns interactive selection, display and
 the run loop; `src/cli/stats_handler.py` tracks LLM/tool calls and token usage.
+
+The master constraint document is
+[`architecture-blueprint.md`](architecture-blueprint.md). Supporting artifacts
+live under [`docs/architecture/`](docs/architecture/) (invariants, trace matrix,
+permission model, runtime policy catalog, candidate evaluation table and ADRs
+003–006) and [`docs/code-governance/`](docs/code-governance/) (structural and
+verification constraints, MCP tool manifest). Interface contracts are under
+[`docs/contracts/`](docs/contracts/).
 
 Cross-cutting boundaries:
 
@@ -91,49 +102,60 @@ Cross-cutting boundaries:
   lazily so test collection needs no API key.
 - **Authority boundary.** LLM output is advisory. Deterministic checks and the
   final validation layer are authoritative; a model must not be able to turn a
-  blocked result into a pass. The D-owned invariants and validation contracts
-  are being added.
+  blocked result into a pass. A non-executable guard verdict is also masked out
+  of the Markdown and HTML reports by
+  [`src/tradingagents/reporting.py`](src/tradingagents/reporting.py) and
+  [`src/tradingagents/report_html.py`](src/tradingagents/report_html.py).
 - **Run records.** [`src/tradingagents/run_recorder.py`](src/tradingagents/run_recorder.py)
-  serialises a run manifest with a versioned schema (15 fields: run identity,
-  config, prompt hashes, evidence snapshot, usage, duration, failure, stop
-  reason). The recorder is deterministic, refuses to overwrite, and excludes
-  secret-shaped config keys. The contract is
-  [`docs/contracts/run-event.md`](docs/contracts/run-event.md). Wiring the
-  recorder into the CLI/graph is a later step because it depends on C's
-  `stop_reason` domain.
-- **Context and memory.** The upstream memory log is retained. B's layered
-  context builder, compression threshold and constraint re-injection policy are
-  being added.
+  serialises a run manifest with a versioned 15-field schema. The recorder is
+  deterministic, refuses to overwrite, excludes secret-shaped config keys and
+  writes atomically; the read path rejects missing fields and unsupported schema
+  versions. The contract is
+  [`docs/contracts/run-event.md`](docs/contracts/run-event.md).
+- **Usage accounting.** Each admitted model call settles once. Incomplete or
+  late usage stays `null` rather than becoming zero, so an unaffordable call
+  cannot look free. The budget contract is
+  [`docs/contracts/execution-budget.md`](docs/contracts/execution-budget.md).
+- **Context and memory.** The upstream memory log is retained. The team's
+  layered context builder, compaction threshold and constraint re-injection are
+  covered by [`docs/contracts/review-context.md`](docs/contracts/review-context.md)
+  and ADR-003.
 
 ## Repository layout
 
 ```text
 TradingAgents-Coursework/
-├── AGENTS.md                    coding-agent entry point and code map
-├── Prompt.md                    static, plan-first startup prompt (D9)
-├── README.md
-├── pyproject.toml               src layout, entry point, pytest/ruff config
+├── README.md                       this file
+├── AGENTS.md                       coding-agent entry point and code map
+├── Prompt.md                       static startup prompt (D9)
+├── architecture-blueprint.md       master architecture constraint document
+├── Report.md                       team process report and reflections
+├── pyproject.toml                  src layout, entry point, pytest/ruff config
+├── opencode.jsonc                  enforced tool configuration
 ├── Dockerfile / docker-compose.yml
-├── .agent/rules.md              project covenant
-├── .github/workflows/ci.yml     blocking CI
+├── .agent/rules.md                 project covenant
+├── .github/workflows/ci.yml        six CI gate jobs
 ├── docs/
-│   ├── ai-use-log.yaml          per-PR AI-use log
-│   ├── contracts/run-event.md   RunEvent manifest contract
-│   ├── evaluation/baseline.md   V0 baseline evidence
-│   ├── plans/                   versioned plans (E)
-│   └── req/req-schema.json      requirements-schema proposal (not adopted)
+│   ├── ai-use-log.yaml             per-PR AI-use log
+│   ├── approvals.yaml              test-approval records
+│   ├── req/                        requirements registry and schema
+│   ├── architecture/               invariants, trace matrix, catalog, ADRs
+│   ├── code-governance/            structural and verification constraints
+│   ├── contracts/                  interface contracts
+│   ├── evaluation/                 baseline, protocol and comparison results
+│   └── evidence/                   evidence records and snapshots
+├── prompts/                        versioned runtime prompt catalog
 ├── src/
-│   ├── cli/                     Typer CLI and display
-│   └── tradingagents/           graph, agents, dataflows, llm_clients, memory
+│   ├── cli/                        Typer CLI, display and usage tracking
+│   └── tradingagents/              graph, agents, dataflows, llm_clients, memory
 ├── test/
-│   ├── offline/                 deterministic tests (new code)
-│   └── live/                    API-dependent tests (reserved)
-└── tests/                       upstream regression suite
+│   ├── offline/                    deterministic tests (38 files)
+│   ├── live/                       API-dependent tests (reserved)
+│   └── fixtures/                   test fixtures
+├── tests/                          upstream regression suite
+├── scripts/                        CI gate and comparison scripts
+└── transcripts/                    annotated agent-session transcripts
 ```
-
-Some directories are not here yet: `docs/architecture/`, `docs/code-governance/`,
-`prompts/` and `transcripts/`. They will be added when the team has real content
-for them, not as empty placeholders.
 
 ## Setup
 
@@ -165,85 +187,108 @@ python -m pytest test/offline -q
 # Upstream regression suite only
 python -m pytest tests -q
 
-# API-dependent tests (when test/live/ contains any; keys required)
+# API-dependent tests (test/live/ is reserved; keys required)
 python -m pytest test/live -m integration -q
 
 # Static checks
 ruff check src tests test scripts
 ```
 
-Current local results (2026-11-22): `1441 passed, 1 skipped, 1 deselected` for
-the full offline suite; `17 passed` for the CI-gate tests. The one skip is
-optional `langchain_aws` not being installed. `test/live/` is empty, so there is
-**no** live-test pass to report; a suite that was not run is not a suite that
-passed.
+Latest local full-suite result (2026-11-25): `2014 passed, 2 skipped,
+1 deselected`, plus `100 subtests passed`. The skips are optional
+`langchain_aws` and the real-model semantic case without an API key.
+`test/live/` has no test cases yet, so there is **no** live-test pass to report;
+a suite that was not run is not a suite that passed.
 
 ## CI and blocking gates
 
 CI runs on every pull request and on pushes to `main`
-([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). The workflow has five
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). The workflow has six
 jobs. Two of them only make sense for a PR and skip on a plain push.
 
 Here is what each gate actually does today, in plain words:
 
-- **`tests`** — runs the upstream `tests/` and our `test/offline/`. If a test
-  fails, the PR is blocked. That's all: it does not count tests or compare
-  against an old number.
-- **`lint`** — runs ruff, compiles the code to catch syntax errors, and checks
-  that every third-party import is declared in `pyproject.toml`. A few packages
-  that the upstream code already gets through its dependencies are allowlisted.
-- **`schema`** — checks `docs/req/requirements.yaml` against
-  `docs/req/req-schema.json`. The check is real, but the registry is only a
-  one-entry seed written by E; A will replace it with the real requirements.
-- **`test-approval`** — if a PR changes a file under `src/`, that file must be
-  listed in `docs/approvals.yaml` with an approver and a date. No matching
-  record, no merge. It only covers `src/`, and the approver is just a name in
-  the file — we do not check who actually approved it.
-- **`ai-use-log`** — if a PR changes `src/`, `scripts/` or `test/`, it must add
-  a new entry to `docs/ai-use-log.yaml` with a fresh unique id and
+- **`tests`** (Gate 5, regression) — runs the upstream `tests/` and our
+  `test/offline/`. If a test fails, the PR is blocked. It does not count tests
+  or compare against an old number.
+- **`lint`** (Gate 2, static analysis) — runs ruff, compiles the code to catch
+  syntax errors, and checks that every third-party import used by our source is
+  declared in `pyproject.toml`. A few packages that upstream pulls in
+  transitively are allowlisted.
+- **`schema`** (Gate 3) — checks `docs/req/requirements.yaml` against
+  `docs/req/req-schema.json`. The registry currently holds 58 entries from all
+  five roles.
+- **`test-approval`** (Gate 1) — if a PR changes a file under `src/`, that file
+  must be listed in `docs/approvals.yaml` with an approver and a date. No
+  matching record, no merge. This gate deliberately covers source code files.
+- **`semantic-eval`** (Gate 4) — scores the rendered research prompts against a
+  fixed evaluation set and includes a real-model judge case that skips without
+  an API key. It writes results to the CI summary and is advisory
+  (`continue-on-error`): it reports, but does not block a merge.
+- **`ai-use-log`** (Gate 6) — if a PR changes `src/`, `scripts/` or `test/`, it
+  must add a new entry to `docs/ai-use-log.yaml` with a fresh unique id and
   `human_reviewed: true`. Editing only docs, prompts or `.github/` does not
   trigger it.
 
-To be honest about the state: `tests`, `lint` and `ai-use-log` are real gates
-that will block a bad PR. `test-approval` and `schema` work but run on simple
-seed data. The semantic-evaluation gate (course gate 4) is **not implemented** —
-an earlier placeholder was removed because it was not real evaluation. There is
-a TODO in [`docs/plans/E-ci-gates.md`](docs/plans/E-ci-gates.md): it needs a real
-eval runner and a fixed evaluation set from B. We do not claim all six course
-gates are finished.
+To be honest about the state: `tests`, `lint` and `ai-use-log` are enforcing
+gates that will block a bad PR. `test-approval` deliberately covers only `src/`,
+the schema gate validates the registry but does not judge requirement quality,
+and the semantic gate is advisory.
 
-Branch protection on `main` is enabled. Safety-critical paths are still
-expected to require human review and an architecture decision. `CODEOWNERS`
-and per-path permission checks are part of D's governance work and will be
-added when the permission model lands, not as an empty placeholder.
+Branch protection on `main` is enabled and verified on GitHub: a pull request
+needs passing CI checks and approval from another person before it can merge.
+The author cannot approve their own change.
 
-## Baseline and reproducibility
+## Baseline, experiments and reproducibility
 
 - Upstream: `TauricResearch/TradingAgents@9fa1196`, Apache-2.0.
 - Migration to `src/`: commit `b5d2f67`.
 - Frozen V0 test baseline: commit `b5d2f67`, Python 3.12.16, `1412 passed,
   1 skipped, 1 deselected`.
-- Current additions do not replace the upstream suite; they extend it under
-  `test/offline/`.
+- Current additions extend the upstream suite; they do not replace it.
 
-The exact commands and environment for the V0 baseline are recorded in
-[`docs/evaluation/baseline.md`](docs/evaluation/baseline.md). Experiments are
-recorded as run manifests (version, input, config, prompt hashes, usage,
-duration, failure, stop reason) so comparisons are tied to a version rather
-than to a screenshot.
+The exact commands and environment for the V0 baseline are in
+[`docs/evaluation/baseline.md`](docs/evaluation/baseline.md) and
+[`docs/evaluation/env.txt`](docs/evaluation/env.txt). The comparison method,
+its fixed inputs and its limits are in
+[`docs/evaluation/protocol.md`](docs/evaluation/protocol.md).
+
+Runs are recorded as manifests (version, input, config, prompt hashes, usage,
+duration, failure, stop reason), so comparisons are tied to a version rather
+than to a screenshot. Two comparable V0/V1 results are published under
+[`docs/evaluation/results/`](docs/evaluation/results/):
+
+| Experiment | LLM calls (v0 → v1) | Output tokens (v0 → v1) | Duration (v0 → v1) |
+|---|---|---|---|
+| [2026-11-22](docs/evaluation/results/compare_run_v0_v1_2026-11-22.md) | 21 → 21 | 33,661 → 28,492 | 210.18 s → 160.98 s |
+| [2026-11-24](docs/evaluation/results/compare_run_v0_v1_2026-11-24.md) | 24 → 21 | 33,495 → 30,148 | 209.51 s → 160.28 s |
+
+Both comparisons were produced by `scripts/compare_runs.py` with exit code 0,
+real prompt hashes and `evidence_mode: strict`. Each variant has one run, so
+these are descriptive measurements, not a stable estimate. Total tokens fell
+3.7% in the first experiment and rose 5.6% in the second; the team's 20–25%
+reduction target is **not** demonstrated by these runs.
+
+## Records and governance
+
+Read, in order: [`AGENTS.md`](AGENTS.md) → [`Prompt.md`](Prompt.md) →
+[`.agent/rules.md`](.agent/rules.md). The workflow requires human approval
+before implementation, small reviewed changes with tests first, and a real
+AI-use log entry for every code or prompt change. Every feature has at least one
+negative test. Changes to safety-critical paths require an architecture
+decision and human approval. Do not weaken or delete tests to make CI pass.
+
+The audit records are [`docs/ai-use-log.yaml`](docs/ai-use-log.yaml),
+[`docs/approvals.yaml`](docs/approvals.yaml) and
+[`docs/approvals/`](docs/approvals/), with review and defect records in
+[`docs/debt-register.md`](docs/debt-register.md) and
+[`docs/bug-diary.md`](docs/bug-diary.md). Five annotated agent-session
+transcripts are in [`transcripts/`](transcripts/). `Report.md` holds the team
+process report and the five members' reflections.
 
 ## GitHub
 
 <https://github.com/298994923/TradingAgents-Teamwork>
-
-## Governance
-
-Read, in order: [`AGENTS.md`](AGENTS.md) → [`Prompt.md`](Prompt.md) →
-[`.agent/rules.md`](.agent/rules.md). The workflow is plan first, stop for human
-approval, then implement in small steps with tests. Every code or prompt change
-gets an AI-use log entry; every feature gets at least one negative test; changes
-to safety-critical paths require an architecture decision and human approval.
-Do not weaken or delete tests to make CI pass.
 
 ## License
 
