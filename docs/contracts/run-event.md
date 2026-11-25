@@ -97,3 +97,18 @@ would collide and one result would be silently lost.
 - Missing required field (e.g. `version`) → rejected with a specific error.
 - Unsupported `schema_version` → rejected with a specific error.
 - Secret-pattern config key (e.g. `openai_api_key`) → absent from `config_snapshot`.
+
+## V0/V1 terminal stop reason
+
+- `completed` is written for a normal, unguarded final decision only: the run reached
+  the Portfolio Manager final-decision edge, terminated without exception, and no guard
+  stop intervened;
+- the enumeration is open: additional values enter only by dated Role D ruling with
+  their own pinned tests; no value is written speculatively — unknown dispositions
+  remain null (null means "no adopted literal yet", never "fine");
+- `stop_reason` is a single run-level slot whose writer depends on where execution
+  stopped; writers are mutually exclusive per workflow variant — this slice adds only
+  the terminal writer and does not touch the V2 scheduler/manager channels
+  (`research_stop_reason`, manager-handoff `stop_reason` semantics unchanged);
+- `guard_result` is never altered by this mechanism; E's writer and schema are untouched
+  (E passively persists whatever state carries — as already built).
