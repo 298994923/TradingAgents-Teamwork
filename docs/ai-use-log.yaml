@@ -765,3 +765,36 @@ entries:
       C implementation; no new acceptance of the combined candidate,
       permission-sync disposition, published CI, or publication or merge
       approval is recorded here.
+
+  - id: "61023334-LiChengzhi-ai-use-06"
+    pr_id: "pre-pr"
+    date: "2026-11-25"
+    task: "Implement and verify the V0/V1 terminal stop reason"
+    agent: "opencode"
+    model: "openai/gpt-6.2-sol"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      OpenCode session ses_e068a4c8dffe1zl0wRjxuCc0m7. On main
+      0fb6b50cf4d7dab41d145d5c534f89aef0c63993, only the optional unseeded
+      AgentState channel and the existing Portfolio Manager registration
+      changed in source. The terminal wrapper records completed for normal
+      unguarded non-REVIEW decisions; Guard, V2, signatures, checkpoints,
+      prompt receipts and the CLI writer were not changed. Role D (Liu
+      Kehong, 60894001) signed the scoped v0.1 ruling on 2026-11-25; the
+      RunEvent addendum was adopted via PR #32 at
+      973f957674d33c407afd809079be01719d96bdaa. Separately, Role C relayed
+      D's conditional instruction to proceed after rerunning self-checks;
+      there is no separate D signature on the tested v0.2 hash
+      655d5d596e6bd079cd1277a442ab4ac1683b37684ca855e854c7737b89441655.
+      The test-first run recorded two expected missing-completed failures
+      and 89 passes. The candidate recorded 98 focused passes, including
+      14 V1, 41 checkpoint and seven B context cases. Full offline:
+      1961 passed, one skipped (langchain_aws), one deselected, 24 warnings
+      and 100 passing subtests. Ruff and diff checks passed. On
+      2026-11-25, after reviewing the fixed source diff and results, Role C
+      (Li Chengzhi, 61023334) explicitly stated "reviewed and accepted" and
+      authorized commit, push and PR creation. Publication was delegated
+      to the coordinating agent; this session did not publish. Published CI,
+      non-author merge and E's serial-merge coordination remain outstanding.
