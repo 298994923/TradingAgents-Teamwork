@@ -17,18 +17,40 @@ from gate_common import GATED_PREFIXES, changed, gated  # noqa: E402
 
 # --- Gate 6: AI-use log ------------------------------------------------------
 
-NEW_ENTRY = """
-- id: "60252993-linan-ai-use-99"
-  human_reviewed: true
-"""
-UNREVIEWED_ENTRY = """
-- id: "60252993-linan-ai-use-99"
-  human_reviewed: false
-"""
 OLD_ENTRY = """
 - id: "60252993-linan-ai-use-01"
+  agent: "opencode"
   human_reviewed: true
 """
+OLD_ENTRY_2 = """
+- id: "60252993-linan-ai-use-02"
+  agent: "opencode"
+  human_reviewed: true
+"""
+NEW_ENTRY = """
+- id: "60252993-linan-ai-use-99"
+  agent: "opencode"
+  human_reviewed: true
+"""
+CHANGED_ENTRY = """
+- id: "60252993-linan-ai-use-01"
+  agent: "opencode"
+  human_reviewed: true
+  notes: "updated"
+"""
+UNREVIEWED_CHANGED = """
+- id: "60252993-linan-ai-use-01"
+  agent: "opencode"
+  human_reviewed: false
+  notes: "updated"
+"""
+WRONG_AGENT_ENTRY = """
+- id: "60252993-linan-ai-use-99"
+  agent: "copilot"
+  human_reviewed: true
+"""
+
+LOG = "docs/ai-use-log.yaml"
 
 
 def _log(*entries: str) -> str:
@@ -36,31 +58,50 @@ def _log(*entries: str) -> str:
 
 
 def _ai_use_gate(base_text: str, head_text: str, changed_paths: list[str]) -> tuple[bool, str]:
-    if not gated(changed_paths):
-        return True, "docs-only"
-    base_ids = _ids(_entries(base_text))
+    code_changed = bool(gated(changed_paths))
+    if not (code_changed or LOG in changed_paths):
+        return True, "skip"
+    base_by_id = {e["id"]: e for e in _entries(base_text) if e.get("id")}
+    base_entries = _entries(base_text)
     head_entries = _entries(head_text)
     head_ids = _ids(head_entries)
     if len(head_ids) != len(set(head_ids)):
         return False, "duplicate id"
-    new_entries = [e for e in head_entries if e.get("id") not in base_ids]
-    if not new_entries:
-        return False, "no new entry"
-    if any(e.get("human_reviewed") is not True for e in new_entries):
+    if set(base_by_id) - set(head_ids):
+        return False, "deleted"
+    if len(head_entries) < len(base_entries):
+        return False, "count dropped"
+    touched = [
+        e for e in head_entries if e.get("id") not in base_by_id or e != base_by_id[e["id"]]
+    ]
+    if any(e.get("agent") != "opencode" for e in touched):
+        return False, "wrong agent"
+    if any(e.get("human_reviewed") is not True for e in touched):
         return False, "not human_reviewed"
+    if code_changed and not (set(head_ids) - set(base_by_id)):
+        return False, "no new id"
     return True, "ok"
 
 
-def test_ai_use_missing_entry_fails():
-    assert _ai_use_gate(_log(OLD_ENTRY), _log(OLD_ENTRY), ["src/x.py"]) == (False, "no new entry")
+def test_ai_use_skips_when_neither():
+    assert _ai_use_gate(_log(OLD_ENTRY), _log(OLD_ENTRY), ["docs/other.md"]) == (True, "skip")
 
 
-def test_ai_use_new_entry_passes():
-    assert _ai_use_gate(_log(OLD_ENTRY), _log(OLD_ENTRY, NEW_ENTRY), ["src/x.py"])[0] is True
+def test_ai_use_code_new_entry_passes():
+    assert _ai_use_gate(_log(OLD_ENTRY), _log(OLD_ENTRY, NEW_ENTRY), ["src/x.py"]) == (True, "ok")
 
 
-def test_ai_use_docs_only_passes():
-    assert _ai_use_gate(_log(OLD_ENTRY), _log(OLD_ENTRY), ["docs/x.md"]) == (True, "docs-only")
+def test_ai_use_code_no_new_id_fails():
+    assert _ai_use_gate(_log(OLD_ENTRY), _log(CHANGED_ENTRY), ["src/x.py"]) == (False, "no new id")
+
+
+def test_ai_use_log_only_edit_passes():
+    assert _ai_use_gate(_log(OLD_ENTRY), _log(CHANGED_ENTRY), [LOG]) == (True, "ok")
+
+
+def test_ai_use_log_only_delete_fails():
+    result = _ai_use_gate(_log(OLD_ENTRY, OLD_ENTRY_2), _log(OLD_ENTRY), [LOG])
+    assert result == (False, "deleted")
 
 
 def test_ai_use_duplicate_id_fails():
@@ -68,21 +109,23 @@ def test_ai_use_duplicate_id_fails():
     assert result == (False, "duplicate id")
 
 
-def test_ai_use_not_human_reviewed_fails():
-    result = _ai_use_gate(_log(OLD_ENTRY), _log(OLD_ENTRY, UNREVIEWED_ENTRY), ["src/x.py"])
+def test_ai_use_log_only_not_reviewed_fails():
+    result = _ai_use_gate(_log(OLD_ENTRY), _log(UNREVIEWED_CHANGED), [LOG])
     assert result == (False, "not human_reviewed")
 
 
-def test_tests_dir_is_not_gated():
-    assert _ai_use_gate(_log(OLD_ENTRY), _log(OLD_ENTRY), ["tests/y.py"])[0] is True
+def test_ai_use_wrong_agent_fails():
+    result = _ai_use_gate(_log(OLD_ENTRY), _log(OLD_ENTRY, WRONG_AGENT_ENTRY), ["src/x.py"])
+    assert result == (False, "wrong agent")
+
+
+def test_tests_dir_is_gated():
+    # test/ changes count as code: a new entry is required.
+    assert _ai_use_gate(_log(OLD_ENTRY), _log(OLD_ENTRY), ["test/y.py"]) == (False, "no new id")
 
 
 def test_prompts_and_github_are_not_gated():
-    passed, reason = _ai_use_gate(
-        _log(OLD_ENTRY), _log(OLD_ENTRY), ["prompts/p.yaml", ".github/workflows/ci.yml"]
-    )
-    assert passed is True
-    assert reason == "docs-only"
+    assert _ai_use_gate(_log(OLD_ENTRY), _log(OLD_ENTRY), ["prompts/p.yaml", ".github/x.yml"])[0] is True
 
 
 # --- Gate 1: test approval ---------------------------------------------------
