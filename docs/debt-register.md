@@ -20,3 +20,13 @@ Last updated: 2026-11-25. No dates are ever backfilled.
 | OI-13 | CI gate-logic updates (gate 4 / gate 6) landed as code | E + reviewer | IN PROGRESS | confirm reviewer + regression; D verifies at next acceptance |
 
 Recorder: Liu Kehong (Role D, 60894001), 2026-11-25.
+
+## Role C — Remaining evaluation and integration work
+
+**Contributor:** LiChengzhi (61023334). These items do not replace the existing governance and operational debt entries.
+
+| ID | Debt / deviation | Owner | Status | Notes |
+| --- | --- | --- | --- | --- |
+| C-OI-01 | Same-revision V0/V1 outcome and usage comparison is not established by the scripted route tests. | C; E records runs | OPEN | Apply the [comparison protocol](architecture/evaluation-table.md); distinguish reported usage from unknown and keep failed attempts in scope. [PR #21](https://github.com/298994923/TradingAgents-Teamwork/pull/21) proves the selector, not decision quality. |
+| C-OI-02 | Adaptive execution acceptance remains outside delivered V0/V1. | C, with B/D/E at their interfaces | OPEN | [PR #23](https://github.com/298994923/TradingAgents-Teamwork/pull/23) documents the design. Require an end-to-end eligibility, bounded routing, budget, and safe termination test before claiming delivery. |
+| C-OI-03 | Explicit locator recovery with Evidence binding is not delivered by ordinary keyed continuation. | C, with A/E at their interfaces | OPEN | [PR #17](https://github.com/298994923/TradingAgents-Teamwork/pull/17) and [PR #18](https://github.com/298994923/TradingAgents-Teamwork/pull/18) cover storage and keyed lifecycle. [PR #48](https://github.com/298994923/TradingAgents-Teamwork/pull/48) covers fresh capture, not replay or recovery. |

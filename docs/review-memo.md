@@ -47,3 +47,26 @@ Reviewer (Role D): Liu Kehong (Student ID: 60894001)
 Date: 2026-11-25
 Declaration: I have independently verified the review conclusions above, endorse them, and sign as the responsible reviewer.
 Signature: Liu Kehong
+
+## Role C — Delivery evidence and public review facts
+
+**Contributor:** LiChengzhi (61023334). This section records Role C verification and public delivery facts, not a new independent approval.
+
+| Public delivery | Prior observed offline evidence |
+| --- | --- |
+| [Standalone budget policy, PR #4](https://github.com/298994923/TradingAgents-Teamwork/pull/4) | 13 policy tests passed; no adaptive graph exercised. |
+| [Guard opt-in, PR #12](https://github.com/298994923/TradingAgents-Teamwork/pull/12) | 129 expanded candidate cases passed; no claim of general rendering coverage. |
+| [Storage, PR #17](https://github.com/298994923/TradingAgents-Teamwork/pull/17), [keyed graph, PR #18](https://github.com/298994923/TradingAgents-Teamwork/pull/18), [receipt wiring, PR #22](https://github.com/298994923/TradingAgents-Teamwork/pull/22) | 23 storage cases passed; the later checkpoint selection with real receipt wiring passed 41. This verifies ordinary continuation, not explicit recovery. |
+| [V1 selector, PR #21](https://github.com/298994923/TradingAgents-Teamwork/pull/21) | 14 selector and receipt cases and 41 checkpoint cases passed on merged main. |
+| [Terminal completion, PR #37](https://github.com/298994923/TradingAgents-Teamwork/pull/37) | Candidate: 98 focused and 1,961 full offline passes, plus 100 passing subtests. |
+| [Fresh capture, PR #48](https://github.com/298994923/TradingAgents-Teamwork/pull/48) | Before implementation: one pinned pass and three expected missing-interface failures. Candidate: 4 pinned and 10 supplemental passes; full offline run had 2,014 passes, 2 skips, 1 deselection, 24 warnings, and 100 passing subtests. |
+
+These are historical offline observations, not newly run checks or GitHub verdicts. The selections overlap. Fresh-capture skips covered an unavailable optional dependency and a provider-dependent semantic case. Its [registered positive and negative bindings](req/evidence-registration-trace.md) distinguish successful capture from preserving the original failure and reserved identity without starting Bull.
+
+| PR | Documented GitHub review | Authorship and merge fact |
+| --- | --- | --- |
+| [#21](https://github.com/298994923/TradingAgents-Teamwork/pull/21) | Non-author `APPROVED` on the delivered head. | Authored and merged by the same account, 2026-11-25 UTC. |
+| [#37](https://github.com/298994923/TradingAgents-Teamwork/pull/37) | Non-author `APPROVED` on the delivered head. | Authored and merged by the same account, 2026-11-25 UTC. |
+| [#48](https://github.com/298994923/TradingAgents-Teamwork/pull/48) | Non-author `APPROVED` on the delivered head. | Authored and merged by the same account, 2026-11-25 UTC. |
+
+Independent review does not establish an independent merge. GitHub PR checks, merge-commit checks, and branch enforcement are also different facts. Passing checks do not establish effective repository permissions.
