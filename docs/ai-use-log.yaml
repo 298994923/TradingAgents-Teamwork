@@ -845,3 +845,36 @@ entries:
       Member B reviewed the restored catalog and README. The v1.0 YAML
       matches the original file from commit 6817a5a byte-for-byte, and
       all three role catalog digests were verified.
+
+  - id: "60252993-linan-ai-use-22"
+    pr_id: "N/A"
+    date: "2026-11-25"
+    task: "Fix three E-side evidence-interface boundaries from C's closeout review"
+    agent: "opencode"
+    model: "custom-foundry/CS5351/DeepSeek-V4-Flash"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      Role C reviewed the three E interfaces and reported three required fixes
+      (C-to-E-evidence-interface-closeout-review.md). The agent planned, stopped
+      for APPROVED, wrote test/offline/test_evidence_boundaries.py first (red),
+      then fixed: (1) an explicit default-off capture switch, --capture-evidence
+      in cli/main.py and capture_evidence in run_analysis(flags[] also accepted),
+      independent of run_id and evidence_mode; unflagged runs including checkpoint
+      use are unchanged, and capture+checkpoint fails before any graph/model/
+      reservation/destination work; (2) evidence_store containment hardened to
+      anchor lexical roots before resolving, validate run_id against RUN_ID_PATTERN
+      with dot-only rejection, reject escaping symlinks before mkdir; (3) failure
+      acceptance: init_agent_state moved inside the try so a post-reservation
+      init failure writes one failure manifest, and the writer exposes is_published
+      so a sidecar failure after publication records sidecar-error.json and raises
+      SidecarError(cause) without a second terminal write; cleanup stays behind
+      successful finalization. Human reviewed the plan and the diff. Offline:
+      new boundary suite 20 passed, related 63 passed, full suite 2002 passed,
+      1 skipped (langchain_aws), 1 deselected, 24 warnings, 100 subtests; ruff
+      clean. No model call, no .env, no real artifact; writer-only and path tests
+      with synthetic inputs. Three defects recorded in docs/bug-diary.md as
+      BUG-E-001/002/003. Committed locally as 62585bc; no push, no PR; GitHub
+      Actions was NOT run. C's independent countersign for the interface delivery
+      remains open; this is not a claim of independent preimplementation approval.

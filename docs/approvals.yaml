@@ -286,3 +286,48 @@ approvals:
       from final_state to manifest and evidence-mode snapshot_ref. Legacy
       unreserved callers unchanged; prompt receipts, Guard and stop_reason
       behavior preserved. Same post-implementation review caveat as above.
+
+  # 2026-11-25 evidence-interface boundary fixes (C closeout review).
+  # Post-implementation review only: the human approved the plan in OpenCode
+  # session ses_def9ea581ffe9jrPzq0ouZBeRy and reviewed the diff afterwards.
+  # Not a claim of independent preimplementation approval; per team split §9 an
+  # independent countersign (Role C, 61023334) is still pending.
+  - src: "src/cli/main.py"
+    approver: "60252993"
+    date: "2026-11-25"
+    review_stage: "post-implementation"
+    tests:
+      - "test/offline/test_evidence_boundaries.py"
+    notes: >-
+      Added the default-off --capture-evidence Typer option threading into
+      run_analysis. Unflagged runs unchanged; capture+checkpoint refuses early.
+      Full offline suite 2021 passed (incl. 20 boundary tests), ruff clean.
+      AI-use entry 60252993-linan-ai-use-22 and BUG-E-001/002/003 in
+      docs/bug-diary.md have details.
+
+  - src: "src/cli/run.py"
+    approver: "60252993"
+    date: "2026-11-25"
+    review_stage: "post-implementation"
+    tests:
+      - "test/offline/test_evidence_boundaries.py"
+      - "test/offline/test_evidence_integration.py"
+      - "test/offline/test_cli_prompt_hashes.py"
+    notes: >-
+      Default-off capture_evidence parameter and flags[] channel, early
+      checkpoint refusal, init failure inside the try, writer is_published
+      guard, sidecar-error marker and chained SidecarError. Prompt receipts,
+      Guard and stop_reason behavior preserved; one terminal write per run.
+      Same post-implementation review caveat as above.
+
+  - src: "src/tradingagents/evidence_store.py"
+    approver: "60252993"
+    date: "2026-11-25"
+    review_stage: "post-implementation"
+    tests:
+      - "test/offline/test_evidence_boundaries.py"
+    notes: >-
+      Containment hardening: RUN_ID_PATTERN validation plus dot-only rejection,
+      lexical root anchoring before resolution, escaping-symlink rejection before
+      mkdir, and resolve+recheck of the destination inside the reserved run.
+      Same post-implementation review caveat as above.
