@@ -839,7 +839,7 @@ entries:
     pr_id: "pre-pr"
     date: "2026-11-25"
     task: "Restore B's v1.0 prompt catalog and document its provenance."
-    agent: "Codex"
+    agent: "opencode"
     human_reviewed: true
     notes: >-
       Member B reviewed the restored catalog and README. The v1.0 YAML
