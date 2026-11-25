@@ -51,6 +51,8 @@ _NOT_IN_SIGNATURE = frozenset({
 class TradingAgentsGraph:
     """Main class that orchestrates the trading agents framework."""
 
+    _workflow_variant: str | None = None
+
     def __init__(
         self,
         selected_analysts=("market", "social", "news", "fundamentals"),
@@ -58,6 +60,8 @@ class TradingAgentsGraph:
         config: dict[str, Any] = None,
         callbacks: list | None = None,
         on_prompt=None,
+        *,
+        workflow_variant: str | None = None,
     ):
         """Initialize the trading agents graph and components.
 
@@ -66,9 +70,21 @@ class TradingAgentsGraph:
             debug: Whether to run in debug mode
             config: Configuration dictionary. If None, uses default config
             callbacks: Optional list of callback handlers (e.g., for tracking LLM/tool stats)
+            workflow_variant: ``v0`` for two research debate rounds, ``v1`` for one,
+                or None to keep the configured depth. Risk depth is unchanged.
         """
+        effective_config = config or DEFAULT_CONFIG
+        if workflow_variant is not None:
+            if not isinstance(workflow_variant, str) or workflow_variant not in ("v0", "v1", "v2"):
+                raise ValueError(f"Invalid workflow_variant: {workflow_variant!r}; expected v0 or v1")
+            if workflow_variant == "v2":
+                raise ValueError("Workflow variant v2 is unavailable")
+            effective_config = effective_config.copy()
+            effective_config["max_debate_rounds"] = 2 if workflow_variant == "v0" else 1
+
         self.debug = debug
-        self.config = config or DEFAULT_CONFIG
+        self.config = effective_config
+        self._workflow_variant = workflow_variant
         self.callbacks = callbacks or []
 
         set_config(self.config)
@@ -151,7 +167,7 @@ class TradingAgentsGraph:
         """
         settings = {k: v for k, v in self.config.items() if k not in _NOT_IN_SIGNATURE}
         digest = hashlib.sha256(json.dumps(settings, sort_keys=True, default=str).encode()).hexdigest()[:12]
-        return "|".join([
+        parts = [
             "analysts=" + ",".join(self.selected_analysts),
             f"debate={self.config['max_debate_rounds']}",
             f"risk={self.config['max_risk_discuss_rounds']}",
@@ -164,7 +180,11 @@ class TradingAgentsGraph:
             "analysts=parallel",
             "memory=parallel",
             f"settings={digest}",
-        ])
+        ]
+        # An explicit preset must not resume legacy work at the same depth.
+        if self._workflow_variant is not None:
+            parts.append(f"workflow_variant={self._workflow_variant}")
+        return "|".join(parts)
 
     def propagate(
         self, company_name, trade_date, asset_type: str = "stock", portfolio=None,
@@ -281,7 +301,7 @@ class TradingAgentsGraph:
         local paths are never recorded.
         """
         cfg = self.config
-        return {
+        settings = {
             "version": tradingagents.__version__,
             "llm_provider": cfg.get("llm_provider"),
             "deep_think_provider": tier_provider(cfg, "deep") if cfg.get("llm_provider") else None,
@@ -295,6 +315,9 @@ class TradingAgentsGraph:
             "data_vendors": dict(cfg.get("data_vendors") or {}),
             "tool_vendors": dict(cfg.get("tool_vendors") or {}),
         }
+        if self._workflow_variant is not None:
+            settings["workflow_variant"] = self._workflow_variant
+        return settings
 
     def save_reports(self, final_state, ticker, save_path=None, html=True) -> Path:
         """Write the report tree for a completed run, like the CLI does.

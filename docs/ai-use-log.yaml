@@ -607,3 +607,90 @@ entries:
       as ADR-006 says. Local: 104 focused tests passed, 1911 passed / 1 skipped /
       1 deselected / 100 subtests in the full suite, ruff clean. Human reviewed the
       diff. GitHub Actions was NOT run.
+
+  - id: "61023334-LiChengzhi-ai-use-05"
+    pr_id: "21"
+    date: "2026-11-24"
+    task: "Implement and verify the programmatic V1 workflow selector"
+    agent: "opencode"
+    model: "openai/gpt-6.2-sol"
+    prompt_version: "N/A"
+    human_reviewed: true
+    changes_accepted: true
+    notes: >-
+      OpenCode session ses_e068a4c8dffe1zl0wRjxuCc0m7. Role D (Liu Kehong,
+      60894001) signed the main delivery ruling on 2026-11-23 and confirmed
+      ADR-006 adoption on 2026-11-24. Role C staged the Gate 1 record and
+      exact-path ledger before the formal source edit. Approved source scope:
+      only src/tradingagents/graph/trading_graph.py, adding the keyword-only
+      selector and early validation plus variant-aware signature and run
+      settings. The pinned fixed-pruning test was unchanged. Guard behavior,
+      keyed checkpoints, CLI, manifest, and V2 were outside the source scope.
+      On main 1930befce0e1e4520e4ffd0ef1afc841ada0d90c the test-first run had
+      2 passes and 9 expected failures for the missing constructor keyword.
+      The interim candidate passed 11 fixed-pruning tests and 17 checkpoint
+      controls; the full offline run had 1905 passes, 1 skip (langchain_aws),
+      1 deselection, 24 warnings, and 100 passing subtests. Ruff and diff
+      checks passed. On 2026-11-24, after reviewing the exact green source
+      diff and evidence, Role C (61023334) explicitly accepted this local
+      interim candidate. That acceptance is historical and applies only to
+      the old candidate, not the updated entry's human flags. In OpenCode
+      session ses_e068a4c8dffe1zl0wRjxuCc0m7, C's operator
+      authorized preparation only, not publication or final acceptance. The
+      2026-11-24 signed D-to-C-v1-constructor-overlap-decision.md authorizes
+      the exact context patch (SHA-256
+      62a1fffdc71828fa8188f264ecbd024a5f4da3b6b3eff9063d848277f2517a01).
+      On main 1f9e7cc8267b81645cb8f13ca287f0995e523b24 after PR #22, both
+      pinned V1 tests were preserved and B wiring matched the reviewed bytes.
+      Before edits, checkpoint 41 passed and V1 had 3 passes and 11 expected
+      failures. The refreshed candidate passed all 14 V1 and 41 checkpoint
+      cases, full offline (1911 passed, 1 skip, 1 deselected, 24 warnings,
+      100 passing subtests), Ruff and diff checks. See
+      C-v1-landed-b-main-gate-evidence.md for hashes and commands. The CLI
+      rejects public v1 and records stale depth for v0; E's follow-up remains
+      open, as do permission-sync disposition and verification on the
+      published PR, including CI. On 2026-11-24, the human explicitly
+      confirmed that they reviewed and accepted the exact local Draft #21
+      candidate 7da74c491b64d9a7db8392dd372de7a6b538bf8b. Both flags record
+      that local acceptance only, not publication, readiness, or merge approval.
+      On 2026-11-25, OpenCode (openai/gpt-6.2-sol, session
+      ses_e068a4c8dffe1zl0wRjxuCc0m7) verified a six-file Draft #21 refresh
+      on main fe8ad1ece6eddec20466b4c9129f18d908edcdd2 after E's PR #28.
+      The graph and both pinned tests are byte-identical to the accepted C
+      implementation. No E code or existing main ledger content was edited.
+      The test-only baseline had 3 passes and 11 expected missing-selector
+      failures. The real public CLI, graph and manifest writer passed all
+      4 scripted offline cases: omission retained configured depth three and
+      the legacy signature; explicit v0 and v1 used depths two and one with
+      effective manifest settings; v2 was rejected before any model call.
+      All 14 V1 and 41 checkpoint cases passed. Full offline: 1921 passed,
+      1 skipped (langchain_aws), 1 deselected, 24 warnings and 100 passing
+      subtests. Ruff and diff checks passed. See
+      C-v1-pr21-post-e-cli-refresh-evidence.md for the exact candidate and
+      checks. The prior human flags remain scoped to the unchanged C
+      implementation they accepted on 2026-11-24. The operator requested
+      verification and local preparation only; no fresh acceptance of the
+      combined candidate, permission-sync disposition, published CI, or
+      approval to publish, promote from Draft, or merge is recorded here.
+      On 2026-11-25, OpenCode (openai/gpt-6.2-sol, session
+      ses_e068a4c8dffe1zl0wRjxuCc0m7) verified the next six-file refresh on
+      main a708d7df853153b5a4b87ec50347ed5076218e3c after E's merged PR #30.
+      Draft head 236a951f310e0212b1f51e89c1972464231f83d7 matched the previous
+      verified overlay tree. The graph and both pinned tests remain byte-identical.
+      Main's ledgers, including E's manifest follow-up, were preserved outside
+      the scoped C additions. Before restoring the graph, the two pinned suites
+      had 3 passing controls and 11 expected missing-selector failures. With
+      the real public CLI, graph, and manifest writer, all 4 offline cases
+      passed: omission retained the legacy signature and three Bull/Bear
+      pairs while publishing the v0 manifest label; explicit v0 and v1 ran
+      two and one pairs and wrote matching config_snapshot.workflow_variant
+      values, run IDs, and effective depths. Risk stayed unchanged and v2
+      made zero model calls. All 14 V1 and 41 checkpoint cases passed. Full
+      offline: 1925 passed, 1 skipped (langchain_aws), 1 deselected, 24
+      warnings and 100 passing subtests. Ruff and diff checks passed.
+      Permission-sync output was byte-identical to the prior run, with
+      10 existing findings. See C-v1-pr21-post-manifest-refresh-evidence.md.
+      The prior human acceptance and flags still apply only to the unchanged
+      C implementation; no new acceptance of the combined candidate,
+      permission-sync disposition, published CI, or publication or merge
+      approval is recorded here.
